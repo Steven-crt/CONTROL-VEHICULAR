@@ -1,0 +1,62 @@
+.pageHeader {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  margin-bottom: 24px;
+}
+
+.pageHeader h1 {
+  font-size: 24px;
+  font-weight: 700;
+}
+
+.doughnutWrap {
+  display: flex;
+  justify-content: center;
+  padding: 10px 0;
+}
+
+.doughnutInner {
+  width: 260px;
+  height: 260px;
+  max-width: 100%;
+}
+
+@media (max-width: 768px) {
+  .doughnutInner {
+    width: 200px;
+    height: 200px;
+  }
+}
+
+@media (max-width: 480px) {
+  .doughnutInner {
+    width: 160px;
+    height: 160px;
+  }
+}
+
+.activityList {
+  max-height: 300px;
+  overflow-y: auto;
+}
+
+.activityItem {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+  padding: 10px 0;
+  border-bottom: 1px solid var(--border);
+}
+
+.activityInfo {
+  flex: 1;
+}
+
+.activityPadding {
+  padding: 10px 0;
+}
+
+.emptyPadding {
+  padding: 40px 0;
+}

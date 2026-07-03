@@ -1,0 +1,391 @@
+@import url('https://fonts.googleapis.com/css2?family=Quicksand:wght@300;400;500;600;700&display=swap');
+
+.loginPage {
+  display: flex;
+  justify-content: center;
+  align-items: center;
+  min-height: 100vh;
+  background: #05080c;
+  position: relative;
+  font-family: 'Quicksand', sans-serif;
+  perspective: 800px;
+  perspective-origin: center;
+}
+
+.section {
+  position: absolute;
+  width: 100vw;
+  height: 100vh;
+  display: flex;
+  justify-content: center;
+  align-items: center;
+  overflow: hidden;
+  background:
+    radial-gradient(ellipse at 15% 50%, rgba(0, 255, 136, 0.07) 0%, transparent 55%),
+    radial-gradient(ellipse at 85% 20%, rgba(0, 200, 255, 0.05) 0%, transparent 50%),
+    radial-gradient(ellipse at 50% 85%, rgba(0, 255, 136, 0.04) 0%, transparent 45%),
+    radial-gradient(ellipse at 50% 0%, rgba(0, 255, 136, 0.03) 0%, transparent 40%),
+    #05080c;
+}
+
+/* === Dot Grid (Connection Nodes) with Parallax === */
+.section::before {
+  content: '';
+  position: absolute;
+  inset: 0;
+  background-image:
+    radial-gradient(circle, rgba(0, 255, 136, 0.35) 1.5px, transparent 1.5px);
+  background-size: 48px 48px;
+  background-position: var(--px, 0px) var(--py, 0px);
+  animation: nodesPulse 4s ease-in-out infinite;
+  pointer-events: none;
+}
+
+/* === Circuit Glow Lines with Inverse Parallax === */
+.section::after {
+  content: '';
+  position: absolute;
+  inset: 0;
+  background:
+    repeating-linear-gradient(
+      45deg,
+      transparent,
+      transparent 38px,
+      rgba(0, 255, 136, 0.025) 38px,
+      rgba(0, 255, 136, 0.025) 40px,
+      transparent 40px,
+      transparent 76px
+    ),
+    repeating-linear-gradient(
+      -45deg,
+      transparent,
+      transparent 58px,
+      rgba(0, 200, 255, 0.02) 58px,
+      rgba(0, 200, 255, 0.02) 60px,
+      transparent 60px,
+      transparent 116px
+    );
+  background-position: var(--px-inv, 0px) var(--py-inv, 0px);
+  animation: circuitDrift 24s linear infinite;
+  pointer-events: none;
+}
+
+/* === Scan Line (Horizontal Sweeping Beam) === */
+.scanLine {
+  position: absolute;
+  left: 0;
+  width: 100%;
+  height: 1px;
+  background: linear-gradient(90deg,
+    transparent 0%,
+    rgba(0, 255, 136, 0.001) 5%,
+    rgba(0, 255, 136, 0.5) 50%,
+    rgba(0, 255, 136, 0.001) 95%,
+    transparent 100%
+  );
+  box-shadow: 0 0 15px rgba(0, 255, 136, 0.3), 0 0 60px rgba(0, 255, 136, 0.08);
+  animation: scanLine 7s ease-in-out infinite;
+  z-index: 1;
+  pointer-events: none;
+}
+
+/* === Floating Light Orbs === */
+.orb {
+  position: absolute;
+  width: 320px;
+  height: 320px;
+  border-radius: 50%;
+  background: radial-gradient(circle, rgba(0, 255, 136, 0.07), transparent 70%);
+  filter: blur(50px);
+  will-change: transform;
+  pointer-events: none;
+  z-index: 0;
+}
+
+.orb2 {
+  position: absolute;
+  width: 260px;
+  height: 260px;
+  border-radius: 50%;
+  background: radial-gradient(circle, rgba(0, 200, 255, 0.06), transparent 70%);
+  filter: blur(50px);
+  will-change: transform;
+  pointer-events: none;
+  z-index: 0;
+}
+
+@keyframes nodesPulse {
+  0%, 100% { opacity: 0.4; }
+  50% { opacity: 0.9; }
+}
+
+@keyframes circuitDrift {
+  0% { transform: translateX(0) translateY(0) rotate(0deg); }
+  25% { transform: translateX(12px) translateY(-6px) rotate(0.5deg); }
+  50% { transform: translateX(-6px) translateY(12px) rotate(-0.3deg); }
+  75% { transform: translateX(10px) translateY(-8px) rotate(0.4deg); }
+  100% { transform: translateX(0) translateY(0) rotate(0deg); }
+}
+
+@keyframes scanLine {
+  0% { top: -2%; opacity: 0; }
+  8% { opacity: 0.8; }
+  45% { top: 100%; opacity: 0.8; }
+  55% { opacity: 0; }
+  100% { top: 100%; opacity: 0; }
+}
+
+.signin {
+  position: absolute;
+  top: 50%;
+  left: 50%;
+  transform: translate(-50%, -50%);
+  width: 92%;
+  max-width: 420px;
+  background: #222;
+  z-index: 1000;
+  display: flex;
+  justify-content: center;
+  align-items: center;
+  padding: 36px 28px;
+  border-radius: 8px;
+  box-shadow: 0 15px 35px rgba(0, 0, 0, 0.9), 0 0 60px rgba(0, 255, 0, 0.08);
+  transform-style: preserve-3d;
+  will-change: transform;
+}
+
+.signin::after {
+  content: "";
+  position: absolute;
+  inset: -1px;
+  border-radius: 9px;
+  background: linear-gradient(135deg, transparent 30%, rgba(0, 255, 0, 0.12) 50%, transparent 70%);
+  z-index: -1;
+  filter: blur(6px);
+  animation: borderGlow 4s ease-in-out infinite;
+}
+
+@keyframes borderGlow {
+  0%, 100% { opacity: 0.3; }
+  50% { opacity: 0.8; }
+}
+
+.content {
+  position: relative;
+  width: 100%;
+  display: flex;
+  justify-content: center;
+  align-items: center;
+  flex-direction: column;
+  gap: 28px;
+}
+
+.content h2 {
+  font-size: clamp(1.4em, 5vw, 2em);
+  color: #0f0;
+  text-transform: uppercase;
+  text-shadow: 0 0 20px rgba(0, 255, 0, 0.3);
+}
+
+.form {
+  width: 100%;
+  display: flex;
+  flex-direction: column;
+  gap: 22px;
+}
+
+.submitWrapper {
+  margin-top: 8px;
+}
+
+.inputBox {
+  position: relative;
+  width: 100%;
+}
+
+.inputBox input {
+  position: relative;
+  width: 100%;
+  background: #333;
+  border: none;
+  outline: none;
+  padding: 22px 38px 7px 10px;
+  border-radius: 4px;
+  color: #fff;
+  font-weight: 500;
+  font-size: 1em;
+  transition: box-shadow 0.4s ease, transform 0.3s ease;
+}
+
+.inputBox input:focus {
+  box-shadow: 0 0 30px rgba(0, 255, 0, 0.15), inset 0 0 20px rgba(0, 255, 0, 0.03);
+  transform: translateY(-2px) scale(1.01);
+}
+
+.inputBox label {
+  position: absolute;
+  left: 0;
+  padding: 15px 10px;
+  font-style: normal;
+  font-size: 13px;
+  color: #aaa;
+  transition: 0.5s;
+  pointer-events: none;
+  display: block;
+  margin-bottom: 0;
+  font-weight: 400;
+}
+
+.inputBox input:focus ~ label,
+.inputBox input:not(:placeholder-shown) ~ label {
+  transform: translateY(-7.5px);
+  font-size: 0.8em;
+  color: #0f0;
+}
+
+.passwordToggle {
+  position: absolute;
+  right: 10px;
+  top: 50%;
+  transform: translateY(-50%);
+  background: none;
+  border: none;
+  color: #aaa;
+  cursor: pointer;
+  padding: 4px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  z-index: 3;
+  transition: color 0.3s ease;
+}
+
+.passwordToggle:hover {
+  color: #0f0;
+  text-shadow: 0 0 8px rgba(0, 255, 0, 0.4);
+}
+
+.passwordToggle:active {
+  color: #00cc00;
+  transform: translateY(-50%) scale(0.92);
+}
+
+.loginBtn {
+  position: relative;
+  padding: 10px;
+  background: linear-gradient(135deg, #0f0, #00cc00);
+  border: none;
+  color: #000;
+  font-weight: 600;
+  font-size: 1.1em;
+  letter-spacing: 0.05em;
+  cursor: pointer;
+  border-radius: 4px;
+  font-family: 'Quicksand', sans-serif;
+  overflow: hidden;
+  transition: transform 0.3s ease, box-shadow 0.3s ease;
+  transform-style: preserve-3d;
+}
+
+.loginBtn::before {
+  content: "";
+  position: absolute;
+  inset: -50%;
+  width: 200%;
+  height: 200%;
+  background: conic-gradient(from 0deg, transparent 0deg, rgba(255, 255, 255, 0.2) 60deg, transparent 120deg);
+  animation: btnGlowSpin 6s linear infinite;
+  opacity: 0;
+  transition: opacity 0.4s ease;
+  pointer-events: none;
+}
+
+.loginBtn:hover {
+  transform: translateY(-2px) scale(1.02);
+  box-shadow: 0 0 40px rgba(0, 255, 0, 0.3), 0 8px 30px rgba(0, 0, 0, 0.4);
+}
+
+.loginBtn:hover::before {
+  opacity: 1;
+}
+
+.loginBtn:active {
+  transform: translateY(0) scale(0.98);
+}
+
+.loginBtn:disabled {
+  opacity: 0.6;
+  cursor: not-allowed;
+  transform: none !important;
+  box-shadow: none !important;
+}
+
+.loginBtn:disabled::before {
+  opacity: 0;
+}
+
+@keyframes btnGlowSpin {
+  from { transform: rotate(0deg); }
+  to { transform: rotate(360deg); }
+}
+
+.logo {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  color: #0f0;
+  text-shadow: 0 0 20px rgba(0, 255, 0, 0.3);
+}
+
+.logo svg {
+  width: 28px;
+  height: 28px;
+}
+
+@media (max-width: 420px) {
+  .signin {
+    padding: 22px 16px;
+  }
+
+  .content h2 {
+    font-size: 1.2em;
+  }
+
+  .form {
+    gap: 16px;
+  }
+
+  .inputBox input {
+    padding: 18px 32px 6px 8px;
+    font-size: 0.9em;
+  }
+
+  .inputBox label {
+    font-size: 12px;
+    left: 8px;
+  }
+
+  .loginBtn {
+    font-size: 1em;
+    padding: 8px;
+  }
+}
+
+@media (max-width: 340px) {
+  .signin {
+    padding: 18px 12px;
+  }
+
+  .content h2 {
+    font-size: 1.1em;
+  }
+
+  .form {
+    gap: 14px;
+  }
+
+  .inputBox input {
+    padding: 16px 30px 5px 6px;
+    font-size: 0.85em;
+  }
+}

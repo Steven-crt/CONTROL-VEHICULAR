@@ -1,0 +1,337 @@
+.layout {
+  display: flex;
+  min-height: 100vh;
+  position: relative;
+  perspective: 1400px;
+  isolation: isolate;
+}
+
+.layoutMain {
+  flex: 1;
+  min-height: 100vh;
+  display: flex;
+  flex-direction: column;
+  transition: margin-left 0.28s cubic-bezier(0.22, 1, 0.36, 1);
+  position: relative;
+  z-index: 1;
+}
+
+.layoutContent {
+  flex: 1;
+  padding: 28px;
+  max-width: 1400px;
+  width: 100%;
+  animation: pageEnter 420ms ease both;
+  transform-origin: 50% 0;
+}
+
+.ambientScene {
+  position: fixed;
+  inset: 0;
+  z-index: 0;
+  overflow: hidden;
+  pointer-events: none;
+  --parallax-x: 0;
+  --parallax-y: 0;
+}
+
+.routePlane {
+  position: absolute;
+  left: 18%;
+  right: -10%;
+  bottom: -34%;
+  height: 60%;
+  background:
+    linear-gradient(90deg, transparent 0 46%, rgba(66, 245, 155, 0.3) 48% 52%, transparent 54%),
+    repeating-linear-gradient(90deg, rgba(104, 216, 255, 0.2) 0 1px, transparent 1px 88px),
+    repeating-linear-gradient(0deg, rgba(104, 216, 255, 0.2) 0 1px, transparent 1px 88px);
+  transform: rotateX(68deg) rotateZ(-8deg);
+  transform-origin: 50% 100%;
+  filter: drop-shadow(0 0 40px rgba(66, 245, 155, 0.3));
+  animation: routeDrift 12s linear infinite;
+}
+
+.signalOrb {
+  position: absolute;
+  right: 10%;
+  top: 16%;
+  width: 240px;
+  height: 240px;
+  border-radius: 50%;
+  border: 2px solid rgba(104, 216, 255, 0.35);
+  box-shadow: inset 0 0 64px rgba(104, 216, 255, 0.15), 0 0 80px rgba(104, 216, 255, 0.2), 0 0 120px rgba(104, 216, 255, 0.12);
+  animation: signalFloat 8s ease-in-out infinite;
+}
+
+.signalOrb::before,
+.signalOrb::after {
+  content: "";
+  position: absolute;
+  inset: 18%;
+  border-radius: inherit;
+  border: 1px dashed rgba(66, 245, 155, 0.35);
+}
+
+.signalOrb::after {
+  inset: 36%;
+  border-style: solid;
+  border-color: rgba(247, 185, 85, 0.35);
+}
+
+.depthBeam {
+  position: absolute;
+  left: 34%;
+  top: -18%;
+  width: 1px;
+  height: 110%;
+  background: linear-gradient(transparent, rgba(66, 245, 155, 0.6), transparent);
+  transform: rotate(28deg);
+  animation: beamSweep 7s ease-in-out infinite;
+}
+
+.signalOrb::after {
+  animation: orbPulse 4s ease-in-out infinite;
+}
+
+.geoHex {
+  position: absolute;
+  left: 12%;
+  top: 24%;
+  width: 100px;
+  height: 100px;
+  background: transparent;
+  border: 2px solid rgba(66, 245, 155, 0.3);
+  clip-path: polygon(50% 0%, 100% 25%, 100% 75%, 50% 100%, 0% 75%, 0% 25%);
+  transform: translate3d(calc(var(--parallax-x, 0) * 20px), calc(var(--parallax-y, 0) * 20px), 0) rotateX(20deg) rotateZ(0deg);
+  animation: hexFloat 14s ease-in-out infinite;
+  filter: drop-shadow(0 0 30px rgba(66, 245, 155, 0.25));
+}
+
+.geoHex2 {
+  position: absolute;
+  right: 18%;
+  bottom: 28%;
+  width: 70px;
+  height: 70px;
+  background: transparent;
+  border: 2px solid rgba(104, 216, 255, 0.3);
+  clip-path: polygon(50% 0%, 100% 25%, 100% 75%, 50% 100%, 0% 75%, 0% 25%);
+  transform: translate3d(calc(var(--parallax-x, 0) * -30px), calc(var(--parallax-y, 0) * -20px), 0) rotateX(40deg) rotateZ(45deg);
+  animation: hexFloat2 18s ease-in-out infinite;
+  filter: drop-shadow(0 0 30px rgba(104, 216, 255, 0.2));
+}
+
+.geoRing {
+  position: absolute;
+  left: 45%;
+  top: 30%;
+  width: 200px;
+  height: 200px;
+  border-radius: 50%;
+  border: 2px solid rgba(247, 185, 85, 0.2);
+  border-top-color: rgba(247, 185, 85, 0.55);
+  border-right-color: rgba(247, 185, 85, 0.2);
+  border-bottom-color: rgba(247, 185, 85, 0.2);
+  border-left-color: rgba(247, 185, 85, 0.35);
+  transform: translate3d(calc(var(--parallax-x, 0) * 40px), calc(var(--parallax-y, 0) * 30px), 0) rotateX(60deg) rotateY(20deg);
+  animation: ringSpin 20s linear infinite;
+  filter: drop-shadow(0 0 40px rgba(247, 185, 85, 0.2));
+}
+
+.scanLine {
+  position: absolute;
+  left: 0;
+  right: 0;
+  height: 3px;
+  background: linear-gradient(90deg, transparent 0%, rgba(66, 245, 155, 0.7) 20%, rgba(66, 245, 155, 0.95) 50%, rgba(66, 245, 155, 0.7) 80%, transparent 100%);
+  filter: blur(3px);
+  animation: scanMove 6s ease-in-out infinite;
+  box-shadow: 0 0 30px rgba(66, 245, 155, 0.5), 0 0 60px rgba(66, 245, 155, 0.3);
+}
+
+.glowOrb {
+  position: absolute;
+  border-radius: 50%;
+  pointer-events: none;
+  animation: orbDrift 12s ease-in-out infinite;
+  transform: translate3d(calc(var(--parallax-x, 0) * 30px), calc(var(--parallax-y, 0) * 20px), 0);
+}
+
+.dataStream {
+  position: absolute;
+  top: 0;
+  bottom: 0;
+  width: 1px;
+  background: linear-gradient(to bottom, transparent, rgba(104, 216, 255, 0.15), transparent);
+  pointer-events: none;
+}
+
+.streamDot {
+  position: absolute;
+  width: 3px;
+  height: 3px;
+  border-radius: 50%;
+  background: rgba(104, 216, 255, 0.9);
+  box-shadow: 0 0 10px rgba(104, 216, 255, 0.7), 0 0 20px rgba(104, 216, 255, 0.3);
+  animation: streamFall linear infinite;
+}
+
+.particle {
+  position: absolute;
+  border-radius: 50%;
+  background: rgba(255, 255, 255, 0.9);
+  pointer-events: none;
+  will-change: transform, opacity;
+  animation: particleFloat linear infinite;
+}
+
+.glowParticle {
+  position: absolute;
+  border-radius: 50%;
+  pointer-events: none;
+  will-change: transform, opacity;
+  animation: glowParticleFloat linear infinite;
+  background: radial-gradient(circle, rgba(66, 245, 155, 0.9), rgba(66, 245, 155, 0.3) 60%, transparent 80%);
+  box-shadow: 0 0 20px rgba(66, 245, 155, 0.5), 0 0 50px rgba(66, 245, 155, 0.3);
+}
+
+@keyframes pageEnter {
+  from {
+    opacity: 0;
+    transform: translateY(16px) rotateX(3deg);
+  }
+  to {
+    opacity: 1;
+    transform: translateY(0) rotateX(0);
+  }
+}
+
+@keyframes routeDrift {
+  from { background-position: 0 0, 0 0, 0 0; }
+  to { background-position: 0 0, 88px 0, 0 88px; }
+}
+
+@keyframes signalFloat {
+  0%, 100% { transform: translate3d(0, 0, 0) rotateX(0); opacity: 0.9; }
+  50% { transform: translate3d(-16px, 18px, 0) rotateX(12deg); opacity: 1; }
+}
+
+@keyframes beamSweep {
+  0%, 100% { opacity: 0.5; transform: translateX(-20px) rotate(28deg); }
+  50% { opacity: 0.9; transform: translateX(22px) rotate(28deg); }
+}
+
+@keyframes orbPulse {
+  0%, 100% { border-color: rgba(247, 185, 85, 0.4); transform: scale(1); }
+  50% { border-color: rgba(247, 185, 85, 0.8); transform: scale(1.15); }
+}
+
+@keyframes hexFloat {
+  0%, 100% { transform: translate3d(calc(var(--parallax-x, 0) * 20px), calc(var(--parallax-y, 0) * 20px), 0) rotateX(20deg) rotateZ(0deg); opacity: 0.8; }
+  25% { transform: translate3d(calc(var(--parallax-x, 0) * 20px + 30px), calc(var(--parallax-y, 0) * 20px - 20px), 0) rotateX(25deg) rotateZ(6deg); opacity: 1; }
+  50% { transform: translate3d(calc(var(--parallax-x, 0) * 20px + 10px), calc(var(--parallax-y, 0) * 20px + 30px), 0) rotateX(15deg) rotateZ(10deg); opacity: 0.9; }
+  75% { transform: translate3d(calc(var(--parallax-x, 0) * 20px - 20px), calc(var(--parallax-y, 0) * 20px + 10px), 0) rotateX(30deg) rotateZ(4deg); opacity: 1; }
+}
+
+@keyframes hexFloat2 {
+  0%, 100% { transform: translate3d(calc(var(--parallax-x, 0) * -30px), calc(var(--parallax-y, 0) * -20px), 0) rotateX(40deg) rotateZ(45deg); opacity: 0.7; }
+  33% { transform: translate3d(calc(var(--parallax-x, 0) * -30px - 25px), calc(var(--parallax-y, 0) * -20px + 25px), 0) rotateX(35deg) rotateZ(55deg); opacity: 1; }
+  66% { transform: translate3d(calc(var(--parallax-x, 0) * -30px + 20px), calc(var(--parallax-y, 0) * -20px - 15px), 0) rotateX(50deg) rotateZ(35deg); opacity: 0.8; }
+}
+
+@keyframes ringSpin {
+  from { transform: translate3d(calc(var(--parallax-x, 0) * 40px), calc(var(--parallax-y, 0) * 30px), 0) rotateX(60deg) rotateY(0deg); }
+  to { transform: translate3d(calc(var(--parallax-x, 0) * 40px), calc(var(--parallax-y, 0) * 30px), 0) rotateX(60deg) rotateY(360deg); }
+}
+
+@keyframes scanMove {
+  0% { top: -2%; opacity: 0; }
+  10% { opacity: 1; }
+  45% { top: 48%; opacity: 1; }
+  55% { top: 52%; opacity: 1; }
+  90% { opacity: 1; }
+  100% { top: 102%; opacity: 0; }
+}
+
+@keyframes orbDrift {
+  0%, 100% { transform: translate3d(calc(var(--parallax-x, 0) * 30px), calc(var(--parallax-y, 0) * 20px), 0) scale(1); opacity: 0.9; }
+  25% { transform: translate3d(calc(var(--parallax-x, 0) * 30px + 40px), calc(var(--parallax-y, 0) * 20px - 30px), 0) scale(1.15); opacity: 1; }
+  50% { transform: translate3d(calc(var(--parallax-x, 0) * 30px + 20px), calc(var(--parallax-y, 0) * 20px + 20px), 0) scale(0.9); opacity: 0.8; }
+  75% { transform: translate3d(calc(var(--parallax-x, 0) * 30px - 30px), calc(var(--parallax-y, 0) * 20px + 10px), 0) scale(1.05); opacity: 0.95; }
+}
+
+@keyframes streamFall {
+  0% { transform: translateY(-10vh); opacity: 0; }
+  20% { opacity: 1; }
+  80% { opacity: 1; }
+  100% { transform: translateY(110vh); opacity: 0; }
+}
+
+@keyframes particleFloat {
+  0% { transform: translate3d(0, 0, 0) scale(0); opacity: 0; }
+  15% { opacity: 0.8; transform: translate3d(0, 0, 0) scale(1); }
+  75% { opacity: 0.7; }
+  100% { transform: translate3d(calc(var(--parallax-x, 0) * 80px - 50px), calc(var(--parallax-y, 0) * 50px - 350px), 0) scale(0); opacity: 0; }
+}
+
+@keyframes glowParticleFloat {
+  0% { transform: translate3d(0, 0, 0) scale(0); opacity: 0; }
+  15% { opacity: 1; transform: translate3d(0, 0, 0) scale(1); }
+  75% { opacity: 0.8; }
+  100% { transform: translate3d(calc(var(--parallax-x, 0) * 60px - 60px), calc(var(--parallax-y, 0) * 40px - 400px), 0) scale(0.3); opacity: 0; }
+}
+
+@media (max-width: 1024px) {
+  .layoutContent {
+    padding: 20px;
+  }
+}
+
+@media (max-width: 768px) {
+  .layoutMain {
+    margin-left: 0 !important;
+  }
+
+  .layoutContent {
+    padding: 14px;
+  }
+
+  .page-header {
+    flex-direction: column;
+    align-items: flex-start;
+    gap: 12px;
+  }
+
+  .page-header h1 {
+    font-size: 20px;
+  }
+
+  .ambientScene {
+    display: none;
+  }
+
+  .grid-2 {
+    gap: 16px;
+  }
+}
+
+@media (max-width: 480px) {
+  .layoutContent {
+    padding: 10px;
+  }
+
+  .card,
+  .chart-container {
+    padding: 14px;
+  }
+
+  .grid-2 {
+    gap: 12px;
+  }
+}
+
+@media (max-width: 360px) {
+  .layoutContent {
+    padding: 8px;
+  }
+}

@@ -1,0 +1,43 @@
+{
+  "name": "control-vehicular-backend",
+  "version": "1.0.0",
+  "description": "Sistema Control Vehicular - Backend",
+  "main": "src/server.js",
+  "scripts": {
+    "start": "node src/server.js",
+    "dev": "nodemon src/server.js",
+    "seed": "node scripts/reseed.js",
+    "migrate": "npx sequelize-cli db:migrate --config src/config/sequelizerc.js",
+    "migrate:undo": "npx sequelize-cli db:migrate:undo --config src/config/sequelizerc.js",
+    "migrate:undo:all": "npx sequelize-cli db:migrate:undo:all --config src/config/sequelizerc.js",
+    "pretest": "node scripts/create-test-db.js",
+    "test": "jest --detectOpenHandles --forceExit --runInBand",
+    "test:coverage": "jest --coverage --detectOpenHandles --forceExit --runInBand"
+  },
+  "dependencies": {
+    "bcryptjs": "^3.0.3",
+    "cors": "^2.8.6",
+    "dotenv": "^17.4.2",
+    "express": "^5.2.1",
+    "express-rate-limit": "^8.5.2",
+    "express-validator": "^7.3.2",
+    "helmet": "^8.1.0",
+    "jsonwebtoken": "^9.0.3",
+    "morgan": "^1.11.0",
+    "multer": "^2.1.1",
+    "mysql2": "^3.22.5",
+    "pdfkit": "^0.19.1",
+    "selfsigned": "^5.5.0",
+    "sequelize": "6.37.8",
+    "socket.io": "^4.8.3"
+  },
+  "overrides": {
+    "uuid": "^11.1.1"
+  },
+  "devDependencies": {
+    "jest": "^30.4.2",
+    "nodemon": "^3.0.0",
+    "sequelize-cli": "^6.6.5",
+    "supertest": "^7.2.2"
+  }
+}
