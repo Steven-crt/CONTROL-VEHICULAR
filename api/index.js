@@ -1,3 +1,10 @@
+// Explicit requires to prevent Vercel tree-shaking
+require('mysql2');
+require('bcryptjs');
+require('express');
+require('sequelize');
+require('jsonwebtoken');
+
 let handler;
 try {
   const app = require('../backend/src/app');

@@ -5,7 +5,7 @@
     "build": "cd frontend && npm ci && npm run build",
     "dev": "cd frontend && npm run dev",
     "dev:backend": "cd backend && npm run dev",
-    "vercel-build": "cd frontend && npm ci && npm run build"
+    "vercel-build": "npm install mysql2 && cd frontend && npm ci && npm run build"
   },
   "dependencies": {
     "bcryptjs": "^3.0.3",
