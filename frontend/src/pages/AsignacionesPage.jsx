@@ -21,6 +21,19 @@ function AdminView() {
   const [usuarioId, setUsuarioId] = useState('')
   const [vehiculoId, setVehiculoId] = useState('')
   const [busqueda, setBusqueda] = useState('')
+  const [solicitudes, setSolicitudes] = useState([])
+  const [loadingSolicitudes, setLoadingSolicitudes] = useState(true)
+
+  const fetchSolicitudes = async () => {
+    try {
+      const { data } = await api.get('/notificaciones/solicitudes-pendientes')
+      setSolicitudes(data)
+    } catch {
+      // silencioso
+    } finally {
+      setLoadingSolicitudes(false)
+    }
+  }
 
   useEffect(() => {
     const fetchData = async () => {
@@ -40,6 +53,7 @@ function AdminView() {
       }
     }
     fetchData()
+    fetchSolicitudes()
   }, [])
 
   const handleAsignar = async (e) => {
@@ -55,6 +69,7 @@ function AdminView() {
       setShowModal(false)
       setUsuarioId('')
       setVehiculoId('')
+      fetchSolicitudes()
     } catch (error) {
       toast.error(error.response?.data?.error || 'Error al asignar')
     }
@@ -122,6 +137,48 @@ function AdminView() {
           </div>
         </div>
       </div>
+
+      {!loadingSolicitudes && solicitudes.length > 0 && (
+        <div className="card mb-4" style={{ borderLeft: '3px solid var(--warning, #f59e0b)' }}>
+          <h3 className="mb-4"><Clock size={18} style={{ marginRight: 8 }} />Solicitudes de Vehículo Pendientes</h3>
+          <div className="table-container">
+            <table>
+              <thead>
+                <tr>
+                  <th>Empleado</th>
+                  <th>Solicitado</th>
+                  <th>Acciones</th>
+                </tr>
+              </thead>
+              <tbody>
+                {solicitudes.map(s => {
+                  const match = s.mensaje.match(/El empleado (.+?) \(/);
+                  const empleadoNombre = match ? match[1] : 'Empleado';
+                  const emailMatch = s.mensaje.match(/\(([^)]+@[^)]+)\)/);
+                  const email = emailMatch ? emailMatch[1] : '';
+                  const usuarioSolicitante = usuarios.find(u => u.email === email);
+                  return (
+                    <tr key={s.id}>
+                      <td><strong>{empleadoNombre}</strong></td>
+                      <td className="text-sm">{new Date(s.created_at).toLocaleString('es-ES')}</td>
+                      <td>
+                        <button className="btn btn-sm btn-primary"
+                          onClick={() => {
+                            setUsuarioId(usuarioSolicitante?.id || '');
+                            setShowModal(true);
+                          }}
+                        >
+                          <Plus size={14} /> Asignar
+                        </button>
+                      </td>
+                    </tr>
+                  );
+                })}
+              </tbody>
+            </table>
+          </div>
+        </div>
+      )}
 
       <div className="card">
         <div className="filter-bar">

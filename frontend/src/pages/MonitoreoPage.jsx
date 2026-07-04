@@ -2,7 +2,8 @@ import { useState, useEffect, useRef, useMemo, useCallback } from 'react'
 import { MapContainer, TileLayer, useMap } from 'react-leaflet'
 import L from 'leaflet'
 import DOMPurify from 'dompurify'
-import { X, Navigation, Fuel, Shield, AlertTriangle, TrendingDown, Activity, MapPin, Truck, Check, AlertCircle, WifiOff, Loader } from 'lucide-react'
+import { X, Navigation, Fuel, Shield, AlertTriangle, TrendingDown, Activity, MapPin, Truck, Check, AlertCircle, WifiOff, Loader, Send } from 'lucide-react'
+import toast from 'react-hot-toast'
 import useAuthStore from '../store/authStore'
 import api from '../services/api'
 import styles from './MonitoreoPage.module.css'
@@ -155,6 +156,7 @@ export default function MonitoreoPage() {
   const [loading, setLoading] = useState(true)
   const [connected, setConnected] = useState(false)
   const [error, setError] = useState(null)
+  const [solicitudEnviada, setSolicitudEnviada] = useState(false)
 
   // Refs
   const sheetRef = useRef(null)
@@ -408,10 +410,24 @@ export default function MonitoreoPage() {
       }))
       setVehiculos(mapped)
       setLoading(false)
+      setError(null)
     } catch (err) {
+      console.error('Error fetching mis vehiculos:', err)
+      setError('No se pudieron cargar tus vehículos asignados')
       setLoading(false)
     }
   }, [usuario])
+
+  // ==================== SOLICITAR VEHICULO (EMPLEADO) ====================
+  const handleSolicitarVehiculo = useCallback(async () => {
+    try {
+      await api.post('/notificaciones/solicitar-vehiculo')
+      setSolicitudEnviada(true)
+      toast.success('Solicitud enviada al administrador')
+    } catch (err) {
+      toast.error(err.response?.data?.error || 'Error al enviar solicitud')
+    }
+  }, [])
 
   // ==================== INIT ====================
   useEffect(() => {
@@ -582,9 +598,16 @@ export default function MonitoreoPage() {
         <WifiOff size={48} style={{ color: '#ef4444' }} />
         <h3>Error de conexión</h3>
         <p className="text-muted" style={{ maxWidth: 400, margin: '0 auto' }}>{error}</p>
-        <button className="btn btn-primary mt-4" onClick={fetchMisVehiculos}>
-          Reintentar
-        </button>
+        <div className="flex gap-4 mt-4" style={{ justifyContent: 'center' }}>
+          <button className="btn btn-primary" onClick={fetchMisVehiculos}>
+            Reintentar
+          </button>
+          {!solicitudEnviada && (
+            <button className="btn btn-secondary" onClick={handleSolicitarVehiculo}>
+              <Send size={16} /> Solicitar Vehículo
+            </button>
+          )}
+        </div>
       </div>
     )
   }
@@ -693,9 +716,18 @@ export default function MonitoreoPage() {
             </p>
             <div className="kpi-grid" style={{ maxWidth: 420, margin: '24px auto' }}>
               {vehiculos.length === 0 ? (
-                <p className="text-muted text-center" style={{ gridColumn: '1 / -1', padding: 20 }}>
-                  No tienes vehículos asignados
-                </p>
+                <div className="text-center" style={{ gridColumn: '1 / -1', padding: 20 }}>
+                  <p className="text-muted">No tienes vehículos asignados</p>
+                  {!solicitudEnviada ? (
+                    <button className="btn btn-primary mt-3" onClick={handleSolicitarVehiculo}>
+                      <Send size={16} /> Solicitar Vehículo
+                    </button>
+                  ) : (
+                    <p className="text-success mt-3" style={{ fontSize: 13 }}>
+                      <Check size={14} /> Solicitud enviada — espera a que el administrador asigne un vehículo
+                    </p>
+                  )}
+                </div>
               ) : vehiculos.map(v => (
                 <div key={v.id} className="kpi-card" style={{ cursor: 'pointer' }} onClick={(e) => toggleGps(v.id, e)}>
                   <div className="kpi-icon" style={{ background: v.gps ? 'rgba(34,197,94,0.14)' : 'rgba(100,116,139,0.14)', color: v.gps ? '#22c55e' : '#64748b' }}>
