@@ -181,30 +181,54 @@ exports.misVehiculos = async (req, res) => {
 
     // Obtener última ubicación de cada vehículo
     const data = await Promise.all(vehiculos.map(async (v) => {
-      const ultima = await Ubicacion.findOne({
-        where: { vehiculo_id: v.id },
-        order: [['timestamp', 'DESC']]
-      });
+      try {
+        const ultima = await Ubicacion.findOne({
+          where: { vehiculo_id: v.id },
+          order: [['timestamp', 'DESC']]
+        });
 
-      return {
-        id: v.id,
-        placa: v.placa,
-        marca: v.marca,
-        modelo: v.modelo,
-        ano: v.ano,
-        tipo_vehiculo: v.tipo_vehiculo || null,
-        pos: ultima ? { lat: parseFloat(ultima.latitud), lng: parseFloat(ultima.longitud) } : null,
-        velocidad: ultima ? parseFloat(ultima.velocidad) : 0,
-        direccion: ultima ? parseFloat(ultima.direccion) : 0,
-        lastUpdate: ultima ? new Date(ultima.timestamp).getTime() : null,
-        gps: !!ultima && (Date.now() - new Date(ultima.timestamp).getTime() < 300000) // 5 min
-      };
+        return {
+          id: v.id,
+          placa: v.placa,
+          marca: v.marca,
+          modelo: v.modelo,
+          ano: v.ano,
+          tipo_vehiculo: v.tipo_vehiculo || null,
+          pos: ultima ? { lat: parseFloat(ultima.latitud), lng: parseFloat(ultima.longitud) } : null,
+          velocidad: ultima ? parseFloat(ultima.velocidad) : 0,
+          direccion: ultima ? parseFloat(ultima.direccion) : 0,
+          lastUpdate: ultima ? new Date(ultima.timestamp).getTime() : null,
+          gps: !!ultima && (Date.now() - new Date(ultima.timestamp).getTime() < 300000) // 5 min
+        };
+      } catch (innerErr) {
+        console.error('Error obteniendo ubicacion para vehiculo ' + v.id + ':', innerErr.message);
+        return {
+          id: v.id,
+          placa: v.placa,
+          marca: v.marca,
+          modelo: v.modelo,
+          ano: v.ano,
+          tipo_vehiculo: v.tipo_vehiculo || null,
+          pos: null,
+          velocidad: 0,
+          direccion: 0,
+          lastUpdate: null,
+          gps: false
+        };
+      }
     }));
 
     res.json(data);
   } catch (error) {
     console.error('Error en mis vehiculos ubicaciones:', error);
-    res.status(500).json({ error: 'Error interno del servidor' });
+    console.error('Stack:', error.stack);
+    if (error.parent) {
+      console.error('Error DB:', error.parent.message);
+    }
+    res.status(500).json({ 
+      error: 'Error al cargar vehículos asignados',
+      detail: process.env.NODE_ENV === 'development' ? error.message : undefined
+    });
   }
 };
 
