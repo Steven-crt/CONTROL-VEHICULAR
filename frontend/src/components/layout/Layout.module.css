@@ -318,6 +318,7 @@
 @media (max-width: 480px) {
   .layoutContent {
     padding: 10px;
+    padding-bottom: calc(10px + env(safe-area-inset-bottom, 0px));
   }
 
   .card,
@@ -333,5 +334,6 @@
 @media (max-width: 360px) {
   .layoutContent {
     padding: 8px;
+    padding-bottom: calc(8px + env(safe-area-inset-bottom, 0px));
   }
 }

@@ -342,13 +342,70 @@
   height: 28px;
 }
 
-@media (max-width: 420px) {
+@media (max-width: 640px) {
   .signin {
-    padding: 22px 16px;
+    width: 94%;
+    max-width: 400px;
+    padding: 28px 20px;
+    border-radius: 12px;
   }
 
   .content h2 {
-    font-size: 1.2em;
+    font-size: 1.3em;
+  }
+
+  .form {
+    gap: 18px;
+  }
+
+  .inputBox input {
+    padding: 20px 36px 8px 12px;
+    font-size: 16px; /* Prevents iOS zoom */
+  }
+
+  .inputBox label {
+    font-size: 13px;
+    padding: 14px 12px;
+  }
+
+  .loginBtn {
+    font-size: 1.05em;
+    padding: 12px;
+    min-height: 48px;
+  }
+
+  .logo svg {
+    width: 32px;
+    height: 32px;
+  }
+
+  .passwordToggle {
+    right: 10px;
+  }
+
+  .passwordToggle svg {
+    width: 20px;
+    height: 20px;
+  }
+
+  .orb, .orb2 {
+    width: 200px;
+    height: 200px;
+  }
+}
+
+@media (max-width: 420px) {
+  .signin {
+    padding: 22px 16px;
+    border-radius: 10px;
+  }
+
+  .content {
+    gap: 22px;
+  }
+
+  .content h2 {
+    font-size: 1.15em;
   }
 
   .form {
@@ -356,28 +413,44 @@
   }
 
   .inputBox input {
-    padding: 18px 32px 6px 8px;
-    font-size: 0.9em;
+    padding: 18px 34px 7px 10px;
+    font-size: 16px;
   }
 
   .inputBox label {
     font-size: 12px;
-    left: 8px;
+    padding: 13px 10px;
   }
 
   .loginBtn {
     font-size: 1em;
-    padding: 8px;
+    padding: 10px;
+    min-height: 44px;
+  }
+
+  .logo {
+    gap: 8px;
+  }
+
+  .logo svg {
+    width: 28px;
+    height: 28px;
+  }
+
+  .orb, .orb2 {
+    width: 150px;
+    height: 150px;
   }
 }
 
-@media (max-width: 340px) {
+@media (max-width: 360px) {
   .signin {
     padding: 18px 12px;
+    border-radius: 8px;
   }
 
   .content h2 {
-    font-size: 1.1em;
+    font-size: 1.05em;
   }
 
   .form {
@@ -385,7 +458,27 @@
   }
 
   .inputBox input {
-    padding: 16px 30px 5px 6px;
-    font-size: 0.85em;
+    padding: 16px 32px 6px 8px;
+    font-size: 16px;
+  }
+
+  .inputBox label {
+    font-size: 11px;
+    padding: 11px 8px;
+  }
+
+  .loginBtn {
+    font-size: 0.95em;
+    padding: 8px;
+    min-height: 40px;
+  }
+
+  .logo svg {
+    width: 24px;
+    height: 24px;
+  }
+
+  .content h2 {
+    font-size: 1em;
   }
 }

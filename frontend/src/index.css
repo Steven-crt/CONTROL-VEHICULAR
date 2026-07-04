@@ -1120,9 +1120,10 @@ tbody tr:hover {
   }
 }
 
-@media (max-width: 480px) {
+@media (max-width: 640px) {
   .layoutContent {
     padding: 12px;
+    padding-bottom: calc(12px + env(safe-area-inset-bottom, 0px));
   }
 
   .card,
@@ -1142,7 +1143,7 @@ tbody tr:hover {
 
   .kpi-card {
     padding: 12px;
-    min-height: 80px;
+    min-height: 72px;
   }
 
   .kpi-icon {
@@ -1173,12 +1174,16 @@ tbody tr:hover {
 
   .modal-content {
     padding: 16px;
-    border-radius: 12px 12px 0 0;
+    border-radius: 16px 16px 0 0;
     max-height: 85vh;
+    max-width: 100% !important;
+    margin: 0;
+    width: 100%;
   }
 
   .modal-overlay {
     align-items: flex-end;
+    padding: 0;
   }
 
   @keyframes modalPop {
@@ -1203,38 +1208,50 @@ tbody tr:hover {
   }
 
   .btn {
-    min-height: 36px;
-    padding: 8px 14px;
-    font-size: 13px;
+    min-height: 40px;
+    padding: 10px 16px;
+    font-size: 14px;
   }
 
   .btn-sm {
-    min-height: 30px;
-    padding: 5px 10px;
-    font-size: 11px;
+    min-height: 36px;
+    padding: 8px 12px;
+    font-size: 13px;
   }
 
   .btn-xs {
-    min-height: 24px;
-    padding: 4px 8px;
-    font-size: 10px;
+    min-height: 32px;
+    padding: 6px 10px;
+    font-size: 12px;
   }
 
   .tabs {
+    width: 100%;
     padding: 3px;
     gap: 3px;
+    overflow-x: auto;
+    -webkit-overflow-scrolling: touch;
+    flex-wrap: nowrap;
   }
 
   .tab {
-    padding: 6px 12px;
-    font-size: 12px;
+    flex-shrink: 0;
+    padding: 8px 14px;
+    font-size: 13px;
+    min-height: 40px;
+    min-width: 80px;
   }
 
   input,
   select,
   textarea {
-    padding: 9px 12px;
-    font-size: 13px;
+    padding: 11px 12px;
+    font-size: 16px; /* Prevents iOS zoom on focus */
+  }
+
+  select {
+    background-position: right 10px center;
+    padding-right: 32px;
   }
 
   .card-title {
@@ -1242,14 +1259,8 @@ tbody tr:hover {
   }
 
   .badge {
-    min-height: 20px;
-    padding: 3px 8px;
-    font-size: 10px;
-  }
-
-  .secureBadge {
-    min-height: 30px;
-    padding: 0 10px;
+    min-height: 24px;
+    padding: 4px 10px;
     font-size: 11px;
   }
 
@@ -1278,17 +1289,47 @@ tbody tr:hover {
     width: 40px;
     height: 40px;
   }
+
+  .page-header {
+    flex-direction: column;
+    align-items: flex-start;
+    gap: 12px;
+  }
+
+  .page-header .btn {
+    width: 100%;
+    justify-content: center;
+  }
+
+  .flex.gap-4.mt-6 {
+    flex-wrap: wrap;
+  }
+
+  .flex.gap-4.mt-6 .btn {
+    flex: 1;
+    min-width: 120px;
+  }
 }
 
-@media (max-width: 360px) {
+@media (max-width: 480px) {
+  .layoutContent {
+    padding: 10px;
+    padding-bottom: calc(10px + env(safe-area-inset-bottom, 0px));
+  }
+
+  .card,
+  .chart-container {
+    padding: 12px;
+  }
+
   .kpi-grid {
-    grid-template-columns: 1fr;
-    gap: 8px;
+    gap: 6px;
   }
 
   .kpi-card {
-    min-height: 70px;
     padding: 10px;
+    min-height: 64px;
+    gap: 10px;
   }
 
   .kpi-icon {
@@ -1296,16 +1337,150 @@ tbody tr:hover {
     height: 30px;
   }
 
+  .kpi-icon svg {
+    width: 14px;
+    height: 14px;
+  }
+
   .kpi-info h3 {
+    font-size: 15px;
+  }
+
+  .kpi-info p {
+    font-size: 10px;
+  }
+
+  .page-header h1 {
+    font-size: 18px;
+  }
+
+  .modal-content {
+    padding: 14px;
+  }
+
+  th, td {
+    padding: 6px 8px;
+    font-size: 11px;
+  }
+
+  .btn {
+    min-height: 36px;
+    padding: 8px 14px;
+    font-size: 13px;
+  }
+
+  .btn-sm {
+    min-height: 32px;
+    padding: 6px 10px;
+    font-size: 12px;
+  }
+
+  .btn-xs {
+    min-height: 28px;
+    padding: 5px 8px;
+    font-size: 11px;
+  }
+
+  .tab {
+    padding: 6px 12px;
+    font-size: 12px;
+    min-height: 36px;
+    min-width: 70px;
+  }
+
+  input, select, textarea {
+    padding: 10px 10px;
+    font-size: 16px;
+  }
+
+  .badge {
+    min-height: 22px;
+    padding: 3px 8px;
+    font-size: 10px;
+  }
+
+  .doughnutInner {
+    width: 140px;
+    height: 140px;
+  }
+
+  .empty-state {
+    padding: 32px 12px;
+  }
+
+  .filter-bar input,
+  .filter-bar select {
     font-size: 16px;
   }
 
   .grid-2 {
     gap: 12px;
   }
+}
+
+@media (max-width: 360px) {
+  .layoutContent {
+    padding: 8px;
+  }
+
+  .kpi-grid {
+    grid-template-columns: 1fr;
+    gap: 6px;
+  }
+
+  .kpi-card {
+    min-height: 56px;
+    padding: 8px;
+  }
+
+  .kpi-icon {
+    width: 26px;
+    height: 26px;
+  }
+
+  .kpi-icon svg {
+    width: 12px;
+    height: 12px;
+  }
+
+  .kpi-info h3 {
+    font-size: 14px;
+  }
+
+  .grid-2 {
+    gap: 10px;
+  }
 
   .filter-bar {
-    margin-bottom: 12px;
+    margin-bottom: 10px;
+  }
+
+  .tab {
+    padding: 5px 10px;
+    font-size: 11px;
+    min-height: 32px;
+    min-width: 60px;
+  }
+
+  .btn {
+    min-height: 34px;
+    padding: 7px 12px;
+    font-size: 12px;
+  }
+
+  .btn-sm {
+    min-height: 28px;
+    padding: 5px 8px;
+    font-size: 11px;
+  }
+
+  .modal-content {
+    padding: 12px;
+  }
+
+  th, td {
+    padding: 5px 6px;
+    font-size: 10px;
   }
 }
 
