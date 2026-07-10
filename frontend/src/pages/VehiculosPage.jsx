@@ -139,7 +139,7 @@ export default function VehiculosPage() {
       </div>
 
       <div className="card">
-        <div className="table-container">
+        <div className="table-container mobile-cards">
           <table>
             <thead>
               <tr>
@@ -157,14 +157,14 @@ export default function VehiculosPage() {
                 <tr><td colSpan={isAdmin ? 7 : 6} className="text-center text-muted" style={{ padding: '40px' }}>No hay vehiculos registrados</td></tr>
               ) : vehiculosFiltrados.map(v => (
                 <tr key={v.id} style={{ cursor: 'pointer' }} onClick={() => navigate(`/vehiculos/${v.id}`)}>
-                  <td><strong>{v.placa}</strong></td>
-                  <td>{v.marca} {v.modelo}</td>
-                  <td>{v.ano}</td>
-                  <td><span className="badge badge-info">{v.tipo_vehiculo?.nombre}</span></td>
-                  <td>{parseFloat(v.kilometraje_actual).toLocaleString()} km</td>
-                  <td><span className={`badge ${getEstadoBadge(v.estado)}`}>{v.estado}</span></td>
+                  <td data-label="Placa"><strong>{v.placa}</strong></td>
+                  <td data-label="Vehículo">{v.marca} {v.modelo}</td>
+                  <td data-label="Año">{v.ano}</td>
+                  <td data-label="Tipo"><span className="badge badge-info">{v.tipo_vehiculo?.nombre}</span></td>
+                  <td data-label="Kilometraje">{parseFloat(v.kilometraje_actual).toLocaleString()} km</td>
+                  <td data-label="Estado"><span className={`badge ${getEstadoBadge(v.estado)}`}>{v.estado}</span></td>
                   {isAdmin && (
-                    <td>
+                    <td data-label="Acciones">
                       <div className="flex gap-2" onClick={e => e.stopPropagation()}>
                         <button className="btn btn-sm btn-secondary" onClick={() => openEdit(v)}><Edit size={14} /></button>
                         <button className={`btn btn-sm ${v.estado === 'Activo' ? 'btn-danger' : 'btn-success'}`}

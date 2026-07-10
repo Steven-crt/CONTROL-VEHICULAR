@@ -66,18 +66,19 @@ export default function Layout() {
     return () => window.removeEventListener('mousemove', handleMouse)
   }, [isMobile])
 
-  const particles = Array.from({ length: 45 }, (_, i) => ({
+  const particlesCount = isMobile ? 8 : 45
+  const particles = Array.from({ length: particlesCount }, (_, i) => ({
     id: i,
     left: Math.random() * 100,
     top: Math.random() * 100,
-    size: i < 10 ? 3 + Math.random() * 4 : 1.5 + Math.random() * 2.5,
+    size: isMobile ? 1.5 + Math.random() * 2 : (i < 10 ? 3 + Math.random() * 4 : 1.5 + Math.random() * 2.5),
     delay: Math.random() * 15,
     duration: 10 + Math.random() * 20,
-    opacity: i < 10 ? 0.6 + Math.random() * 0.4 : 0.4 + Math.random() * 0.5,
-    isGlow: i < 10,
+    opacity: isMobile ? 0.2 + Math.random() * 0.3 : (i < 10 ? 0.6 + Math.random() * 0.4 : 0.4 + Math.random() * 0.5),
+    isGlow: !isMobile && i < 10,
   }))
 
-  const orbs = [
+  const orbs = isMobile ? [] : [
     { id: 1, left: 15, top: 25, size: 350, color: 'rgba(66, 245, 155, 0.15)', delay: 0 },
     { id: 2, left: 75, top: 55, size: 300, color: 'rgba(104, 216, 255, 0.12)', delay: 2 },
     { id: 3, left: 50, top: 10, size: 250, color: 'rgba(247, 185, 85, 0.1)', delay: 4 },
@@ -85,9 +86,10 @@ export default function Layout() {
     { id: 5, left: 80, top: 15, size: 220, color: 'rgba(104, 216, 255, 0.08)', delay: 3 },
   ]
 
-  const streams = Array.from({ length: 6 }, (_, i) => ({
+  const streamCount = isMobile ? 2 : 6
+  const streams = Array.from({ length: streamCount }, (_, i) => ({
     id: i,
-    left: 10 + i * 16,
+    left: isMobile ? 15 + i * 45 : 10 + i * 16,
     delay: Math.random() * 8,
     duration: 3 + Math.random() * 4,
   }))

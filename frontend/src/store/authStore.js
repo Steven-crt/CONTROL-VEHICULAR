@@ -83,8 +83,7 @@ const useAuthStore = create(
           () => {
             get().logout()
             window.location.href = '/login'
-          },
-          () => {}
+          }
         )
         set({ _cleanupInactivity: cleanup })
       }

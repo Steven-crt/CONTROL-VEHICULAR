@@ -2,9 +2,7 @@ const SENSITIVE_KEYS = ['password', 'token', 'secret', 'jwt', 'refreshToken'];
 
 let inactivityTimer = null;
 const INACTIVITY_LIMIT = 30 * 60 * 1000;
-const WARNING_BEFORE = 60000;
 let onInactivityLogout = null;
-let warningCallback = null;
 
 export function sanitizarDisplay(texto) {
   if (typeof texto !== 'string') return texto;
@@ -68,9 +66,8 @@ export function validarEmail(email) {
 }
 
 
-export function startInactivityMonitor(logoutFn, onWarning) {
+export function startInactivityMonitor(logoutFn) {
   onInactivityLogout = logoutFn;
-  warningCallback = onWarning;
 
   const resetTimer = () => {
     if (inactivityTimer) {

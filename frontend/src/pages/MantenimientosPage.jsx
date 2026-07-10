@@ -199,7 +199,7 @@ export default function MantenimientosPage() {
             <AlertTriangle color="var(--warning)" size={24} />
             <h3 style={{ color: 'var(--warning)' }}>Mantenimientos Recomendados ({proximos.length})</h3>
           </div>
-          <div className="table-container">
+          <div className="table-container mobile-cards">
             <table>
               <thead>
                 <tr>
@@ -213,15 +213,15 @@ export default function MantenimientosPage() {
               <tbody>
                 {proximos.slice(0, 5).map((p, i) => (
                   <tr key={i}>
-                    <td><strong>{p.vehiculo.placa}</strong> - {p.vehiculo.marca}</td>
-                    <td><span className="badge badge-info">{p.tipo_mantenimiento.nombre}</span></td>
-                    <td className="text-sm" style={{ color: 'var(--warning)' }}>{p.razon}</td>
-                    <td className="text-sm text-muted">
+                    <td data-label="Vehículo"><strong>{p.vehiculo.placa}</strong> - {p.vehiculo.marca}</td>
+                    <td data-label="Tipo"><span className="badge badge-info">{p.tipo_mantenimiento.nombre}</span></td>
+                    <td data-label="Razón" className="text-sm" style={{ color: 'var(--warning)' }}>{p.razon}</td>
+                    <td data-label="Intervalo" className="text-sm text-muted">
                       {p.cada_km ? `Cada ${p.cada_km} km` : ''}
                       {p.cada_km && p.cada_dias ? ' / ' : ''}
                       {p.cada_dias ? `Cada ${p.cada_dias} dias` : ''}
                     </td>
-                    <td className="text-sm text-muted">
+                    <td data-label="Último" className="text-sm text-muted">
                       {p.ultimo_realizado ? new Date(p.ultimo_realizado).toLocaleDateString('es-ES') : 'Nunca'}
                     </td>
                   </tr>
@@ -249,7 +249,7 @@ export default function MantenimientosPage() {
       </div>
 
       <div className="card">
-        <div className="table-container">
+        <div className="table-container mobile-cards">
           <table>
             <thead>
               <tr>
@@ -270,8 +270,8 @@ export default function MantenimientosPage() {
                 </td></tr>
               ) : filtrados.map(m => (
                 <tr key={m.id}>
-                  <td><strong>{m.codigo}</strong></td>
-                  <td>
+                  <td data-label="Código"><strong>{m.codigo}</strong></td>
+                  <td data-label="Vehículo">
                     <div style={{ display: 'flex', alignItems: 'center', gap: 8 }}>
                       <div style={{
                         width: 32, height: 32, borderRadius: 8,
@@ -287,11 +287,11 @@ export default function MantenimientosPage() {
                       </div>
                     </div>
                   </td>
-                  <td><span className="badge badge-info">{m.tipo_mantenimiento?.nombre}</span></td>
-                  <td className="text-sm">{m.fecha_programada ? new Date(m.fecha_programada).toLocaleDateString('es-ES') : '-'}</td>
-                  <td className="text-sm">{m.fecha_realizada ? new Date(m.fecha_realizada).toLocaleDateString('es-ES') : '-'}</td>
-                  <td>{m.costo ? `Q${parseFloat(m.costo).toFixed(2)}` : '-'}</td>
-                  <td>
+                  <td data-label="Tipo"><span className="badge badge-info">{m.tipo_mantenimiento?.nombre}</span></td>
+                  <td data-label="Fecha Prog." className="text-sm">{m.fecha_programada ? new Date(m.fecha_programada).toLocaleDateString('es-ES') : '-'}</td>
+                  <td data-label="Fecha Real." className="text-sm">{m.fecha_realizada ? new Date(m.fecha_realizada).toLocaleDateString('es-ES') : '-'}</td>
+                  <td data-label="Costo">{m.costo ? `Q${parseFloat(m.costo).toFixed(2)}` : '-'}</td>
+                  <td data-label="Estado">
                     <div className="flex items-center gap-2">
                       <span style={{
                         width: 8, height: 8, borderRadius: '50%',
@@ -302,7 +302,7 @@ export default function MantenimientosPage() {
                     </div>
                   </td>
                   {isAdmin && (
-                    <td>
+                    <td data-label="Acciones">
                       <div className="flex gap-2">
                         <button className="btn btn-xs btn-secondary" onClick={() => setShowDetail(m)}
                           title="Ver detalle">

@@ -121,7 +121,7 @@ export default function SolicitudesCombustiblePage() {
       </div>
 
       <div className="card">
-        <div className="table-container">
+        <div className="table-container mobile-cards">
           <table>
             <thead>
               <tr>
@@ -141,16 +141,16 @@ export default function SolicitudesCombustiblePage() {
                 <tr><td colSpan={isAdmin ? 9 : 8} className="text-center text-muted" style={{ padding: 40 }}>No hay solicitudes de combustible</td></tr>
               ) : solicitudesFiltradas.map(s => (
                 <tr key={s.id}>
-                  <td><strong>{s.codigo}</strong></td>
-                  <td>{s.vehiculo?.placa} - {s.vehiculo?.marca}</td>
-                  <td>{s.solicitante?.nombre} {s.solicitante?.apellido}</td>
-                  <td>{parseFloat(s.galones_solicitados).toFixed(2)}</td>
-                  <td>{s.galones_surtidos ? parseFloat(s.galones_surtidos).toFixed(2) : '-'}</td>
-                  <td>{s.costo_total ? `Q${parseFloat(s.costo_total).toFixed(2)}` : '-'}</td>
-                  <td className="text-sm">{new Date(s.fecha_solicitud).toLocaleDateString('es-ES')}</td>
-                  <td><span className={`badge ${getBadge(s.estado)}`}>{s.estado}</span></td>
+                  <td data-label="Código"><strong>{s.codigo}</strong></td>
+                  <td data-label="Vehículo">{s.vehiculo?.placa} - {s.vehiculo?.marca}</td>
+                  <td data-label="Solicitante">{s.solicitante?.nombre} {s.solicitante?.apellido}</td>
+                  <td data-label="Gal. Solicitados">{parseFloat(s.galones_solicitados).toFixed(2)}</td>
+                  <td data-label="Gal. Surtidos">{s.galones_surtidos ? parseFloat(s.galones_surtidos).toFixed(2) : '-'}</td>
+                  <td data-label="Costo">{s.costo_total ? `Q${parseFloat(s.costo_total).toFixed(2)}` : '-'}</td>
+                  <td data-label="Fecha">{new Date(s.fecha_solicitud).toLocaleDateString('es-ES')}</td>
+                  <td data-label="Estado"><span className={`badge ${getBadge(s.estado)}`}>{s.estado}</span></td>
                   {isAdmin && s.estado === 'Pendiente' && (
-                    <td>
+                    <td data-label="Acciones">
                       <div className="flex gap-2">
                         <button className="btn btn-xs btn-success" onClick={() => openAction(s, 'Aprobada')}>Aprobar</button>
                         <button className="btn btn-xs btn-danger" onClick={() => openAction(s, 'Rechazada')}>Rechazar</button>
@@ -158,12 +158,12 @@ export default function SolicitudesCombustiblePage() {
                     </td>
                   )}
                   {isAdmin && s.estado === 'Aprobada' && (
-                    <td>
+                    <td data-label="Acciones">
                       <button className="btn btn-xs btn-primary" onClick={() => openAction(s, 'Surtida')}>Surtir</button>
                     </td>
                   )}
                   {isAdmin && (s.estado === 'Surtida' || s.estado === 'Rechazada') && (
-                    <td className="text-muted text-sm">-</td>
+                    <td data-label="Acciones" className="text-muted text-sm">-</td>
                   )}
                 </tr>
               ))}

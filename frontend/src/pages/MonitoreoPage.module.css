@@ -542,11 +542,34 @@
 }
 
 .efCard {
-  background: linear-gradient(145deg, rgba(255, 255, 255, 0.06), transparent 40%), var(--bg-card);
+  background: linear-gradient(145deg, rgba(66, 245, 155, 0.08), transparent 40%), var(--bg-card);
   border: 1px solid var(--border);
   border-radius: var(--radius-sm);
   padding: 14px 16px;
+  transition: transform var(--transition-default), box-shadow var(--transition-default), border-color var(--transition-default);
+  animation: cardDeal 480ms ease both;
+  position: relative;
+  overflow: hidden;
 }
+
+.efCard::after {
+  content: '';
+  position: absolute;
+  inset: auto -30% -40% -30%;
+  height: 50px;
+  background: radial-gradient(ellipse, rgba(66, 245, 155, 0.15), transparent 65%);
+  pointer-events: none;
+}
+
+.efCard:hover {
+  transform: translateY(-2px);
+  border-color: rgba(137, 230, 183, 0.3);
+  box-shadow: 0 0 20px rgba(66, 245, 155, 0.1);
+}
+
+.efCard:nth-child(2) { animation-delay: 60ms; }
+.efCard:nth-child(3) { animation-delay: 120ms; }
+.efCard:nth-child(4) { animation-delay: 180ms; }
 
 .efCard h3 {
   font-size: 20px;
@@ -590,6 +613,7 @@
   margin-bottom: 16px;
   font-size: 13px;
   font-weight: 500;
+  animation: slideUp 400ms ease both;
 }
 
 .alertDanger {
@@ -1033,14 +1057,21 @@
 
   .statsFloating {
     top: 8px;
+    left: 8px;
+    right: 8px;
+    transform: none;
+    width: auto;
+    justify-content: center;
     gap: 2px;
-    padding: 4px 6px;
+    padding: 5px 8px;
     font-size: 10px;
+    border-radius: var(--radius-sm);
   }
 
   .statItem {
-    padding: 2px 5px;
+    padding: 2px 8px;
     font-size: 11px;
+    white-space: nowrap;
   }
 
   .statItem svg {
@@ -1063,11 +1094,15 @@
   }
 
   .efCard {
-    padding: 10px 12px;
+    padding: 12px 14px;
   }
 
   .efCard h3 {
-    font-size: 16px;
+    font-size: 18px;
+  }
+
+  .efCard p {
+    font-size: 10px;
   }
 
   .mapWrapper {
@@ -1132,7 +1167,52 @@
   }
 }
 
+@media (max-width: 480px) {
+  .eficienciaGrid {
+    gap: 6px;
+  }
+
+  .efCard {
+    padding: 10px 12px;
+  }
+
+  .efCard h3 {
+    font-size: 16px;
+  }
+
+  .efCard p {
+    font-size: 10px;
+  }
+
+  .statsFloating {
+    padding: 4px 6px;
+    gap: 1px;
+  }
+
+  .statItem {
+    padding: 2px 6px;
+    font-size: 10px;
+  }
+
+  .statItem svg {
+    width: 10px;
+    height: 10px;
+  }
+
+  .topBarTitle {
+    font-size: 16px;
+  }
+
+  .mapWrapper {
+    min-height: 250px;
+  }
+}
+
 @media (max-width: 400px) {
+  .pageWrap {
+    height: calc(100vh - var(--topbar-height, 48px) - 44px);
+  }
+
   .bottomSheet {
     max-height: 48%;
   }
@@ -1143,7 +1223,7 @@
 
   .eficienciaGrid {
     grid-template-columns: 1fr 1fr;
-    gap: 6px;
+    gap: 5px;
   }
 
   .efCard {
@@ -1161,10 +1241,48 @@
   .statsFloating {
     gap: 1px;
     padding: 3px 4px;
+    flex-wrap: wrap;
   }
 
   .statItem {
     padding: 1px 4px;
-    font-size: 10px;
+    font-size: 9px;
+  }
+}
+
+@media (max-width: 360px) {
+  .eficienciaGrid {
+    grid-template-columns: 1fr;
+  }
+
+  .efCard {
+    padding: 10px 12px;
+  }
+
+  .efCard h3 {
+    font-size: 16px;
+  }
+
+  .topBarTitle {
+    font-size: 15px;
+  }
+
+  .statsFloating {
+    padding: 3px 4px;
+  }
+
+  .statItem {
+    font-size: 9px;
+    padding: 1px 4px;
+  }
+
+  .mapWrapper {
+    min-height: 200px;
+    border-radius: var(--radius-sm);
+  }
+
+  .gpsModalBtn {
+    font-size: 12px;
+    padding: 8px 12px;
   }
 }

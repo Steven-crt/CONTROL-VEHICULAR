@@ -201,12 +201,12 @@ export default function MonitoreoPage() {
         })
 
         socket.on('connect', () => {
-          console.log('✅ WebSocket conectado')
+          if (import.meta.env.DEV) console.log('✅ WebSocket conectado')
           setConnected(true)
         })
 
         socket.on('ubicacion:actualizada', (data) => {
-          console.log('📍 Ubicación recibida:', data)
+          if (import.meta.env.DEV) console.log('📍 Ubicación recibida:', data)
           setVehiculos(prev => {
             const idx = prev.findIndex(v => v.id === data.vehiculo_id)
             const now = Date.now()
@@ -243,7 +243,7 @@ export default function MonitoreoPage() {
         })
 
         socket.on('ubicacion:confirmada', (data) => {
-          console.log('✅ Ubicación confirmada:', data)
+          if (import.meta.env.DEV) console.log('✅ Ubicación confirmada:', data)
         })
 
         socket.on('disconnect', () => {
@@ -286,22 +286,16 @@ export default function MonitoreoPage() {
         precision_gps: accuracy || 0
       }
 
-      console.log('📡 Enviando ubicación:', payload)
-
       // Enviar por WebSocket (prioritario)
       if (socketRef.current?.connected) {
-        console.log('✅ Enviando por WebSocket')
+        if (import.meta.env.DEV) console.log('✅ Enviando por WebSocket')
         socketRef.current.emit('ubicacion:reportar', payload)
-      } else {
-        console.warn('⚠️ WebSocket no conectado')
       }
 
       // Backup via HTTP (cada 2° envío)
       if (!lastPosRef.current || Math.random() < 0.5) {
-        console.log('📤 Enviando por HTTP backup')
-        api.post('/ubicaciones', payload).catch((err) => {
-          console.error('❌ Error HTTP:', err)
-        })
+        if (import.meta.env.DEV) console.log('📤 Enviando por HTTP backup')
+        api.post('/ubicaciones', payload).catch(() => { if (import.meta.env.DEV) console.warn('HTTP backup failed') })
       }
 
       lastPosRef.current = { lat, lng, time: Date.now() }
@@ -473,7 +467,7 @@ export default function MonitoreoPage() {
 
   const confirmGpsActivation = useCallback(() => {
     if (confirmGpsId === null) return
-    console.log('🚗 Activando GPS para vehículo:', confirmGpsId)
+    if (import.meta.env.DEV) console.log('🚗 Activando GPS para vehículo:', confirmGpsId)
     setVehiculos(prev => prev.map(v => {
       if (v.id !== confirmGpsId) return v
       return { ...v, gps: true, status: 'moving', lastUpdate: Date.now() }
@@ -917,7 +911,7 @@ export default function MonitoreoPage() {
           <div className="card">
             <div className="card-header"><h3 className="card-title">Consumo Real vs Esperado</h3></div>
             <div className={styles.tableScroll}>
-              <table className={styles.efTable}>
+              <table className={`${styles.efTable} mobile-cards`}>
                 <thead>
                   <tr>
                     <th>Vehículo</th>
@@ -935,14 +929,14 @@ export default function MonitoreoPage() {
                     <tr><td colSpan={8} className="text-center text-muted" style={{ padding: 40 }}>Esperando datos de GPS para calcular eficiencia.</td></tr>
                   ) : eficiencia.map((e, i) => (
                     <tr key={i}>
-                      <td><strong>{e.placa}</strong></td>
-                      <td>{e.empleado}</td>
-                      <td>{Math.round(e.km || 0).toLocaleString()} km</td>
-                      <td><span className="badge badge-info">{e.rend} km/gal</span></td>
-                      <td>{e.gas_esp.toFixed(2)} gal</td>
-                      <td>s/. {e.cost_esp.toFixed(2)}</td>
-                      <td>s/. {(e.gas || 0).toFixed(2)}</td>
-                      <td><span className={`badge ${e.diff > 0 ? 'badge-danger' : e.diff < 0 ? 'badge-success' : 'badge-secondary'}`} style={{ fontSize: 11 }}>{e.diff > 0 ? '+' : ''}s/. {e.diff.toFixed(2)}</span></td>
+                      <td data-label="Vehículo"><strong>{e.placa}</strong></td>
+                      <td data-label="Empleado">{e.empleado}</td>
+                      <td data-label="Km">{Math.round(e.km || 0).toLocaleString()} km</td>
+                      <td data-label="Rend."><span className="badge badge-info">{e.rend} km/gal</span></td>
+                      <td data-label="Gas. Esp.">{e.gas_esp.toFixed(2)} gal</td>
+                      <td data-label="Costo Esp.">s/. {e.cost_esp.toFixed(2)}</td>
+                      <td data-label="Costo Real">s/. {(e.gas || 0).toFixed(2)}</td>
+                      <td data-label="Diferencia"><span className={`badge ${e.diff > 0 ? 'badge-danger' : e.diff < 0 ? 'badge-success' : 'badge-secondary'}`} style={{ fontSize: 11 }}>{e.diff > 0 ? '+' : ''}s/. {e.diff.toFixed(2)}</span></td>
                     </tr>
                   ))}
                 </tbody>
