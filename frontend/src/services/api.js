@@ -81,9 +81,22 @@ api.interceptors.request.use(config => {
 
 const SAFE_METHODS = ['GET', 'HEAD', 'OPTIONS']
 
+function normalizeError(error) {
+  const data = error?.response?.data
+  if (data && typeof data === 'object') {
+    if (typeof data.error === 'object' && data.error !== null) {
+      data.error = JSON.stringify(data.error)
+    } else if (data.error === undefined && typeof data.message === 'string') {
+      data.error = data.message
+    }
+  }
+  return error
+}
+
 api.interceptors.response.use(
   response => response,
   async error => {
+    normalizeError(error)
     const originalRequest = error.config
 
     if (error.response?.status === 401 && !originalRequest._retry) {

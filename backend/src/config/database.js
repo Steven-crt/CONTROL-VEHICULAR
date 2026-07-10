@@ -1,23 +1,15 @@
 const { Sequelize } = require('sequelize');
 require('dotenv').config();
 
-function requiredEnv(name) {
-  const value = process.env[name];
-  if (!value) {
-    throw new Error(`${name} no configurado en variables de entorno`);
-  }
-  return value;
-}
-
 const isServerless = !process.env.PORT && process.env.VERCEL;
 
 const sequelize = new Sequelize(
-  requiredEnv('DB_NAME'),
-  requiredEnv('DB_USER'),
+  process.env.DB_NAME || 'defaultdb',
+  process.env.DB_USER || '',
   process.env.DB_PASSWORD || '',
   {
-    host: requiredEnv('DB_HOST'),
-    port: process.env.DB_PORT || 3306,
+    host: process.env.DB_HOST || 'localhost',
+    port: parseInt(process.env.DB_PORT || '3306', 10),
     dialect: 'mysql',
     logging: false,
     pool: {

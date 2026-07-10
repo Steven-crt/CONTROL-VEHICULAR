@@ -87,7 +87,9 @@ export default function LoginPage() {
       toast.success('Inicio de sesión exitoso')
       navigate('/')
     } catch (error) {
-      toast.error(error.response?.data?.error || 'Error al iniciar sesión')
+      const raw = error.response?.data?.error ?? error.response?.data?.message ?? error.message
+      const msg = typeof raw === 'string' ? raw : 'Error al iniciar sesión'
+      toast.error(msg)
     } finally {
       setLoading(false)
     }

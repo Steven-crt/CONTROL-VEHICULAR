@@ -79,7 +79,20 @@ app.disable("x-powered-by");
 
 app.use(
   cors({
-    origin: process.env.FRONTEND_URL || "http://localhost:5175",
+    origin: function (origin, callback) {
+      const allowed = [
+        process.env.FRONTEND_URL,
+        "http://localhost:5175",
+        "http://localhost:3000",
+        "https://control-vehicular-kappa.vercel.app"
+      ].filter(Boolean);
+
+      if (!origin || allowed.includes(origin)) {
+        callback(null, true);
+      } else {
+        callback(null, true);
+      }
+    },
     methods: ["GET", "POST", "PUT", "PATCH", "DELETE"],
     allowedHeaders: ["Content-Type", "Authorization"],
     credentials: true,
@@ -136,8 +149,7 @@ app.use((err, req, res, next) => {
 
   if (err instanceof AppError) {
     return res.status(err.statusCode).json({
-      error: err.message,
-      code: err.code,
+      error: String(err.message || "Error"),
     });
   }
 
