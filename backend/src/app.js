@@ -149,7 +149,8 @@ app.use((err, req, res, next) => {
 
   if (err instanceof AppError) {
     return res.status(err.statusCode).json({
-      error: String(err.message || "Error"),
+      error: err.message,
+      code: err.code,
     });
   }
 

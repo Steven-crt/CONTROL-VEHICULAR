@@ -1,14 +1,22 @@
 const { Sequelize } = require('sequelize');
 require('dotenv').config();
 
+function requiredEnv(name) {
+  const value = process.env[name];
+  if (!value) {
+    throw new Error(`${name} no configurado en variables de entorno`);
+  }
+  return value;
+}
+
 const isServerless = !process.env.PORT && process.env.VERCEL;
 
 const sequelize = new Sequelize(
-  process.env.DB_NAME || 'defaultdb',
-  process.env.DB_USER || '',
+  requiredEnv('DB_NAME'),
+  requiredEnv('DB_USER'),
   process.env.DB_PASSWORD || '',
   {
-    host: process.env.DB_HOST || 'localhost',
+    host: requiredEnv('DB_HOST'),
     port: parseInt(process.env.DB_PORT || '3306', 10),
     dialect: 'mysql',
     logging: false,
@@ -20,10 +28,6 @@ const sequelize = new Sequelize(
     },
     dialectOptions: {
       connectTimeout: 30000,
-      ssl: {
-        require: true,
-        rejectUnauthorized: false
-      }
     },
     retry: {
       max: 3

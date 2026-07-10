@@ -5,6 +5,41 @@ import { startInactivityMonitor } from '../services/security'
 
 const SESSION_TIMEOUT = 30 * 60 * 1000
 
+// Validar que el estado persistido sea válido y limpiar si está corrupto
+function validarEstadoPersistido(state) {
+  if (!state || typeof state !== 'object') {
+    limpiarAuthStorage()
+    return { usuario: null, token: null, refreshToken: null, lastActivity: null }
+  }
+  
+  // Validar token (debe ser string o null/undefined)
+  if (state.token !== undefined && state.token !== null && typeof state.token !== 'string') {
+    console.warn('Token corrupto detectado, limpiando almacenamiento...')
+    limpiarAuthStorage()
+    return { usuario: null, token: null, refreshToken: null, lastActivity: null }
+  }
+  
+  // Si usuario existe pero no tiene los campos esperados, es corrupto
+  if (state.usuario && typeof state.usuario === 'object') {
+    const camposRequeridos = ['id', 'nombre', 'email', 'rol']
+    const valido = camposRequeridos.some(campo => state.usuario[campo] !== undefined)
+    if (!valido) {
+      console.warn('Estado de auth corrupto detectado, limpiando almacenamiento...')
+      limpiarAuthStorage()
+      return { usuario: null, token: null, refreshToken: null, lastActivity: null }
+    }
+  }
+  
+  return state
+}
+
+function limpiarAuthStorage() {
+  try {
+    sessionStorage.removeItem('auth-storage')
+    localStorage.removeItem('auth-storage')
+  } catch {}
+}
+
 const useAuthStore = create(
   persist(
     (set, get) => ({
@@ -96,6 +131,10 @@ const useAuthStore = create(
         token: state.token,
         refreshToken: state.refreshToken,
         lastActivity: state.lastActivity
+      }),
+      merge: (persisted, current) => ({
+        ...current,
+        ...validarEstadoPersistido(persisted)
       })
     }
   )
