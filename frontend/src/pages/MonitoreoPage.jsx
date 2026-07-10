@@ -191,10 +191,12 @@ export default function MonitoreoPage() {
         const apiUrl = import.meta.env.VITE_API_URL || '/api'
         const baseUrl = apiUrl.replace('/api', '')
         const socketUrl = baseUrl || window.location.origin
+        // En Vercel (ruta relativa) Socket.IO solo funciona con polling, no WebSocket
+        const isVercel = apiUrl === '/api' || apiUrl.startsWith('/')
 
         const socket = io(socketUrl, {
           auth: { token: authToken },
-          transports: ['websocket', 'polling'],
+          transports: isVercel ? ['polling'] : ['websocket', 'polling'],
           reconnection: true,
           reconnectionAttempts: 10,
           reconnectionDelay: 2000
