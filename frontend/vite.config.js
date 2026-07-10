@@ -26,21 +26,6 @@ export default defineConfig({
     }
   },
   build: {
-    sourcemap: false,
-    cssCodeSplit: true,
-    target: 'es2020',
-    rollupOptions: {
-      output: {
-        manualChunks(id) {
-          if (id.includes('node_modules/react-dom') || id.includes('node_modules/react-router')) return 'react-vendor'
-          if (id.includes('node_modules/react')) return 'react-vendor'
-          if (id.includes('node_modules/lucide-react') || id.includes('node_modules/react-hot-toast')) return 'ui-vendor'
-          if (id.includes('node_modules/chart.js') || id.includes('node_modules/react-chartjs-2')) return 'chart-vendor'
-          if (id.includes('node_modules/leaflet')) return 'map-vendor'
-          if (id.includes('node_modules/socket.io-client')) return 'socket-vendor'
-        }
-      }
-    },
-
+    sourcemap: false
   }
 })

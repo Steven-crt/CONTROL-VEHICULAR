@@ -3,7 +3,6 @@ const express = require("express");
 const cors = require("cors");
 const helmet = require("helmet");
 const morgan = require("morgan");
-const compression = require("compression");
 const fs = require("fs");
 const path = require("path");
 
@@ -99,7 +98,6 @@ app.use(
   }),
 );
 
-app.use(compression({ level: 6, threshold: 1024 }));
 app.use(express.json({ limit: "2mb" }));
 app.use(express.urlencoded({ extended: true, limit: "2mb" }));
 

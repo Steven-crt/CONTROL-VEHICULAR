@@ -201,12 +201,12 @@ export default function MonitoreoPage() {
         })
 
         socket.on('connect', () => {
-          if (import.meta.env.DEV) console.log('✅ WebSocket conectado')
+          console.log('✅ WebSocket conectado')
           setConnected(true)
         })
 
         socket.on('ubicacion:actualizada', (data) => {
-          if (import.meta.env.DEV) console.log('📍 Ubicación recibida:', data)
+          console.log('📍 Ubicación recibida:', data)
           setVehiculos(prev => {
             const idx = prev.findIndex(v => v.id === data.vehiculo_id)
             const now = Date.now()
@@ -243,7 +243,7 @@ export default function MonitoreoPage() {
         })
 
         socket.on('ubicacion:confirmada', (data) => {
-          if (import.meta.env.DEV) console.log('✅ Ubicación confirmada:', data)
+          console.log('✅ Ubicación confirmada:', data)
         })
 
         socket.on('disconnect', () => {
@@ -288,14 +288,14 @@ export default function MonitoreoPage() {
 
       // Enviar por WebSocket (prioritario)
       if (socketRef.current?.connected) {
-        if (import.meta.env.DEV) console.log('✅ Enviando por WebSocket')
+        console.log('✅ Enviando por WebSocket')
         socketRef.current.emit('ubicacion:reportar', payload)
       }
 
       // Backup via HTTP (cada 2° envío)
       if (!lastPosRef.current || Math.random() < 0.5) {
-        if (import.meta.env.DEV) console.log('📤 Enviando por HTTP backup')
-        api.post('/ubicaciones', payload).catch(() => { if (import.meta.env.DEV) console.warn('HTTP backup failed') })
+        console.log('📤 Enviando por HTTP backup')
+        api.post('/ubicaciones', payload).catch(() => console.warn('HTTP backup failed'))
       }
 
       lastPosRef.current = { lat, lng, time: Date.now() }
@@ -467,7 +467,7 @@ export default function MonitoreoPage() {
 
   const confirmGpsActivation = useCallback(() => {
     if (confirmGpsId === null) return
-    if (import.meta.env.DEV) console.log('🚗 Activando GPS para vehículo:', confirmGpsId)
+    console.log('🚗 Activando GPS para vehículo:', confirmGpsId)
     setVehiculos(prev => prev.map(v => {
       if (v.id !== confirmGpsId) return v
       return { ...v, gps: true, status: 'moving', lastUpdate: Date.now() }

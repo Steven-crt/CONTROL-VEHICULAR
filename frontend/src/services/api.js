@@ -10,7 +10,7 @@ const api = axios.create({
     'X-Content-Type-Options': 'nosniff',
     'X-Frame-Options': 'DENY'
   },
-  timeout: 10000
+  timeout: 15000
 })
 
 let isRefreshing = false

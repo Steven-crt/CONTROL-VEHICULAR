@@ -4,31 +4,24 @@ const sequelize = require('../config/database');
 
 exports.kpis = async (req, res) => {
   try {
-    const [
-      totalVehiculos,
-      vehiculosActivos,
-      solicitudesPendientes,
-      mantenimientosProximos,
-      gastoCombustible,
-      totalGalones
-    ] = await Promise.all([
-      Vehiculo.count({ where: { activo: 1 } }),
-      Vehiculo.count({ where: { activo: 1, estado: 'Activo' } }),
-      SolicitudCombustible.count({ where: { estado: 'Pendiente' } }),
-      Mantenimiento.count({ where: { estado: { [Op.in]: ['Programado', 'En Proceso'] } } }),
-      SolicitudCombustible.findOne({
-        attributes: [
-          [sequelize.fn('COALESCE', sequelize.fn('SUM', sequelize.col('costo_total')), 0), 'total']
-        ],
-        where: { estado: 'Surtida' }
-      }),
-      SolicitudCombustible.findOne({
-        attributes: [
-          [sequelize.fn('COALESCE', sequelize.fn('SUM', sequelize.col('galones_surtidos')), 0), 'total']
-        ],
-        where: { estado: 'Surtida' }
-      })
-    ]);
+    const totalVehiculos = await Vehiculo.count({ where: { activo: 1 } });
+    const vehiculosActivos = await Vehiculo.count({ where: { activo: 1, estado: 'Activo' } });
+    const solicitudesPendientes = await SolicitudCombustible.count({ where: { estado: 'Pendiente' } });
+    const mantenimientosProximos = await Mantenimiento.count({ where: { estado: { [Op.in]: ['Programado', 'En Proceso'] } } });
+
+    const gastoCombustible = await SolicitudCombustible.findOne({
+      attributes: [
+        [sequelize.fn('COALESCE', sequelize.fn('SUM', sequelize.col('costo_total')), 0), 'total']
+      ],
+      where: { estado: 'Surtida' }
+    });
+
+    const totalGalones = await SolicitudCombustible.findOne({
+      attributes: [
+        [sequelize.fn('COALESCE', sequelize.fn('SUM', sequelize.col('galones_surtidos')), 0), 'total']
+      ],
+      where: { estado: 'Surtida' }
+    });
 
     res.json({
       total_vehiculos: totalVehiculos,
