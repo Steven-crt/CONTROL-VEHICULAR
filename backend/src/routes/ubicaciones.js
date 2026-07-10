@@ -21,6 +21,6 @@ router.get("/actuales", autorizar("Administrador"), actuales);
 router.get("/mis-vehiculos", misVehiculos);
 
 // Admin obtiene historial de un vehículo específico
-router.get("/:vehiculoId/historial", autorizar("Administrador"), historial);
+router.get("/:vehiculoId/historial", historial);
 
 module.exports = router;
