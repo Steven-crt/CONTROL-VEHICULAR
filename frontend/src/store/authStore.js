@@ -11,14 +11,14 @@ function validarEstadoPersistido(state) {
     limpiarAuthStorage()
     return { usuario: null, token: null, refreshToken: null, lastActivity: null }
   }
-  
+
   // Validar token (debe ser string o null/undefined)
   if (state.token !== undefined && state.token !== null && typeof state.token !== 'string') {
     console.warn('Token corrupto detectado, limpiando almacenamiento...')
     limpiarAuthStorage()
     return { usuario: null, token: null, refreshToken: null, lastActivity: null }
   }
-  
+
   // Si usuario existe pero no tiene los campos esperados, es corrupto
   if (state.usuario && typeof state.usuario === 'object') {
     const camposRequeridos = ['id', 'nombre', 'email', 'rol']
@@ -29,14 +29,14 @@ function validarEstadoPersistido(state) {
       return { usuario: null, token: null, refreshToken: null, lastActivity: null }
     }
   }
-  
+
   return state
 }
 
 function limpiarAuthStorage() {
   try {
-    sessionStorage.removeItem('auth-storage')
     localStorage.removeItem('auth-storage')
+    sessionStorage.removeItem('auth-storage')
   } catch {}
 }
 
@@ -83,13 +83,18 @@ const useAuthStore = create(
       },
 
       logout: async () => {
-        try {
-          await api.post('/auth/logout')
-        } catch (e) { }
+        // Siempre limpiar el estado local, independientemente de si el servidor responde
         const cleanup = get()._cleanupInactivity
         if (cleanup) cleanup()
-        sessionStorage.removeItem('auth-storage')
-        localStorage.removeItem('auth-storage')
+
+        // Intentar notificar al servidor, pero no bloquear el logout si falla
+        try {
+          await api.post('/auth/logout')
+        } catch {
+          // Ignorar errores del servidor (incluyendo 401) — el estado local se limpia igual
+        }
+
+        limpiarAuthStorage()
         set({ usuario: null, token: null, refreshToken: null, lastActivity: null, _cleanupInactivity: null })
       },
 
@@ -125,7 +130,8 @@ const useAuthStore = create(
     }),
     {
       name: 'auth-storage',
-      storage: createJSONStorage(() => sessionStorage),
+      // Usar localStorage para persistir la sesión entre recargas de página
+      storage: createJSONStorage(() => localStorage),
       partialize: state => ({
         usuario: state.usuario,
         token: state.token,

@@ -16,43 +16,38 @@ const api = axios.create({
 let isRefreshing = false
 let failedQueue = []
 
-const STORAGE_KEYS = {
-  auth: 'auth-storage',
-  legacy: 'auth-storage-legacy'
-}
-
-const readAuthState = () => {
-  const stored = sessionStorage.getItem(STORAGE_KEYS.auth) || localStorage.getItem(STORAGE_KEYS.auth)
-  if (!stored) return null
-
+// Lee el estado de auth directamente desde localStorage (donde Zustand lo persiste)
+// Esto evita dependencia circular con el store y funciona antes de que React monte
+const getAuthState = () => {
   try {
+    const stored = localStorage.getItem('auth-storage')
+    if (!stored) return null
     const parsed = JSON.parse(stored)
-    if (localStorage.getItem(STORAGE_KEYS.auth)) {
-      localStorage.removeItem(STORAGE_KEYS.auth)
-      sessionStorage.setItem(STORAGE_KEYS.auth, stored)
-    }
-    return parsed.state || null
+    return parsed?.state || null
   } catch {
-    Object.values(STORAGE_KEYS).forEach(k => {
-      sessionStorage.removeItem(k)
-      localStorage.removeItem(k)
-    })
     return null
   }
 }
 
-const writeAuthState = (state) => {
-  sessionStorage.setItem(STORAGE_KEYS.auth, JSON.stringify({ state }))
-  Object.values(STORAGE_KEYS).filter(k => k !== STORAGE_KEYS.auth).forEach(k => {
-    localStorage.removeItem(k)
-  })
+// Actualiza solo el token en el storage persistido, sin importar el store
+const updateTokenInStorage = (newToken, newRefreshToken) => {
+  try {
+    const stored = localStorage.getItem('auth-storage')
+    if (!stored) return
+    const parsed = JSON.parse(stored)
+    if (parsed?.state) {
+      parsed.state.token = newToken
+      if (newRefreshToken) parsed.state.refreshToken = newRefreshToken
+      localStorage.setItem('auth-storage', JSON.stringify(parsed))
+    }
+  } catch {}
 }
 
-const clearAuthState = () => {
-  Object.values(STORAGE_KEYS).forEach(k => {
-    sessionStorage.removeItem(k)
-    localStorage.removeItem(k)
-  })
+const clearStorage = () => {
+  try {
+    localStorage.removeItem('auth-storage')
+    sessionStorage.removeItem('auth-storage')
+  } catch {}
 }
 
 const processQueue = (error, token = null) => {
@@ -66,21 +61,6 @@ const processQueue = (error, token = null) => {
   failedQueue = []
 }
 
-api.interceptors.request.use(config => {
-  const state = readAuthState()
-  if (state?.token) {
-    config.headers.Authorization = `Bearer ${state.token}`
-  }
-
-  if (config.data && !(config.data instanceof FormData)) {
-    config.data = limpiarDatosFormulario(config.data)
-  }
-
-  return config
-})
-
-const SAFE_METHODS = ['GET', 'HEAD', 'OPTIONS']
-
 function normalizeError(error) {
   const data = error?.response?.data
   if (data && typeof data === 'object') {
@@ -93,6 +73,21 @@ function normalizeError(error) {
   return error
 }
 
+// Interceptor de REQUEST: añade el token Bearer al header Authorization
+api.interceptors.request.use(config => {
+  const state = getAuthState()
+  if (state?.token) {
+    config.headers.Authorization = `Bearer ${state.token}`
+  }
+
+  if (config.data && !(config.data instanceof FormData)) {
+    config.data = limpiarDatosFormulario(config.data)
+  }
+
+  return config
+})
+
+// Interceptor de RESPONSE: maneja 401 intentando refresh de token automático
 api.interceptors.response.use(
   response => response,
   async error => {
@@ -100,19 +95,23 @@ api.interceptors.response.use(
     const originalRequest = error.config
 
     if (error.response?.status === 401 && !originalRequest._retry) {
-      const state = readAuthState()
-      if (!state) {
-        clearAuthState()
+      const state = getAuthState()
+
+      // Sin sesión local → ir a login directamente
+      if (!state?.token) {
+        clearStorage()
         window.location.href = '/login'
         return Promise.reject(error)
       }
 
+      // Sin refreshToken → no se puede renovar, ir a login
       if (!state?.refreshToken) {
-        clearAuthState()
+        clearStorage()
         window.location.href = '/login'
         return Promise.reject(error)
       }
 
+      // Si ya estamos haciendo refresh, encolar esta petición
       if (isRefreshing) {
         return new Promise((resolve, reject) => {
           failedQueue.push({ resolve, reject })
@@ -130,12 +129,8 @@ api.interceptors.response.use(
           refreshToken: state.refreshToken
         })
 
-        const newState = {
-          ...state,
-          token: data.token,
-          refreshToken: data.refreshToken
-        }
-        writeAuthState(newState)
+        // Actualizar token en storage para que el store de Zustand lo use
+        updateTokenInStorage(data.token, data.refreshToken)
 
         api.defaults.headers.common['Authorization'] = `Bearer ${data.token}`
         processQueue(null, data.token)
@@ -144,7 +139,7 @@ api.interceptors.response.use(
         return api(originalRequest)
       } catch (refreshError) {
         processQueue(refreshError, null)
-        clearAuthState()
+        clearStorage()
         window.location.href = '/login'
         return Promise.reject(refreshError)
       } finally {
