@@ -8,7 +8,7 @@ const auth = require('../middleware/auth');
 router.get('/', auth(['admin']), async (req, res) => {
   try {
     const [rows] = await db.query(
-      'SELECT id, nombre, username, email, rol, activo, created_at FROM usuarios ORDER BY nombre'
+      'SELECT id, nombre, username, email, rol_id as rol, activo, created_at FROM usuarios ORDER BY nombre'
     );
     res.json(rows);
   } catch (err) {
@@ -20,7 +20,7 @@ router.get('/', auth(['admin']), async (req, res) => {
 router.get('/:id', auth(['admin']), async (req, res) => {
   try {
     const [rows] = await db.query(
-      'SELECT id, nombre, username, email, rol, activo FROM usuarios WHERE id = ?',
+      'SELECT id, nombre, username, email, rol_id as rol, activo FROM usuarios WHERE id = ?',
       [req.params.id]
     );
     if (!rows.length) return res.status(404).json({ error: 'Usuario no encontrado' });
@@ -38,8 +38,8 @@ router.post('/', auth(['admin']), async (req, res) => {
   try {
     const hash = await bcrypt.hash(password, 10);
     const [result] = await db.query(
-      'INSERT INTO usuarios (nombre, username, password, email, rol) VALUES (?, ?, ?, ?, ?)',
-      [nombre, username, hash, email, rol || 'operador']
+      'INSERT INTO usuarios (nombre, username, password, email, rol_id) VALUES (?, ?, ?, ?, ?)',
+      [nombre, username, hash, email, rol || 2]
     );
     res.status(201).json({ id: result.insertId, message: 'Usuario creado' });
   } catch (err) {
@@ -56,12 +56,12 @@ router.put('/:id', auth(['admin']), async (req, res) => {
     if (password) {
       const hash = await bcrypt.hash(password, 10);
       await db.query(
-        'UPDATE usuarios SET nombre=?, email=?, rol=?, activo=?, password=? WHERE id=?',
+        'UPDATE usuarios SET nombre=?, email=?, rol_id=?, activo=?, password=? WHERE id=?',
         [nombre, email, rol, activo, hash, req.params.id]
       );
     } else {
       await db.query(
-        'UPDATE usuarios SET nombre=?, email=?, rol=?, activo=? WHERE id=?',
+        'UPDATE usuarios SET nombre=?, email=?, rol_id=?, activo=? WHERE id=?',
         [nombre, email, rol, activo, req.params.id]
       );
     }

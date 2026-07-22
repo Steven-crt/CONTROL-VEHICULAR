@@ -25,7 +25,7 @@ router.post('/login', async (req, res) => {
       return res.status(401).json({ error: 'Credenciales inválidas' });
 
     const token = jwt.sign(
-      { id: usuario.id, username: usuario.username, nombre: usuario.nombre, rol: usuario.rol },
+      { id: usuario.id, username: usuario.username, nombre: usuario.nombre, rol: usuario.rol_id },
       process.env.JWT_SECRET,
       { expiresIn: process.env.JWT_EXPIRES_IN || '8h' }
     );
@@ -37,7 +37,7 @@ router.post('/login', async (req, res) => {
         nombre: usuario.nombre,
         username: usuario.username,
         email: usuario.email,
-        rol: usuario.rol
+        rol: usuario.rol_id
       }
     });
   } catch (err) {
@@ -52,7 +52,7 @@ router.get('/me', async (req, res) => {
   const token = authHeader.split(' ')[1];
   try {
     const decoded = jwt.verify(token, process.env.JWT_SECRET);
-    const [rows] = await db.query('SELECT id, nombre, username, email, rol FROM usuarios WHERE id = ?', [decoded.id]);
+    const [rows] = await db.query('SELECT id, nombre, username, email, rol_id as rol FROM usuarios WHERE id = ?', [decoded.id]);
     if (rows.length === 0) return res.status(404).json({ error: 'Usuario no encontrado' });
     res.json(rows[0]);
   } catch {
