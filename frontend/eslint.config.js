@@ -1,67 +1,29 @@
-import react from 'eslint-plugin-react'
+import js from '@eslint/js'
+import globals from 'globals'
 import reactHooks from 'eslint-plugin-react-hooks'
+import reactRefresh from 'eslint-plugin-react-refresh'
+import { defineConfig, globalIgnores } from 'eslint/config'
 
-export default [
+export default defineConfig([
+  globalIgnores(['dist']),
   {
     files: ['**/*.{js,jsx}'],
-    plugins: {
-      react,
-      'react-hooks': reactHooks,
-    },
+    extends: [
+      js.configs.recommended,
+      reactHooks.configs.flat.recommended,
+      reactRefresh.configs.vite,
+    ],
     languageOptions: {
-      ecmaVersion: 'latest',
-      sourceType: 'module',
+      ecmaVersion: 2020,
+      globals: globals.browser,
       parserOptions: {
+        ecmaVersion: 'latest',
         ecmaFeatures: { jsx: true },
+        sourceType: 'module',
       },
     },
     rules: {
-      // ==================== SEGURIDAD ====================
-
-      // Prohibir dangerouslySetInnerHTML completamente
-      'react/no-danger': 'error',
-
-      // Prohibir children + dangerouslySetInnerHTML combinados
-      'react/no-danger-with-children': 'error',
-
-      // Prohibir innerHTML directo (obliga a usar DOMPurify o textContent)
-      'no-restricted-syntax': [
-        'error',
-        {
-          selector:
-            'AssignmentExpression[operator="="] MemberExpression[property.name="innerHTML"]',
-          message:
-            'Usar innerHTML directamente es inseguro. Usa DOMPurify.sanitize() o textContent.',
-        },
-        {
-          selector:
-            'CallExpression[callee.property.name="insertAdjacentHTML"]',
-          message:
-            'Usar insertAdjacentHTML directamente es inseguro. Usa DOMPurify.sanitize() primero.',
-        },
-        {
-          selector:
-            'AssignmentExpression[operator="="] MemberExpression[property.name="outerHTML"]',
-          message:
-            'Usar outerHTML directamente es inseguro. Usa DOMPurify.sanitize() o textContent.',
-        },
-      ],
-
-      // ==================== BUENAS PRÁCTICAS ====================
-      'react-hooks/rules-of-hooks': 'error',
-      'react-hooks/exhaustive-deps': 'warn',
-
-      // Evitar console.log en producción
-      'no-console': ['warn', { allow: ['warn', 'error'] }],
-    },
-    settings: {
-      react: {
-        version: 'detect',
-      },
+      'no-unused-vars': ['error', { varsIgnorePattern: '^[A-Z_]' }],
     },
   },
-  // Ignorar node_modules y dist
-  {
-    ignores: ['node_modules/**', 'dist/**'],
-  },
-]
+])

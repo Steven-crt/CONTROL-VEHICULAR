@@ -1,9 +1,0 @@
-version: v1.25.0
-ignore:
-  SNYK-JS-LEAFLET-16427276:
-    - '*':
-        reason: 'El código fuente ya sanitiza la entrada con DOMPurify.sanitize() en MonitoreoPage.jsx antes de llamar a bindPopup(), mitigando el riesgo de XSS.'
-        expires: '2030-01-01T00:00:00.000Z'
-exclude:
-  global:
-    - 'node_modules/**'
