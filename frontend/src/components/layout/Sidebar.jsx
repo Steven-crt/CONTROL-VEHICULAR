@@ -41,7 +41,7 @@ export default function Sidebar({ isOpen, setIsOpen }) {
             )}
           </div>
           <div className="min-w-0">
-            <h1 className="text-park-text font-bold text-lg leading-tight truncate" title={config?.nombre_negocio || 'ParkSmart'}>{config?.nombre_negocio || 'ParkSmart'}</h1>
+            <h1 className="text-park-text font-bold text-lg leading-tight truncate" title={config?.nombre_negocio || 'Control Vehicular'}>{config?.nombre_negocio || 'Control Vehicular'}</h1>
             <p className="text-park-muted text-xs truncate">Sistema de Gestión Vehicular</p>
           </div>
         </div>

@@ -48,8 +48,8 @@ export default function Login() {
                 <Car className="w-10 h-10 text-park-dark" />
               )}
             </div>
-            <h1 className="text-park-text font-bold text-2xl tracking-tight text-center">{config?.nombre_negocio || 'ParkSmart Pro'}</h1>
-            <p className="text-park-muted text-sm mt-1 text-center">Sistema de Gestión de Parqueo</p>
+            <h1 className="text-park-text font-bold text-2xl tracking-tight text-center">{config?.nombre_negocio || 'Control Vehicular'}</h1>
+            <p className="text-park-muted text-sm mt-1 text-center">Sistema de Control Vehicular</p>
           </div>
 
           {/* Form */}
@@ -124,7 +124,7 @@ export default function Login() {
         </div>
 
         <p className="text-center text-park-muted text-xs mt-4">
-          © 2024 ParkSmart Pro. Todos los derechos reservados.
+          © 2025 Sistema de Control Vehicular. Todos los derechos reservados.
         </p>
       </div>
     </div>

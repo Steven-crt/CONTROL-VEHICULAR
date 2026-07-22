@@ -228,15 +228,21 @@ CREATE TABLE IF NOT EXISTS cierres_caja (
 -- DATOS SEMILLA: configuracion
 -- ============================================================
 INSERT INTO configuracion (clave, valor, descripcion) VALUES
-('nombre_negocio', 'ParkSmart Pro', 'Nombre del parqueo'),
+('nombre_negocio', 'Control Vehicular', 'Nombre de la empresa'),
 ('ruc', '1234567890001', 'RUC o identificación fiscal'),
-('direccion', 'Av. Principal 123', 'Dirección del parqueo'),
+('direccion', 'Av. Principal 123', 'Dirección de la empresa'),
 ('telefono', '0999999999', 'Teléfono de contacto'),
-('email', 'info@parksmart.com', 'Email de contacto'),
-('capacidad_total', '50', 'Total de espacios'),
-('tiempo_gracia', '10', 'Minutos de gracia sin cobro'),
+('email', 'info@controlvehicular.com', 'Email de contacto'),
 ('moneda', 'USD', 'Moneda del sistema'),
-('logo_url', '', 'URL del logo del negocio')
+('logo_url', '', 'URL del logo del negocio'),
+('total_vehiculos', '30', 'Total de vehículos en flota'),
+('formato_placa', 'ABC-1234', 'Formato de placa vehicular'),
+('tipos_vehiculo', 'Auto, Moto, Camioneta, Bus', 'Tipos de vehículo permitidos'),
+('intervalo_mant_km', '5000', 'Kilómetros entre mantenimientos'),
+('intervalo_mant_dias', '90', 'Días entre mantenimientos'),
+('alerta_combustible', '50', 'Kilómetros mínimos para alerta de combustible'),
+('monitoreo_gps', 'Activo', 'Estado del monitoreo GPS'),
+('alertas_vencimiento', 'Activas', 'Alertas de vencimiento de documentos')
 ON DUPLICATE KEY UPDATE valor = VALUES(valor);
 
 -- ============================================================

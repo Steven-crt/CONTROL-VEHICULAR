@@ -17,7 +17,7 @@ function PrivateRoute({ children }) {
   const { usuario, loading } = useAuth();
   if (loading) return (
     <div className="min-h-screen bg-park-dark flex items-center justify-center">
-      <div className="text-park-accent text-xl animate-pulse">Cargando ParkSmart...</div>
+      <div className="text-park-accent text-xl animate-pulse">Cargando Sistema...</div>
     </div>
   );
   return usuario ? children : <Navigate to="/login" />;

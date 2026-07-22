@@ -20,7 +20,7 @@ const breadcrumbs = {
 const matchBreadcrumb = (pathname) => {
   if (breadcrumbs[pathname]) return breadcrumbs[pathname];
   if (pathname.startsWith('/vehiculos/')) return 'Detalle del Vehículo';
-  return 'ParkSmart';
+  return 'Control Vehicular';
 };
 
 export default function Topbar({ setIsSidebarOpen }) {

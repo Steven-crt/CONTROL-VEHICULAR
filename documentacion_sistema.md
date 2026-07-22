@@ -1,4 +1,4 @@
-# Manual de Sistema: ParkSmart Pro
+# Manual de Sistema: Control Vehicular
 
 ## 1. Tecnologías de Desarrollo
 

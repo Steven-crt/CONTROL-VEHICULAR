@@ -1,4 +1,4 @@
-# ParkSmart Pro — Iniciar Sistema
+# Sistema de Control Vehicular — Iniciar Sistema
 
 ## Opción 1: Script automático (recomendado)
 Doble clic en `start.bat`
