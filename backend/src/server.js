@@ -22,6 +22,7 @@ app.use('/api/vehiculos', require('./routes/vehiculos'));
 app.use('/api/combustible', require('./routes/combustible'));
 app.use('/api/mantenimiento', require('./routes/mantenimiento'));
 app.use('/api/movimiento', require('./routes/movimiento'));
+app.use('/api/notificaciones', require('./routes/notificaciones'));
 
 // Health check
 app.get('/api/health', (req, res) => {

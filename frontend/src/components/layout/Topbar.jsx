@@ -1,6 +1,8 @@
+import React from 'react';
 import { useLocation } from 'react-router-dom';
 import { useAuth } from '../../contexts/AuthContext';
-import { Bell, Clock, Menu } from 'lucide-react';
+import { Clock, Menu } from 'lucide-react';
+import Notificaciones from './Notificaciones';
 
 const breadcrumbs = {
   '/dashboard': 'Dashboard',
@@ -50,9 +52,7 @@ export default function Topbar({ setIsSidebarOpen }) {
           <Clock className="w-4 h-4" />
           <CurrentTime />
         </div>
-        <button className="relative text-park-muted hover:text-park-accent transition-colors">
-          <Bell className="w-5 h-5" />
-        </button>
+        <Notificaciones />
         <div className="flex items-center gap-2">
           <div className="w-8 h-8 rounded-full bg-park-primary flex items-center justify-center">
             <span className="text-park-accent font-bold text-xs uppercase">
@@ -74,5 +74,3 @@ function CurrentTime() {
   }, []);
   return <span>{time}</span>;
 }
-
-import React from 'react';
