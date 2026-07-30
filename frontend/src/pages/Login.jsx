@@ -124,16 +124,16 @@ const StyledWrapper = styled.div`
   }
 
   .login-wrapper {
-    --blob-1-color: #91ff00;
-    --blob-2-color: #7000ff;
-    --btn-hover-glow: rgba(145, 255, 0, 0.2);
-    --input-focus-glow: rgba(145, 255, 0, 0.12);
+    --blob-1-color: #f59e0b;
+    --blob-2-color: #3b82f6;
+    --btn-hover-glow: rgba(245, 158, 11, 0.25);
+    --input-focus-glow: rgba(245, 158, 11, 0.12);
     min-height: 100vh;
     display: flex;
     align-items: center;
     justify-content: center;
     padding: 16px;
-    background: #0a0c10;
+    background: #0b1220;
     position: relative;
     overflow: hidden;
     animation: floatUp 0.8s cubic-bezier(0.16, 1, 0.3, 1) forwards;
@@ -151,7 +151,7 @@ const StyledWrapper = styled.div`
   .login-card {
     position: relative;
     width: 360px;
-    background-color: #0d0f14;
+    background-color: #132040;
     border-radius: 24px;
     padding: 36px 28px;
     overflow: hidden;
@@ -224,7 +224,7 @@ const StyledWrapper = styled.div`
       transparent 100%
     );
     z-index: 1;
-    box-shadow: inset 0 0 0 1px rgba(255, 255, 255, 0.05);
+    box-shadow: inset 0 0 0 1px rgba(30, 58, 95, 0.4);
     border-radius: inherit;
   }
 
@@ -265,7 +265,7 @@ const StyledWrapper = styled.div`
     justify-content: center;
     align-items: center;
     overflow: hidden;
-    background: rgba(145, 255, 0, 0.08);
+    background: rgba(245, 158, 11, 0.08);
   }
 
   .logo-img {
@@ -277,7 +277,7 @@ const StyledWrapper = styled.div`
   .logo-icon {
     width: 30px;
     height: 30px;
-    color: #91ff00;
+    color: #f59e0b;
   }
 
   .title {
@@ -350,22 +350,19 @@ const StyledWrapper = styled.div`
   .btn-submit {
     width: 100%;
     padding: 1em;
-    background: rgba(145, 255, 0, 0.12);
-    color: #91ff00;
-    border: 1px solid rgba(145, 255, 0, 0.25);
+    background: #f59e0b;
+    color: #0b1220;
+    border: none;
     border-radius: 12px;
     font-size: 14.5px;
-    font-weight: 500;
+    font-weight: 600;
     font-family: inherit;
     cursor: pointer;
     transition: all 0.3s cubic-bezier(0.16, 1, 0.3, 1);
-    backdrop-filter: blur(10px);
-    -webkit-backdrop-filter: blur(10px);
   }
 
   .btn-submit:hover {
-    background: rgba(145, 255, 0, 0.2);
-    border-color: rgba(145, 255, 0, 0.5);
+    background: #fbbf24;
     transform: translateY(-2px);
     box-shadow: 0 8px 20px var(--btn-hover-glow);
   }
@@ -421,7 +418,7 @@ const StyledWrapper = styled.div`
   }
 
   .demo-btn-title {
-    color: #91ff00;
+    color: #f59e0b;
     font-size: 13px;
     font-weight: 500;
   }
