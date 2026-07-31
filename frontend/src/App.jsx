@@ -8,7 +8,6 @@ import Dashboard from './pages/Dashboard';
 import Vehiculos from './pages/Vehiculos';
 import VehiculoDetalle from './pages/VehiculoDetalle';
 import Movimiento from './pages/Movimiento';
-import Clientes from './pages/Clientes';
 import Reportes from './pages/Reportes';
 import Usuarios from './pages/Usuarios';
 import Configuracion from './pages/Configuracion';
@@ -39,7 +38,6 @@ function AppRoutes() {
         <Route path="vehiculos" element={<Vehiculos />} />
         <Route path="vehiculos/:id" element={<VehiculoDetalle />} />
         <Route path="movimiento" element={<Movimiento />} />
-        <Route path="clientes" element={<Clientes />} />
         <Route path="reportes" element={<Reportes />} />
         <Route path="usuarios" element={<Usuarios />} />
         <Route path="configuracion" element={<Configuracion />} />

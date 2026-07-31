@@ -304,14 +304,6 @@ export default function VehiculoDetalle() {
             <InfoItem icon={Fuel} label="Total Combustible" value={`${vehiculo.totales?.combustible?.total_cargas || 0} cargas`} />
           </div>
         )}
-        {vehiculo.cliente_nombre && (
-          <div className="mt-4 pt-4 border-t border-park-border flex items-center gap-2 text-sm text-park-muted">
-            <span className="text-slate-500">Propietario:</span>
-            <span className="text-white font-medium">{vehiculo.cliente_nombre}</span>
-            {vehiculo.cedula && <span className="text-slate-500">• CI: {vehiculo.cedula}</span>}
-            {vehiculo.telefono && <span className="text-slate-500">• Tel: {vehiculo.telefono}</span>}
-          </div>
-        )}
       </div>
 
       {/* Tabs */}

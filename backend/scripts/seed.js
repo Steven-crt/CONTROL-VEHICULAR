@@ -40,22 +40,7 @@ async function seed() {
         );
     }
 
-    // 3. CLIENTES ABONADOS (10 registros)
-    console.log('Insertando Clientes...');
-    await connection.query("DELETE FROM clientes");
-    for(let i=1; i<=10; i++) {
-        const f_inicio = new Date();
-        f_inicio.setDate(f_inicio.getDate() - Math.floor(Math.random()*10));
-        const f_fin = new Date(f_inicio);
-        f_fin.setMonth(f_fin.getMonth() + 1);
-        
-        await connection.query(
-            "INSERT INTO clientes (cedula, nombre, email, telefono, placa, tipo_membresia, fecha_inicio, fecha_vencimiento, activo) VALUES (?, ?, ?, ?, ?, ?, ?, ?, 1)",
-            [`09${Math.floor(Math.random()*100000000)}`, `Cliente Premium ${i}`, `cliente${i}@mail.com`, `099${Math.floor(Math.random()*1000000)}`, `ABC-10${i%10}`, 'mensual', f_inicio, f_fin]
-        );
-    }
-
-    // 4. TICKETS & PAGOS (Data Histórica y Actual)
+    // 3. TICKETS & PAGOS (Data Histórica y Actual)
     console.log('Limpiando tickets y pagos...');
     await connection.query("DELETE FROM pagos");
     await connection.query("DELETE FROM cierres_caja");
@@ -115,7 +100,7 @@ async function seed() {
         }
     }
     
-    // 5. CIERRES DE CAJA (1 por día de los últimos 7 días)
+    // 4. CIERRES DE CAJA (1 por día de los últimos 7 días)
     for(let i=7; i>0; i--) {
         const date = new Date();
         date.setDate(date.getDate() - i);

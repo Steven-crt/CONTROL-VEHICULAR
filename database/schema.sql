@@ -71,24 +71,6 @@ CREATE TABLE IF NOT EXISTS tarifas (
 );
 
 -- ============================================================
--- TABLA: clientes (abonados / frecuentes)
--- ============================================================
-CREATE TABLE IF NOT EXISTS clientes (
-  id INT AUTO_INCREMENT PRIMARY KEY,
-  nombre VARCHAR(100) NOT NULL,
-  cedula VARCHAR(20) UNIQUE,
-  telefono VARCHAR(20),
-  email VARCHAR(100),
-  placa VARCHAR(20),
-  tipo_membresia ENUM('ninguna', 'mensual', 'anual') DEFAULT 'ninguna',
-  fecha_inicio DATE,
-  fecha_vencimiento DATE,
-  activo TINYINT(1) DEFAULT 1,
-  created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
-  updated_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP
-);
-
--- ============================================================
 -- TABLA: vehiculos
 -- ============================================================
 CREATE TABLE IF NOT EXISTS vehiculos (
@@ -99,9 +81,7 @@ CREATE TABLE IF NOT EXISTS vehiculos (
   marca VARCHAR(50),
   modelo VARCHAR(50),
   anio INT,
-  cliente_id INT,
-  created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
-  FOREIGN KEY (cliente_id) REFERENCES clientes(id) ON DELETE SET NULL
+  created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP
 );
 
 -- ============================================================

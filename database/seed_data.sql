@@ -5,61 +5,37 @@
 USE parqueo_db;
 
 -- ============================================================
--- CLIENTES (abonados y frecuentes)
--- ============================================================
-INSERT INTO clientes (nombre, cedula, telefono, email, placa, tipo_membresia, fecha_inicio, fecha_vencimiento) VALUES
-('Carlos Mendoza',   '1712345678', '0991234567', 'carlos@email.com',   'ABC-1234', 'mensual',  '2026-01-01', '2026-08-01'),
-('María García',     '1723456789', '0982345678', 'maria@email.com',    'DEF-5678', 'anual',    '2026-01-15', '2027-01-15'),
-('Juan Pérez',       '1734567890', '0973456789', 'juan@email.com',     'GHI-9012', 'mensual',  '2026-03-01', '2026-09-01'),
-('Ana López',        '1745678901', '0964567890', 'ana@email.com',      'JKL-3456', 'ninguna',  NULL, NULL),
-('Roberto Sánchez',  '1756789012', '0955678901', 'roberto@email.com',  'MNO-7890', 'mensual',  '2026-02-10', '2026-08-10'),
-('Laura Torres',     '1767890123', '0946789012', 'laura@email.com',    'PQR-1234', 'ninguna',  NULL, NULL),
-('Diego Ramírez',    '1778901234', '0937890123', 'diego@email.com',    'STU-5678', 'anual',    '2026-06-01', '2027-06-01'),
-('Sofía Vargas',     '1789012345', '0928901234', 'sofia@email.com',    'VWX-9012', 'mensual',  '2026-04-01', '2026-10-01'),
-('Pedro Castillo',   '1790123456', '0919012345', 'pedro@email.com',    'YZA-3456', 'ninguna',  NULL, NULL),
-('Carmen Ruiz',      '1801234567', '0900123456', 'carmen@email.com',   'BCD-7890', 'mensual',  '2026-05-01', '2026-11-01'),
-('Luis Herrera',     '1812345678', '0891234567', 'luis@email.com',     'EFG-1234', 'ninguna',  NULL, NULL),
-('Valentina Cruz',   '1823456789', '0882345678', 'valentina@email.com', 'HIJ-5678', 'anual',    '2026-02-15', '2027-02-15'),
-('Andrés Morales',   '1834567890', '0873456789', 'andres@email.com',   'KLM-9012', 'mensual',  '2026-06-01', '2026-12-01'),
-('Isabella Díaz',    '1845678901', '0864567890', 'isabella@email.com', 'NOP-3456', 'ninguna',  NULL, NULL),
-('Fernando Gómez',   '1856789012', '0855678901', 'fernando@email.com', 'QRS-7890', 'mensual',  '2026-03-15', '2026-09-15'),
-('Daniela Romero',   '1867890123', '0846789012', 'daniela@email.com',  'TUV-1234', 'ninguna',  NULL, NULL),
-('Miguel Ángel Silva','1878901234','0837890123', 'miguel@email.com',   'WXY-5678', 'mensual',  '2026-04-15', '2026-10-15'),
-('Paula Navarro',    '1889012345', '0828901234', 'paula@email.com',    'ZAB-9012', 'anual',    '2026-01-01', '2027-01-01'),
-('Ricardo Peña',     '1890123456', '0819012345', 'ricardo@email.com',  'CDE-3456', 'ninguna',  NULL, NULL);
-
--- ============================================================
 -- VEHÍCULOS
 -- ============================================================
-INSERT INTO vehiculos (placa, tipo, color, marca, modelo, anio, cliente_id) VALUES
-('ABC-1234', 'auto',  'Rojo',     'Toyota',     'Corolla',        2021, 1),
-('DEF-5678', 'auto',  'Blanco',   'Mazda',      'CX-5',           2022, 2),
-('GHI-9012', 'auto',  'Negro',    'Hyundai',    'Tucson',         2020, 3),
-('JKL-3456', 'auto',  'Azul',     'Chevrolet',  'Sail',           2019, 4),
-('MNO-7890', 'moto',  'Rojo',     'Yamaha',     'MT-07',         2023, 5),
-('PQR-1234', 'auto',  'Gris',     'Kia',        'Sportage',       2022, 6),
-('STU-5678', 'auto',  'Blanco',   'Nissan',     'Frontier',       2020, 7),
-('VWX-9012', 'auto',  'Verde',    'Suzuki',     'Swift',          2021, 8),
-('YZA-3456', 'moto',  'Negro',    'Honda',      'CB190R',         2022, 9),
-('BCD-7890', 'auto',  'Plata',    'Volkswagen',  'Taos',          2023, 10),
-('EFG-1234', 'auto',  'Azul',     'Toyota',     'Hilux',          2021, 11),
-('HIJ-5678', 'moto',  'Blanco',   'Yamaha',     'NMax',           2022, 12),
-('KLM-9012', 'auto',  'Rojo',     'Mazda',      'Mazda3',         2020, 13),
-('NOP-3456', 'auto',  'Negro',    'Hyundai',    'Santa Fe',       2021, 14),
-('QRS-7890', 'auto',  'Plata',    'Chevrolet',  'Tracker',        2022, 15),
-('TUV-1234', 'moto',  'Azul',     'Honda',      'XRE300',         2020, 16),
-('WXY-5678', 'auto',  'Blanco',   'Kia',        'Rio',            2021, 17),
-('ZAB-9012', 'auto',  'Gris',     'Nissan',     'Versa',          2023, 18),
-('CDE-3456', 'auto',  'Verde',    'Suzuki',     'Vitara',         2020, 19),
-('LMN-0001', 'auto',  'Rojo',     'Toyota',     'Yaris',          2022, NULL),
-('LMN-0002', 'auto',  'Azul',     'Mazda',      'CX-30',          2023, NULL),
-('LMN-0003', 'moto',  'Negro',    'Honda',      'CB500X',         2021, NULL),
-('LMN-0004', 'auto',  'Blanco',   'Hyundai',    'Elantra',        2020, NULL),
-('LMN-0005', 'VIP',   'Negro',    'Mercedes',   'Clase E',        2024, NULL),
-('LMN-0006', 'auto',  'Plata',    'BMW',        '320i',           2023, NULL),
-('XYZ-7777', 'auto',  'Rojo',     'Ford',       'Ranger',         2021, NULL),
-('XYZ-8888', 'moto',  'Verde',    'Suzuki',     'V-Strom',        2022, NULL),
-('XYZ-9999', 'auto',  'Azul',     'Toyota',     'RAV4',           2023, NULL);
+INSERT INTO vehiculos (placa, tipo, color, marca, modelo, anio) VALUES
+('ABC-1234', 'auto',  'Rojo',     'Toyota',     'Corolla',        2021),
+('DEF-5678', 'auto',  'Blanco',   'Mazda',      'CX-5',           2022),
+('GHI-9012', 'auto',  'Negro',    'Hyundai',    'Tucson',         2020),
+('JKL-3456', 'auto',  'Azul',     'Chevrolet',  'Sail',           2019),
+('MNO-7890', 'moto',  'Rojo',     'Yamaha',     'MT-07',         2023),
+('PQR-1234', 'auto',  'Gris',     'Kia',        'Sportage',       2022),
+('STU-5678', 'auto',  'Blanco',   'Nissan',     'Frontier',       2020),
+('VWX-9012', 'auto',  'Verde',    'Suzuki',     'Swift',          2021),
+('YZA-3456', 'moto',  'Negro',    'Honda',      'CB190R',         2022),
+('BCD-7890', 'auto',  'Plata',    'Volkswagen',  'Taos',          2023),
+('EFG-1234', 'auto',  'Azul',     'Toyota',     'Hilux',          2021),
+('HIJ-5678', 'moto',  'Blanco',   'Yamaha',     'NMax',           2022),
+('KLM-9012', 'auto',  'Rojo',     'Mazda',      'Mazda3',         2020),
+('NOP-3456', 'auto',  'Negro',    'Hyundai',    'Santa Fe',       2021),
+('QRS-7890', 'auto',  'Plata',    'Chevrolet',  'Tracker',        2022),
+('TUV-1234', 'moto',  'Azul',     'Honda',      'XRE300',         2020),
+('WXY-5678', 'auto',  'Blanco',   'Kia',        'Rio',            2021),
+('ZAB-9012', 'auto',  'Gris',     'Nissan',     'Versa',          2023),
+('CDE-3456', 'auto',  'Verde',    'Suzuki',     'Vitara',         2020),
+('LMN-0001', 'auto',  'Rojo',     'Toyota',     'Yaris',          2022),
+('LMN-0002', 'auto',  'Azul',     'Mazda',      'CX-30',          2023),
+('LMN-0003', 'moto',  'Negro',    'Honda',      'CB500X',         2021),
+('LMN-0004', 'auto',  'Blanco',   'Hyundai',    'Elantra',        2020),
+('LMN-0005', 'VIP',   'Negro',    'Mercedes',   'Clase E',        2024),
+('LMN-0006', 'auto',  'Plata',    'BMW',        '320i',           2023),
+('XYZ-7777', 'auto',  'Rojo',     'Ford',       'Ranger',         2021),
+('XYZ-8888', 'moto',  'Verde',    'Suzuki',     'V-Strom',        2022),
+('XYZ-9999', 'auto',  'Azul',     'Toyota',     'RAV4',           2023);
 
 -- ============================================================
 -- TICKETS (historial de entradas y salidas)

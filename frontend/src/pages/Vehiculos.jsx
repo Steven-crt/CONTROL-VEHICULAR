@@ -223,16 +223,6 @@ export default function Vehiculos() {
                         </span>
                       </div>
                     </div>
-
-                    {vehiculo.cliente_nombre && (
-                      <p className="text-xs text-park-muted mt-2">
-                        <span className="text-slate-500">Propietario:</span>{' '}
-                        <span className="text-slate-300 font-medium">{vehiculo.cliente_nombre}</span>
-                        {vehiculo.cliente_telefono && (
-                          <span className="text-slate-500 ml-2">• {vehiculo.cliente_telefono}</span>
-                        )}
-                      </p>
-                    )}
                   </div>
                 </div>
 

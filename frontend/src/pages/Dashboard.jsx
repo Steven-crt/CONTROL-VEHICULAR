@@ -4,7 +4,7 @@ import {
   BarChart, Bar, XAxis, YAxis, Tooltip, ResponsiveContainer, CartesianGrid,
   PieChart, Pie, Cell, Legend
 } from 'recharts';
-import { Car, DollarSign, Users, Wrench, Fuel, PieChart as PieIcon } from 'lucide-react';
+import { Car, DollarSign, Wrench, Fuel, PieChart as PieIcon } from 'lucide-react';
 
 const TIPO_COLORS = { auto: '#3b82f6', moto: '#8b5cf6', VIP: '#f59e0b', discapacitado: '#10b981' };
 const PIE_FALLBACK = ['#3b82f6', '#8b5cf6', '#f59e0b', '#10b981', '#ef4444'];
@@ -98,15 +98,6 @@ export default function Dashboard() {
           color="text-blue-400"
           iconBg="bg-blue-500/20"
           cardBg="bg-gradient-to-b from-blue-500/5 to-transparent border-t-blue-500"
-        />
-        <StatCard
-          icon={Users}
-          label="Total Clientes"
-          value={data?.total_clientes || 0}
-          sub="Propietarios registrados"
-          color="text-purple-400"
-          iconBg="bg-purple-500/20"
-          cardBg="bg-gradient-to-b from-purple-500/5 to-transparent border-t-purple-500"
         />
         <StatCard
           icon={Fuel}
@@ -238,7 +229,6 @@ export default function Dashboard() {
                   </div>
                 </div>
                 <div className="text-right">
-                  {e.cliente_nombre && <p className="text-park-muted text-xs">{e.cliente_nombre}</p>}
                   <span className="bg-[#0f172a] text-slate-300 px-2.5 py-1 rounded-md text-xs font-medium border border-park-border/50">
                     {new Date(e.created_at).toLocaleDateString('es-EC', { day: '2-digit', month: 'short' })}
                   </span>

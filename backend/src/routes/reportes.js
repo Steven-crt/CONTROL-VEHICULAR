@@ -7,7 +7,6 @@ const auth = require('../middleware/auth');
 router.get('/dashboard', auth(), async (req, res) => {
   try {
     const [totalVehiculos] = await db.query('SELECT COUNT(*) as total FROM vehiculos');
-    const [totalClientes] = await db.query('SELECT COUNT(*) as total FROM clientes');
     const [gastosCombustible] = await db.query(
       "SELECT COALESCE(SUM(costo_total),0) as total FROM combustible WHERE MONTH(fecha_carga)=MONTH(CURDATE()) AND YEAR(fecha_carga)=YEAR(CURDATE())"
     );
@@ -21,9 +20,8 @@ router.get('/dashboard', auth(), async (req, res) => {
       'SELECT marca as name, COUNT(*) as value FROM vehiculos WHERE marca IS NOT NULL GROUP BY marca ORDER BY value DESC LIMIT 10'
     );
     const [ultimos5] = await db.query(
-      `SELECT v.id, v.placa, v.tipo, v.marca, v.modelo, v.color, v.created_at,
-        c.nombre as cliente_nombre
-       FROM vehiculos v LEFT JOIN clientes c ON v.cliente_id = c.id
+      `SELECT v.id, v.placa, v.tipo, v.marca, v.modelo, v.color, v.created_at
+       FROM vehiculos v
        ORDER BY v.created_at DESC LIMIT 5`
     );
     // Gastos combustible últimos 6 meses
@@ -47,7 +45,6 @@ router.get('/dashboard', auth(), async (req, res) => {
 
     res.json({
       total_vehiculos: totalVehiculos[0].total,
-      total_clientes: totalClientes[0].total,
       gastos_combustible_mes: parseFloat(gastosCombustible[0].total),
       gastos_mantenimiento_mes: parseFloat(gastosMantenimiento[0].total),
       vehiculos_por_tipo: porTipo,
@@ -104,12 +101,6 @@ router.get('/vehiculos-resumen', auth(), async (req, res) => {
     const [porTipo] = await db.query(
       'SELECT tipo as name, COUNT(*) as value FROM vehiculos GROUP BY tipo'
     );
-    const [conCliente] = await db.query(
-      'SELECT COUNT(*) as total FROM vehiculos WHERE cliente_id IS NOT NULL'
-    );
-    const [sinCliente] = await db.query(
-      'SELECT COUNT(*) as total FROM vehiculos WHERE cliente_id IS NULL'
-    );
     const [porMarca] = await db.query(
       'SELECT marca as name, COUNT(*) as value FROM vehiculos WHERE marca IS NOT NULL GROUP BY marca ORDER BY value DESC LIMIT 10'
     );
@@ -120,8 +111,6 @@ router.get('/vehiculos-resumen', auth(), async (req, res) => {
     res.json({
       total: total[0].total,
       por_tipo: porTipo,
-      con_cliente: conCliente[0].total,
-      sin_cliente: sinCliente[0].total,
       por_marca: porMarca,
       por_anio: porAnio
     });
@@ -248,10 +237,8 @@ router.get('/gastos-consolidado', auth(), async (req, res) => {
 router.get('/vehiculos-recientes', auth(), async (req, res) => {
   try {
     const [rows] = await db.query(`
-      SELECT v.id, v.placa, v.tipo, v.marca, v.modelo, v.color, v.created_at,
-        c.nombre as cliente_nombre
+      SELECT v.id, v.placa, v.tipo, v.marca, v.modelo, v.color, v.created_at
       FROM vehiculos v
-      LEFT JOIN clientes c ON v.cliente_id = c.id
       ORDER BY v.created_at DESC LIMIT 10
     `);
     res.json(rows);

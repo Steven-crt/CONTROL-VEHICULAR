@@ -8,15 +8,13 @@ router.get('/', auth(), async (req, res) => {
   const { year, search } = req.query;
   try {
     let q = `
-      SELECT v.*, c.nombre as cliente_nombre, c.cedula as cliente_cedula,
-        c.telefono as cliente_telefono,
+      SELECT v.*,
         (SELECT latitud FROM ubicaciones WHERE vehiculo_id = v.id ORDER BY timestamp DESC LIMIT 1) as ultima_latitud,
         (SELECT longitud FROM ubicaciones WHERE vehiculo_id = v.id ORDER BY timestamp DESC LIMIT 1) as ultima_longitud,
         (SELECT timestamp FROM ubicaciones WHERE vehiculo_id = v.id ORDER BY timestamp DESC LIMIT 1) as ultima_ubicacion_fecha,
         (SELECT km_actual FROM combustible WHERE vehiculo_id = v.id ORDER BY fecha_carga DESC LIMIT 1) as km_actual,
         (SELECT fecha_carga FROM combustible WHERE vehiculo_id = v.id ORDER BY fecha_carga DESC LIMIT 1) as ultima_carga_fecha
       FROM vehiculos v
-      LEFT JOIN clientes c ON v.cliente_id = c.id
       WHERE 1=1
     `;
     const params = [];
@@ -66,20 +64,19 @@ router.get('/', auth(), async (req, res) => {
 
 // POST /api/vehiculos - Crear nuevo vehículo (solo admin)
 router.post('/', auth(['admin']), async (req, res) => {
-  const { placa, tipo, color, marca, modelo, anio, cliente_id } = req.body;
+  const { placa, tipo, color, marca, modelo, anio } = req.body;
   if (!placa) return res.status(400).json({ error: 'Placa es requerida' });
   try {
     const toIntOrNull = (v) => (v === '' || v === null || v === undefined) ? null : parseInt(v);
     const [result] = await db.query(
-      'INSERT INTO vehiculos (placa, tipo, color, marca, modelo, anio, cliente_id) VALUES (?, ?, ?, ?, ?, ?, ?)',
+      'INSERT INTO vehiculos (placa, tipo, color, marca, modelo, anio) VALUES (?, ?, ?, ?, ?, ?)',
       [
         placa.toUpperCase(),
         tipo || 'auto',
         color || null,
         marca || null,
         modelo || null,
-        toIntOrNull(anio),
-        toIntOrNull(cliente_id)
+        toIntOrNull(anio)
       ]
     );
     res.status(201).json({ id: result.insertId, message: 'Vehículo registrado' });
@@ -95,10 +92,8 @@ router.post('/', auth(['admin']), async (req, res) => {
 router.get('/:id', auth(), async (req, res) => {
   try {
     const [vehiculos] = await db.query(`
-      SELECT v.*, c.nombre as cliente_nombre, c.cedula, c.telefono, c.email as cliente_email,
-        c.tipo_membresia
+      SELECT v.*
       FROM vehiculos v
-      LEFT JOIN clientes c ON v.cliente_id = c.id
       WHERE v.id = ?
     `, [req.params.id]);
     
@@ -225,7 +220,7 @@ router.get('/:id/historial-km', auth(), async (req, res) => {
 
 // PUT /api/vehiculos/:id - Actualizar vehículo (solo admin)
 router.put('/:id', auth(['admin']), async (req, res) => {
-  const { placa, tipo, color, marca, modelo, anio, cliente_id } = req.body;
+  const { placa, tipo, color, marca, modelo, anio } = req.body;
   try {
     const [existing] = await db.query('SELECT * FROM vehiculos WHERE id = ?', [req.params.id]);
     if (!existing.length)
@@ -234,7 +229,7 @@ router.put('/:id', auth(['admin']), async (req, res) => {
     const toIntOrNull = (v) => (v === '' || v === null || v === undefined) ? null : parseInt(v);
 
     await db.query(
-      'UPDATE vehiculos SET placa = ?, tipo = ?, color = ?, marca = ?, modelo = ?, anio = ?, cliente_id = ? WHERE id = ?',
+      'UPDATE vehiculos SET placa = ?, tipo = ?, color = ?, marca = ?, modelo = ?, anio = ? WHERE id = ?',
       [
         placa || existing[0].placa,
         tipo || existing[0].tipo,
@@ -242,13 +237,12 @@ router.put('/:id', auth(['admin']), async (req, res) => {
         marca !== undefined ? marca : existing[0].marca,
         modelo !== undefined ? modelo : existing[0].modelo,
         anio !== undefined ? toIntOrNull(anio) : existing[0].anio,
-        cliente_id !== undefined ? toIntOrNull(cliente_id) : existing[0].cliente_id,
         req.params.id
       ]
     );
 
     const [updated] = await db.query(
-      'SELECT v.*, c.nombre as cliente_nombre FROM vehiculos v LEFT JOIN clientes c ON v.cliente_id = c.id WHERE v.id = ?',
+      'SELECT * FROM vehiculos WHERE id = ?',
       [req.params.id]
     );
     res.json(updated[0]);

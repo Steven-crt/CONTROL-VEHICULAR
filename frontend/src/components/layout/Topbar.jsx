@@ -12,7 +12,6 @@ const breadcrumbs = {
   '/salida': 'Salida y Cobro',
   '/mapa': 'Mapa de Espacios',
   '/tarifas': 'Tarifas y Cobros',
-  '/clientes': 'Clientes y Abonados',
   '/reportes': 'Reportes y Estadísticas',
   '/usuarios': 'Gestión de Usuarios',
   '/configuracion': 'Configuración General',

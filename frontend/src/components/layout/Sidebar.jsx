@@ -1,7 +1,7 @@
 import { NavLink, useNavigate } from 'react-router-dom';
 import { useAuth } from '../../contexts/AuthContext';
 import {
-  LayoutDashboard, LogOut, Users, Settings, BarChart3, Car, UserCircle, Activity
+  LayoutDashboard, LogOut, Users, Settings, BarChart3, Car, Activity
 } from 'lucide-react';
 import { useConfig } from '../../contexts/ConfigContext';
 
@@ -9,7 +9,6 @@ const navItems = [
   { to: '/dashboard', icon: LayoutDashboard, label: 'Dashboard' },
   { to: '/vehiculos', icon: Car,             label: 'Consulta Vehículos' },
   { to: '/movimiento',icon: Activity,        label: 'Movimiento y Gasto' },
-  { to: '/clientes',  icon: UserCircle,      label: 'Clientes' },
   { to: '/reportes',  icon: BarChart3,       label: 'Reportes' },
   { to: '/usuarios',  icon: Users,           label: 'Usuarios' },
   { to: '/configuracion', icon: Settings,    label: 'Configuración' },

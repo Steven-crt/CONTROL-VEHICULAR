@@ -194,7 +194,7 @@ export default function Reportes() {
           <table className="w-full text-sm">
             <thead>
               <tr className="border-b border-park-border">
-                {['Placa', 'Tipo', 'Marca', 'Modelo', 'Color', 'Cliente', 'Fecha'].map(h => (
+                {['Placa', 'Tipo', 'Marca', 'Modelo', 'Color', 'Fecha'].map(h => (
                   <th key={h} className="table-header text-left pb-3 px-2">{h}</th>
                 ))}
               </tr>
@@ -207,7 +207,6 @@ export default function Reportes() {
                   <td className="table-cell px-2 text-park-muted">{v.marca || '-'}</td>
                   <td className="table-cell px-2 text-park-muted">{v.modelo || '-'}</td>
                   <td className="table-cell px-2 text-park-muted">{v.color || '-'}</td>
-                  <td className="table-cell px-2 text-park-muted">{v.cliente_nombre || 'Sin asignar'}</td>
                   <td className="table-cell px-2 text-park-muted">{new Date(v.created_at).toLocaleDateString('es-EC')}</td>
                 </tr>
               ))}
