@@ -3,15 +3,18 @@ const router = express.Router();
 const db = require('../db');
 const bcrypt = require('bcryptjs');
 const auth = require('../middleware/auth');
-const { normalizeRol } = require('../utils/roles');
+const { getRol } = require('../utils/roles');
+const { getRolColumn, rolValueToStore } = require('../utils/rolColumn');
 
 // GET /api/usuarios
 router.get('/', auth(['admin']), async (req, res) => {
   try {
+    const col = await getRolColumn();
+    const rolSelect = col.name ? `${col.name} AS rol` : 'NULL AS rol';
     const [rows] = await db.query(
-      'SELECT id, nombre, username, email, rol_id as rol, activo, created_at FROM usuarios ORDER BY nombre'
+      `SELECT id, nombre, username, email, ${rolSelect}, activo, created_at FROM usuarios ORDER BY nombre`
     );
-    rows.forEach(u => { u.rol = normalizeRol(u.rol); });
+    rows.forEach(u => { u.rol = getRol(u); });
     res.json(rows);
   } catch (err) {
     res.status(500).json({ error: err.message });
@@ -21,12 +24,14 @@ router.get('/', auth(['admin']), async (req, res) => {
 // GET /api/usuarios/:id
 router.get('/:id', auth(['admin']), async (req, res) => {
   try {
+    const col = await getRolColumn();
+    const rolSelect = col.name ? `${col.name} AS rol` : 'NULL AS rol';
     const [rows] = await db.query(
-      'SELECT id, nombre, username, email, rol_id as rol, activo FROM usuarios WHERE id = ?',
+      `SELECT id, nombre, username, email, ${rolSelect}, activo FROM usuarios WHERE id = ?`,
       [req.params.id]
     );
     if (!rows.length) return res.status(404).json({ error: 'Usuario no encontrado' });
-    rows[0].rol = normalizeRol(rows[0].rol);
+    rows[0].rol = getRol(rows[0]);
     res.json(rows[0]);
   } catch (err) {
     res.status(500).json({ error: err.message });
@@ -39,10 +44,12 @@ router.post('/', auth(['admin']), async (req, res) => {
   if (!nombre || !username || !password)
     return res.status(400).json({ error: 'Nombre, usuario y contraseña son requeridos' });
   try {
+    const col = await getRolColumn();
+    const rolValue = await rolValueToStore(rol);
     const hash = await bcrypt.hash(password, 10);
     const [result] = await db.query(
-      'INSERT INTO usuarios (nombre, username, password, email, rol_id) VALUES (?, ?, ?, ?, ?)',
-      [nombre, username, hash, email, rol || 2]
+      `INSERT INTO usuarios (nombre, username, password, email, ${col.name}) VALUES (?, ?, ?, ?, ?)`,
+      [nombre, username, hash, email, rolValue ?? 2]
     );
     res.status(201).json({ id: result.insertId, message: 'Usuario creado' });
   } catch (err) {
@@ -56,16 +63,19 @@ router.post('/', auth(['admin']), async (req, res) => {
 router.put('/:id', auth(['admin']), async (req, res) => {
   const { nombre, email, rol, activo, password } = req.body;
   try {
+    const col = await getRolColumn();
+    const rolValue = await rolValueToStore(rol);
+    const rolSet = `${col.name}=?`;
     if (password) {
       const hash = await bcrypt.hash(password, 10);
       await db.query(
-        'UPDATE usuarios SET nombre=?, email=?, rol_id=?, activo=?, password=? WHERE id=?',
-        [nombre, email, rol, activo, hash, req.params.id]
+        `UPDATE usuarios SET nombre=?, email=?, ${rolSet}, activo=?, password=? WHERE id=?`,
+        [nombre, email, rolValue, activo, hash, req.params.id]
       );
     } else {
       await db.query(
-        'UPDATE usuarios SET nombre=?, email=?, rol_id=?, activo=? WHERE id=?',
-        [nombre, email, rol, activo, req.params.id]
+        `UPDATE usuarios SET nombre=?, email=?, ${rolSet}, activo=? WHERE id=?`,
+        [nombre, email, rolValue, activo, req.params.id]
       );
     }
     res.json({ message: 'Usuario actualizado' });

@@ -1,9 +1,10 @@
 const jwt = require('jsonwebtoken');
-const { normalizeRol } = require('../utils/roles');
+const db = require('../db');
+const { getRol } = require('../utils/roles');
 require('dotenv').config();
 
 const authMiddleware = (roles = []) => {
-  return (req, res, next) => {
+  return async (req, res, next) => {
     const authHeader = req.headers['authorization'];
     if (!authHeader || !authHeader.startsWith('Bearer ')) {
       return res.status(401).json({ error: 'Token no proporcionado' });
@@ -12,10 +13,18 @@ const authMiddleware = (roles = []) => {
     const token = authHeader.split(' ')[1];
     try {
       const decoded = jwt.verify(token, process.env.JWT_SECRET);
-      decoded.rol = normalizeRol(decoded.rol);
-      req.user = decoded;
+      const [rows] = await db.query(
+        'SELECT * FROM usuarios WHERE id = ? AND activo = 1',
+        [decoded.id]
+      );
+      if (rows.length === 0) {
+        return res.status(401).json({ error: 'Usuario no encontrado o inactivo' });
+      }
 
-      if (roles.length > 0 && !roles.includes(decoded.rol)) {
+      const rol = getRol(rows[0]);
+      req.user = { ...decoded, rol };
+
+      if (roles.length > 0 && !roles.includes(rol)) {
         return res.status(403).json({ error: 'Acceso denegado: rol insuficiente' });
       }
       next();
