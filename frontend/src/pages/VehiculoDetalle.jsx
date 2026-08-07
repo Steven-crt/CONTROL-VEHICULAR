@@ -5,12 +5,35 @@ import { useAuth } from '../contexts/AuthContext';
 import {
   Car, Fuel, Wrench, ArrowLeft, Gauge, MapPin, Calendar, DollarSign,
   ChevronDown, ChevronUp, AlertCircle, Download, Filter, BarChart3, CalendarDays,
-  Pencil, Trash2, X, Check
+  Pencil, Trash2, X, Check, ShieldCheck
 } from 'lucide-react';
 import {
   BarChart, Bar, XAxis, YAxis, Tooltip, ResponsiveContainer, CartesianGrid, AreaChart, Area, Legend
 } from 'recharts';
 import toast from 'react-hot-toast';
+
+const SOAT_STYLES = {
+  vigente: { badge: 'text-emerald-400 bg-emerald-900/20 border-emerald-700/50', alerta: 'border-emerald-700/50 bg-emerald-900/20', icono: 'text-emerald-400' },
+  por_vencer: { badge: 'text-amber-400 bg-amber-900/20 border-amber-700/50', alerta: 'border-amber-700/50 bg-amber-900/20', icono: 'text-amber-400' },
+  vencido: { badge: 'text-red-400 bg-red-900/20 border-red-700/50', alerta: 'border-red-700/50 bg-red-900/20', icono: 'text-red-400' },
+  sin_soat: { badge: 'text-park-muted bg-park-border/20 border-park-border/50', alerta: 'border-park-border/50 bg-park-border/10', icono: 'text-park-muted' },
+};
+
+function getSoatInfo(v) {
+  const s = v?.soat || {};
+  const fechaVenc = v?.soat_fecha_vencimiento;
+  switch (s.estado) {
+    case 'vigente': return { text: `SOAT vigente`, detalle: `Vence el ${formatDate(fechaVenc)}`, style: SOAT_STYLES.vigente };
+    case 'por_vencer': return { text: `SOAT por vencer (${s.dias_restantes} días)`, detalle: `Vence el ${formatDate(fechaVenc)}`, style: SOAT_STYLES.por_vencer };
+    case 'vencido': return { text: 'SOAT vencido', detalle: `Venció el ${formatDate(fechaVenc)}`, style: SOAT_STYLES.vencido };
+    default: return { text: 'Sin SOAT registrado', detalle: 'Registre la póliza del SOAT', style: SOAT_STYLES.sin_soat };
+  }
+}
+
+function formatDate(fecha) {
+  if (!fecha) return '—';
+  try { return new Date(fecha).toLocaleDateString('es'); } catch { return fecha; }
+}
 
 export default function VehiculoDetalle() {
   const { id } = useParams();
@@ -156,6 +179,10 @@ export default function VehiculoDetalle() {
       marca: vehiculo.marca || '',
       modelo: vehiculo.modelo || '',
       anio: vehiculo.anio || '',
+      soat_numero: vehiculo.soat_numero || '',
+      soat_empresa: vehiculo.soat_empresa || '',
+      soat_fecha_inicio: vehiculo.soat_fecha_inicio ? String(vehiculo.soat_fecha_inicio).slice(0, 10) : '',
+      soat_fecha_vencimiento: vehiculo.soat_fecha_vencimiento ? String(vehiculo.soat_fecha_vencimiento).slice(0, 10) : '',
     });
     setEditing(true);
   };
@@ -256,7 +283,7 @@ export default function VehiculoDetalle() {
           </div>
         )}
       </div>
-
+          
       {/* Vehicle info card */}
       <div className="card">
         {editing ? (
@@ -305,6 +332,57 @@ export default function VehiculoDetalle() {
           </div>
         )}
       </div>
+
+      {/* Alerta SOAT */}
+      {(() => {
+        const info = getSoatInfo(vehiculo);
+        return (
+          <div className={`flex items-start gap-3 p-4 rounded-xl border ${info.style.alerta}`}>
+            <ShieldCheck className={`w-5 h-5 mt-0.5 shrink-0 ${info.style.icono}`} />
+            <div>
+              <p className={`font-semibold text-sm ${info.style.icono}`}>{info.text}</p>
+              {vehiculo.soat?.estado !== 'sin_soat' && (
+                <p className="text-slate-300 text-xs mt-0.5">
+                  {info.detalle}
+                  {vehiculo.soat_empresa ? ` · ${vehiculo.soat_empresa}` : ''}
+                  {vehiculo.soat_numero ? ` · Póliza ${vehiculo.soat_numero}` : ''}
+                </p>
+              )}
+            </div>
+            {vehiculo.soat?.estado === 'vencido' && (
+              <span className="ml-auto hidden sm:block text-xs text-red-400 font-medium">Renovar SOAT</span>
+            )}
+          </div>
+        );
+      })()}
+
+      {/* Sección SOAT (edición) */}
+      {editing && (
+        <div className="card">
+          <div className="flex items-center gap-2 mb-4">
+            <ShieldCheck className="w-5 h-5 text-park-accent" />
+            <h4 className="text-park-text font-semibold">SOAT (Seguro Obligatorio)</h4>
+          </div>
+          <div className="grid grid-cols-2 sm:grid-cols-3 lg:grid-cols-4 gap-4">
+            <div>
+              <label className="text-park-muted text-xs font-medium mb-1 block">Número de Póliza *</label>
+              <input className="input" required value={editForm.soat_numero} onChange={e => setEditForm({...editForm, soat_numero: e.target.value})} placeholder="Ej: SOAT-2024-001234" />
+            </div>
+            <div>
+              <label className="text-park-muted text-xs font-medium mb-1 block">Aseguradora *</label>
+              <input className="input" required value={editForm.soat_empresa} onChange={e => setEditForm({...editForm, soat_empresa: e.target.value})} placeholder="Ej: Mapfre" />
+            </div>
+            <div>
+              <label className="text-park-muted text-xs font-medium mb-1 block">Fecha Inicio</label>
+              <input type="date" className="input" value={editForm.soat_fecha_inicio} onChange={e => setEditForm({...editForm, soat_fecha_inicio: e.target.value})} />
+            </div>
+            <div>
+              <label className="text-park-muted text-xs font-medium mb-1 block">Fecha Vencimiento *</label>
+              <input type="date" className="input" required value={editForm.soat_fecha_vencimiento} onChange={e => setEditForm({...editForm, soat_fecha_vencimiento: e.target.value})} />
+            </div>
+          </div>
+        </div>
+      )}
 
       {/* Tabs */}
       <div className="flex border-b border-park-border gap-1">

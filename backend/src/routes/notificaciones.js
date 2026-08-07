@@ -82,7 +82,53 @@ router.get('/', auth(), async (req, res) => {
       });
     });
 
-    // 4. Total vehículos en flota
+    // 4. SOAT: vencidos, por vencer y sin datos registrados
+    const [soatVehiculos] = await db.query(`
+      SELECT id, placa, marca, modelo, soat_numero, soat_empresa, soat_fecha_vencimiento,
+        DATEDIFF(soat_fecha_vencimiento, CURDATE()) as dias_restantes
+      FROM vehiculos
+      WHERE soat_fecha_vencimiento IS NOT NULL
+      ORDER BY dias_restantes ASC
+      LIMIT 10
+    `);
+    soatVehiculos.forEach(v => {
+      if (v.dias_restantes < 0) {
+        notificaciones.push({
+          tipo: 'warning',
+          icono: 'alert',
+          titulo: 'SOAT vencido',
+          mensaje: `${v.placa} — venció el ${String(v.soat_fecha_vencimiento).slice(0, 10)}`,
+          link: `/vehiculos/${v.id}`
+        });
+      } else if (v.dias_restantes <= 30) {
+        notificaciones.push({
+          tipo: 'warning',
+          icono: 'alert',
+          titulo: 'SOAT por vencer',
+          mensaje: `${v.placa} — vence en ${v.dias_restantes} día${v.dias_restantes !== 1 ? 's' : ''}`,
+          link: `/vehiculos/${v.id}`
+        });
+      }
+    });
+
+    const [sinSoat] = await db.query(`
+      SELECT id, placa, marca, modelo
+      FROM vehiculos
+      WHERE soat_numero IS NULL OR soat_numero = '' OR soat_fecha_vencimiento IS NULL
+      ORDER BY placa ASC
+      LIMIT 5
+    `);
+    sinSoat.forEach(v => {
+      notificaciones.push({
+        tipo: 'warning',
+        icono: 'alert',
+        titulo: 'Sin datos de SOAT',
+        mensaje: `${v.placa} — registre los datos del SOAT`,
+        link: `/vehiculos/${v.id}`
+      });
+    });
+
+    // 5. Total vehículos en flota
     const [totalVeh] = await db.query('SELECT COUNT(*) as total FROM vehiculos');
     notificaciones.push({
       tipo: 'info',
@@ -92,7 +138,7 @@ router.get('/', auth(), async (req, res) => {
       link: '/vehiculos'
     });
 
-    // 5. Gastos del mes
+    // 6. Gastos del mes
     const [gastoCombustible] = await db.query(
       "SELECT COALESCE(SUM(costo_total),0) as total FROM combustible WHERE MONTH(fecha_carga)=MONTH(CURDATE()) AND YEAR(fecha_carga)=YEAR(CURDATE())"
     );

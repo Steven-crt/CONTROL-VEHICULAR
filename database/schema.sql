@@ -81,6 +81,10 @@ CREATE TABLE IF NOT EXISTS vehiculos (
   marca VARCHAR(50),
   modelo VARCHAR(50),
   anio INT,
+  soat_numero VARCHAR(50),
+  soat_empresa VARCHAR(100),
+  soat_fecha_inicio DATE,
+  soat_fecha_vencimiento DATE,
   created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP
 );
 

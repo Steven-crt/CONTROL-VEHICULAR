@@ -3,6 +3,27 @@ const router = express.Router();
 const db = require('../db');
 const auth = require('../middleware/auth');
 
+// Devuelve el estado de vigencia del SOAT basado en la fecha de vencimiento
+function getSoatEstado(v) {
+  const fechaVenc = v.soat_fecha_vencimiento;
+  if (!fechaVenc) return { vigente: false, estado: 'sin_soat' };
+  const hoy = new Date();
+  const venc = new Date(fechaVenc);
+  if (isNaN(venc.getTime())) return { vigente: false, estado: 'sin_soat' };
+
+  const vencUnix = venc.getTime();
+  const hoyUnix = new Date(hoy.getFullYear(), hoy.getMonth(), hoy.getDate()).getTime();
+
+  if (vencUnix < hoyUnix) return { vigente: false, estado: 'vencido' };
+  const diasRestantes = Math.ceil((vencUnix - hoyUnix) / 86400000);
+  if (diasRestantes <= 30) return { vigente: true, estado: 'por_vencer', dias_restantes: diasRestantes };
+  return { vigente: true, estado: 'vigente', dias_restantes: diasRestantes };
+}
+
+function enriquecerConSoat(v) {
+  return { ...v, soat: getSoatEstado(v) };
+}
+
 // GET /api/vehiculos - Listar vehículos con filtro por año y última ubicación
 router.get('/', auth(), async (req, res) => {
   const { year, search } = req.query;
@@ -54,8 +75,8 @@ router.get('/', auth(), async (req, res) => {
         } : null
       };
     }));
-    
-    res.json(result);
+
+    res.json(result.map(enriquecerConSoat));
   } catch (err) {
     console.error('Error en GET /vehiculos:', err);
     res.status(500).json({ error: err.message });
@@ -64,19 +85,27 @@ router.get('/', auth(), async (req, res) => {
 
 // POST /api/vehiculos - Crear nuevo vehículo (solo admin)
 router.post('/', auth(['admin']), async (req, res) => {
-  const { placa, tipo, color, marca, modelo, anio } = req.body;
+  const { placa, tipo, color, marca, modelo, anio, soat_numero, soat_empresa, soat_fecha_inicio, soat_fecha_vencimiento } = req.body;
   if (!placa) return res.status(400).json({ error: 'Placa es requerida' });
+  if (!soat_numero || !soat_empresa || !soat_fecha_vencimiento)
+    return res.status(400).json({ error: 'Los datos del SOAT (número, aseguradora y fecha de vencimiento) son obligatorios' });
   try {
     const toIntOrNull = (v) => (v === '' || v === null || v === undefined) ? null : parseInt(v);
+    const toDateOrNull = (v) => (v === '' || v === null || v === undefined) ? null : v;
     const [result] = await db.query(
-      'INSERT INTO vehiculos (placa, tipo, color, marca, modelo, anio) VALUES (?, ?, ?, ?, ?, ?)',
+      `INSERT INTO vehiculos (placa, tipo, color, marca, modelo, anio, soat_numero, soat_empresa, soat_fecha_inicio, soat_fecha_vencimiento)
+       VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?)`,
       [
         placa.toUpperCase(),
         tipo || 'auto',
         color || null,
         marca || null,
         modelo || null,
-        toIntOrNull(anio)
+        toIntOrNull(anio),
+        soat_numero || null,
+        soat_empresa || null,
+        toDateOrNull(soat_fecha_inicio),
+        toDateOrNull(soat_fecha_vencimiento)
       ]
     );
     res.status(201).json({ id: result.insertId, message: 'Vehículo registrado' });
@@ -138,6 +167,7 @@ router.get('/:id', auth(), async (req, res) => {
         longitud: parseFloat(ubicacion[0].longitud),
         fecha: ubicacion[0].timestamp
       } : null,
+      soat: getSoatEstado(v),
       totales: {
         combustible: totalesCombustible[0],
         mantenimiento: totalesMantenimiento[0]
@@ -220,16 +250,25 @@ router.get('/:id/historial-km', auth(), async (req, res) => {
 
 // PUT /api/vehiculos/:id - Actualizar vehículo (solo admin)
 router.put('/:id', auth(['admin']), async (req, res) => {
-  const { placa, tipo, color, marca, modelo, anio } = req.body;
+  const { placa, tipo, color, marca, modelo, anio, soat_numero, soat_empresa, soat_fecha_inicio, soat_fecha_vencimiento } = req.body;
   try {
     const [existing] = await db.query('SELECT * FROM vehiculos WHERE id = ?', [req.params.id]);
     if (!existing.length)
       return res.status(404).json({ error: 'Vehículo no encontrado' });
 
     const toIntOrNull = (v) => (v === '' || v === null || v === undefined) ? null : parseInt(v);
+    const toDateOrNull = (v) => (v === '' || v === null || v === undefined) ? null : v;
+
+    const nuevoSoatNumero = soat_numero !== undefined ? soat_numero : existing[0].soat_numero;
+    const nuevoSoatEmpresa = soat_empresa !== undefined ? soat_empresa : existing[0].soat_empresa;
+    const nuevoSoatVenc = soat_fecha_vencimiento !== undefined ? toDateOrNull(soat_fecha_vencimiento) : existing[0].soat_fecha_vencimiento;
+    if (!nuevoSoatNumero || !nuevoSoatEmpresa || !nuevoSoatVenc)
+      return res.status(400).json({ error: 'Los datos del SOAT (número, aseguradora y fecha de vencimiento) son obligatorios' });
 
     await db.query(
-      'UPDATE vehiculos SET placa = ?, tipo = ?, color = ?, marca = ?, modelo = ?, anio = ? WHERE id = ?',
+      `UPDATE vehiculos SET placa = ?, tipo = ?, color = ?, marca = ?, modelo = ?, anio = ?,
+        soat_numero = ?, soat_empresa = ?, soat_fecha_inicio = ?, soat_fecha_vencimiento = ?
+       WHERE id = ?`,
       [
         placa || existing[0].placa,
         tipo || existing[0].tipo,
@@ -237,6 +276,10 @@ router.put('/:id', auth(['admin']), async (req, res) => {
         marca !== undefined ? marca : existing[0].marca,
         modelo !== undefined ? modelo : existing[0].modelo,
         anio !== undefined ? toIntOrNull(anio) : existing[0].anio,
+        nuevoSoatNumero,
+        nuevoSoatEmpresa,
+        soat_fecha_inicio !== undefined ? toDateOrNull(soat_fecha_inicio) : existing[0].soat_fecha_inicio,
+        nuevoSoatVenc,
         req.params.id
       ]
     );
@@ -245,7 +288,7 @@ router.put('/:id', auth(['admin']), async (req, res) => {
       'SELECT * FROM vehiculos WHERE id = ?',
       [req.params.id]
     );
-    res.json(updated[0]);
+    res.json(enriquecerConSoat(updated[0]));
   } catch (err) {
     console.error('Error en PUT /vehiculos:', err);
     res.status(500).json({ error: err.message });

@@ -1,3 +1,4 @@
+
 import { useState, useEffect, useCallback, useRef } from 'react';
 import api from '../api/axios';
 import {
@@ -36,7 +37,7 @@ export default function Movimiento() {
       const { data } = await api.get('/vehiculos');
       setVehiculos(data);
     } catch (err) {
-      toast.error('Error al cargar vehículos');
+      toast.error('Error al cargar vehiculos');
     } finally {
       setLoadingVehiculos(false);
     }

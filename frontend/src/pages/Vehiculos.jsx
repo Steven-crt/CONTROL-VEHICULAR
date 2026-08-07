@@ -1,10 +1,27 @@
 import { useState, useEffect } from 'react';
 import { useNavigate } from 'react-router-dom';
 import api from '../api/axios';
-import { Search, Car, MapPin, Fuel, Calendar, Gauge, Filter, ChevronDown, ChevronUp, AlertCircle, CalendarDays, Plus, X, Save } from 'lucide-react';
+import { Search, Car, MapPin, Fuel, Calendar, Gauge, Filter, ChevronDown, ChevronUp, AlertCircle, CalendarDays, Plus, X, Save, ShieldCheck } from 'lucide-react';
 import toast from 'react-hot-toast';
 
-const EMPTY_VEHICULO = { placa: '', tipo: 'auto', color: '', marca: '', modelo: '', anio: '' };
+const EMPTY_VEHICULO = { placa: '', tipo: 'auto', color: '', marca: '', modelo: '', anio: '', soat_numero: '', soat_empresa: '', soat_fecha_inicio: '', soat_fecha_vencimiento: '' };
+
+const SOAT_STYLES = {
+  vigente: 'text-emerald-400 bg-emerald-900/20 border-emerald-700/50',
+  por_vencer: 'text-amber-400 bg-amber-900/20 border-amber-700/50',
+  vencido: 'text-red-400 bg-red-900/20 border-red-700/50',
+  sin_soat: 'text-park-muted bg-park-border/20 border-park-border/50',
+};
+
+function getSoatBadge(soat) {
+  const s = soat || {};
+  switch (s.estado) {
+    case 'vigente': return { text: `SOAT vigente`, style: SOAT_STYLES.vigente };
+    case 'por_vencer': return { text: `SOAT vence en ${s.dias_restantes}d`, style: SOAT_STYLES.por_vencer };
+    case 'vencido': return { text: 'SOAT vencido', style: SOAT_STYLES.vencido };
+    default: return { text: 'Sin SOAT', style: SOAT_STYLES.sin_soat };
+  }
+}
 
 export default function Vehiculos() {
   const navigate = useNavigate();
@@ -72,6 +89,16 @@ export default function Vehiculos() {
     if (!ubicacion) return 'Sin ubicación';
     return `${ubicacion.latitud.toFixed(4)}, ${ubicacion.longitud.toFixed(4)}`;
   };
+
+  const soatAlertas = [
+    ...vehiculos.filter(v => v.soat?.estado === 'vencido').map(v => ({ ...v, orden: 0 })),
+    ...vehiculos.filter(v => v.soat?.estado === 'por_vencer').map(v => ({ ...v, orden: 1 })),
+    ...vehiculos.filter(v => v.soat?.estado === 'sin_soat').map(v => ({ ...v, orden: 2 })),
+  ].sort((a, b) => a.orden - b.orden);
+
+  const soatVencidos = soatAlertas.filter(v => v.soat?.estado === 'vencido').length;
+  const soatPorVencer = soatAlertas.filter(v => v.soat?.estado === 'por_vencer').length;
+  const sinSoat = soatAlertas.filter(v => v.soat?.estado === 'sin_soat').length;
 
   return (
     <div className="space-y-6 animate-fade-in">
@@ -142,6 +169,56 @@ export default function Vehiculos() {
         </div>
       </form>
 
+      {/* Banner de alertas SOAT */}
+      {soatAlertas.length > 0 && (
+        <div className="card border-amber-700/50 bg-amber-900/10">
+          <div className="flex flex-col sm:flex-row sm:items-center gap-3 mb-3">
+            <div className="flex items-center gap-2 flex-1">
+              <AlertCircle className="w-5 h-5 text-amber-400 shrink-0" />
+              <h3 className="text-white font-semibold text-sm">Alertas de SOAT</h3>
+            </div>
+            <div className="flex flex-wrap gap-2 text-xs">
+              {soatVencidos > 0 && (
+                <span className={`inline-flex items-center px-2.5 py-1 rounded-full font-medium border ${SOAT_STYLES.vencido}`}>
+                  {soatVencidos} vencido{soatVencidos !== 1 ? 's' : ''}
+                </span>
+              )}
+              {soatPorVencer > 0 && (
+                <span className={`inline-flex items-center px-2.5 py-1 rounded-full font-medium border ${SOAT_STYLES.por_vencer}`}>
+                  {soatPorVencer} por vencer
+                </span>
+              )}
+              {sinSoat > 0 && (
+                <span className={`inline-flex items-center px-2.5 py-1 rounded-full font-medium border ${SOAT_STYLES.sin_soat}`}>
+                  {sinSoat} sin SOAT
+                </span>
+              )}
+            </div>
+          </div>
+          <div className="flex flex-col gap-1.5">
+            {soatAlertas.slice(0, 8).map(v => {
+              const badge = getSoatBadge(v.soat);
+              return (
+                <button
+                  key={v.id}
+                  onClick={() => navigate(`/vehiculos/${v.id}`)}
+                  className="flex items-center gap-3 px-3 py-2 rounded-lg bg-park-border/10 hover:bg-park-border/30 transition-colors text-left"
+                >
+                  <span className="text-white font-semibold text-sm tracking-wide">{v.placa}</span>
+                  <span className="text-park-muted text-xs truncate">
+                    {v.marca || ''}{v.marca && v.modelo ? ' · ' : ''}{v.modelo || ''}
+                  </span>
+                  <span className={`ml-auto inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-medium border shrink-0 ${badge.style}`}>
+                    <ShieldCheck className="w-3 h-3 mr-1" />
+                    {badge.text}
+                  </span>
+                </button>
+              );
+            })}
+          </div>
+        </div>
+      )}
+
       {/* Resultados */}
       {loading ? (
         <div className="flex justify-center py-20">
@@ -204,6 +281,12 @@ export default function Vehiculos() {
                         <span className="text-slate-400">Tipo:</span>{' '}
                         <span className="text-white font-medium capitalize">{vehiculo.tipo}</span>
                       </span>
+                      <span>
+                        <span className={`inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-medium border ${getSoatBadge(vehiculo.soat).style}`}>
+                          <ShieldCheck className="w-3 h-3 mr-1" />
+                          {getSoatBadge(vehiculo.soat).text}
+                        </span>
+                      </span>
                     </div>
 
                     {/* Ubicación y estado */}
@@ -258,6 +341,16 @@ export default function Vehiculos() {
                 <div><label className="block text-park-muted text-sm mb-1">Modelo</label><input className="input" value={vehForm.modelo} onChange={e => setVehForm({ ...vehForm, modelo: e.target.value })} placeholder="Ej: Corolla" /></div>
                 <div><label className="block text-park-muted text-sm mb-1">Año</label><input type="number" className="input" value={vehForm.anio} onChange={e => setVehForm({ ...vehForm, anio: e.target.value })} placeholder="Ej: 2023" min={1900} max={2030} /></div>
                 <div><label className="block text-park-muted text-sm mb-1">Color</label><input className="input" value={vehForm.color} onChange={e => setVehForm({ ...vehForm, color: e.target.value })} placeholder="Ej: Rojo" /></div>
+              </div>
+              <div className="flex items-center gap-2 pt-2">
+                <ShieldCheck className="w-4 h-4 text-park-accent" />
+                <h4 className="text-park-text font-semibold text-sm">SOAT (Seguro Obligatorio)</h4>
+              </div>
+              <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                <div><label className="block text-park-muted text-sm mb-1">Número de Póliza *</label><input className="input" required value={vehForm.soat_numero} onChange={e => setVehForm({ ...vehForm, soat_numero: e.target.value })} placeholder="Ej: SOAT-2024-001234" /></div>
+                <div><label className="block text-park-muted text-sm mb-1">Aseguradora *</label><input className="input" required value={vehForm.soat_empresa} onChange={e => setVehForm({ ...vehForm, soat_empresa: e.target.value })} placeholder="Ej: Mapfre" /></div>
+                <div><label className="block text-park-muted text-sm mb-1">Fecha Inicio</label><input type="date" className="input" value={vehForm.soat_fecha_inicio} onChange={e => setVehForm({ ...vehForm, soat_fecha_inicio: e.target.value })} /></div>
+                <div><label className="block text-park-muted text-sm mb-1">Fecha Vencimiento *</label><input type="date" className="input" required value={vehForm.soat_fecha_vencimiento} onChange={e => setVehForm({ ...vehForm, soat_fecha_vencimiento: e.target.value })} /></div>
               </div>
               <div className="flex gap-3 pt-2">
                 <button type="button" onClick={() => setShowModal(false)} className="btn-secondary flex-1 justify-center">Cancelar</button>
