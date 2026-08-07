@@ -3,6 +3,7 @@ const router = express.Router();
 const db = require('../db');
 const bcrypt = require('bcryptjs');
 const jwt = require('jsonwebtoken');
+const { normalizeRol } = require('../utils/roles');
 require('dotenv').config();
 
 // POST /api/auth/login
@@ -24,8 +25,10 @@ router.post('/login', async (req, res) => {
     if (!valid)
       return res.status(401).json({ error: 'Credenciales inválidas' });
 
+    const rol = normalizeRol(usuario.rol_id);
+
     const token = jwt.sign(
-      { id: usuario.id, username: usuario.username, nombre: usuario.nombre, rol: usuario.rol_id },
+      { id: usuario.id, username: usuario.username, nombre: usuario.nombre, rol },
       process.env.JWT_SECRET,
       { expiresIn: process.env.JWT_EXPIRES_IN || '8h' }
     );
@@ -37,7 +40,7 @@ router.post('/login', async (req, res) => {
         nombre: usuario.nombre,
         username: usuario.username,
         email: usuario.email,
-        rol: usuario.rol_id
+        rol
       }
     });
   } catch (err) {
@@ -54,6 +57,7 @@ router.get('/me', async (req, res) => {
     const decoded = jwt.verify(token, process.env.JWT_SECRET);
     const [rows] = await db.query('SELECT id, nombre, username, email, rol_id as rol FROM usuarios WHERE id = ?', [decoded.id]);
     if (rows.length === 0) return res.status(404).json({ error: 'Usuario no encontrado' });
+    rows[0].rol = normalizeRol(rows[0].rol);
     res.json(rows[0]);
   } catch {
     res.status(401).json({ error: 'Token inválido' });

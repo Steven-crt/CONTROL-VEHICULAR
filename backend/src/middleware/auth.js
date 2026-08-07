@@ -1,4 +1,5 @@
 const jwt = require('jsonwebtoken');
+const { normalizeRol } = require('../utils/roles');
 require('dotenv').config();
 
 const authMiddleware = (roles = []) => {
@@ -11,6 +12,7 @@ const authMiddleware = (roles = []) => {
     const token = authHeader.split(' ')[1];
     try {
       const decoded = jwt.verify(token, process.env.JWT_SECRET);
+      decoded.rol = normalizeRol(decoded.rol);
       req.user = decoded;
 
       if (roles.length > 0 && !roles.includes(decoded.rol)) {

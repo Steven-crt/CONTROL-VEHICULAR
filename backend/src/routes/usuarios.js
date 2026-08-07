@@ -3,6 +3,7 @@ const router = express.Router();
 const db = require('../db');
 const bcrypt = require('bcryptjs');
 const auth = require('../middleware/auth');
+const { normalizeRol } = require('../utils/roles');
 
 // GET /api/usuarios
 router.get('/', auth(['admin']), async (req, res) => {
@@ -10,6 +11,7 @@ router.get('/', auth(['admin']), async (req, res) => {
     const [rows] = await db.query(
       'SELECT id, nombre, username, email, rol_id as rol, activo, created_at FROM usuarios ORDER BY nombre'
     );
+    rows.forEach(u => { u.rol = normalizeRol(u.rol); });
     res.json(rows);
   } catch (err) {
     res.status(500).json({ error: err.message });
@@ -24,6 +26,7 @@ router.get('/:id', auth(['admin']), async (req, res) => {
       [req.params.id]
     );
     if (!rows.length) return res.status(404).json({ error: 'Usuario no encontrado' });
+    rows[0].rol = normalizeRol(rows[0].rol);
     res.json(rows[0]);
   } catch (err) {
     res.status(500).json({ error: err.message });
