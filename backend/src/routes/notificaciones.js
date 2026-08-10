@@ -10,11 +10,11 @@ router.get('/', auth(), async (req, res) => {
     // 1. Vehículos con bajo rendimiento de combustible (< 8 km/l)
     const [bajoRendimiento] = await db.query(`
       SELECT c.vehiculo_id, v.placa, v.marca, v.modelo,
-        ROUND(AVG((c.km_actual - COALESCE(
-          (SELECT km_actual FROM combustible c2 WHERE c2.vehiculo_id = c.vehiculo_id AND c2.fecha_carga < c.fecha_carga ORDER BY c2.fecha_carga DESC LIMIT 1),
+        ROUND(AVG((c.kilometraje_actual - COALESCE(
+          (SELECT kilometraje_actual FROM solicitudes_combustible c2 WHERE c2.vehiculo_id = c.vehiculo_id AND c2.fecha_solicitud < c.fecha_solicitud ORDER BY c2.fecha_solicitud DESC LIMIT 1),
           0
-        )) / c.litros), 2) as rendimiento
-      FROM combustible c
+        )) / c.galones_surtidos), 2) as rendimiento
+      FROM solicitudes_combustible c
       JOIN vehiculos v ON c.vehiculo_id = v.id
       GROUP BY c.vehiculo_id
       HAVING rendimiento < 8 AND rendimiento > 0
@@ -34,9 +34,10 @@ router.get('/', auth(), async (req, res) => {
     // 2. Vehículos sin carga de combustible en los últimos 30 días
     const [sinCarga] = await db.query(`
       SELECT v.id, v.placa, v.marca, v.modelo,
-        DATEDIFF(NOW(), COALESCE(MAX(c.fecha_carga), v.created_at)) as dias
+        DATEDIFF(NOW(), COALESCE(MAX(c.fecha_solicitud), v.created_at)) as dias
       FROM vehiculos v
-      LEFT JOIN combustible c ON v.id = c.vehiculo_id
+      LEFT JOIN solicitudes_combustible c ON v.id = c.vehiculo_id
+      WHERE v.activo = 1
       GROUP BY v.id
       HAVING dias >= 30
       ORDER BY dias DESC
@@ -57,18 +58,15 @@ router.get('/', auth(), async (req, res) => {
     const intervaloKm = parseInt(config[0]?.valor) || 5000;
     const [mantenciones] = await db.query(`
       SELECT v.id, v.placa, v.marca, v.modelo,
+        v.kilometraje_actual as km_actual,
         COALESCE(
-          (SELECT km_actual FROM combustible WHERE vehiculo_id = v.id ORDER BY fecha_carga DESC LIMIT 1),
-          (SELECT km_actual FROM kilometraje_manual WHERE vehiculo_id = v.id ORDER BY fecha_registro DESC LIMIT 1),
-          0
-        ) as km_actual,
-        COALESCE(
-          (SELECT MAX(km_actual) FROM mantenimiento WHERE vehiculo_id = v.id),
+          (SELECT MAX(kilometraje_realizado) FROM mantenimientos WHERE vehiculo_id = v.id),
           0
         ) as ultimo_km_mant
       FROM vehiculos v
-      HAVING km_actual > 0 AND (km_actual - ultimo_km_mant) >= (? * 0.8)
-      ORDER BY (km_actual - ultimo_km_mant) DESC
+      WHERE v.activo = 1 AND v.kilometraje_actual > 0
+        AND (v.kilometraje_actual - COALESCE((SELECT MAX(kilometraje_realizado) FROM mantenimientos WHERE vehiculo_id = v.id), 0)) >= (? * 0.8)
+      ORDER BY (v.kilometraje_actual - COALESCE((SELECT MAX(kilometraje_realizado) FROM mantenimientos WHERE vehiculo_id = v.id), 0)) DESC
       LIMIT 5
     `, [intervaloKm]);
     mantenciones.forEach(v => {
@@ -87,7 +85,7 @@ router.get('/', auth(), async (req, res) => {
       SELECT id, placa, marca, modelo, soat_numero, soat_empresa, soat_fecha_vencimiento,
         DATEDIFF(soat_fecha_vencimiento, CURDATE()) as dias_restantes
       FROM vehiculos
-      WHERE soat_fecha_vencimiento IS NOT NULL
+      WHERE soat_fecha_vencimiento IS NOT NULL AND activo = 1
       ORDER BY dias_restantes ASC
       LIMIT 10
     `);
@@ -114,7 +112,7 @@ router.get('/', auth(), async (req, res) => {
     const [sinSoat] = await db.query(`
       SELECT id, placa, marca, modelo
       FROM vehiculos
-      WHERE soat_numero IS NULL OR soat_numero = '' OR soat_fecha_vencimiento IS NULL
+      WHERE (soat_numero IS NULL OR soat_numero = '' OR soat_fecha_vencimiento IS NULL) AND activo = 1
       ORDER BY placa ASC
       LIMIT 5
     `);
@@ -129,7 +127,7 @@ router.get('/', auth(), async (req, res) => {
     });
 
     // 5. Total vehículos en flota
-    const [totalVeh] = await db.query('SELECT COUNT(*) as total FROM vehiculos');
+    const [totalVeh] = await db.query('SELECT COUNT(*) as total FROM vehiculos WHERE activo = 1');
     notificaciones.push({
       tipo: 'info',
       icono: 'car',
@@ -140,10 +138,10 @@ router.get('/', auth(), async (req, res) => {
 
     // 6. Gastos del mes
     const [gastoCombustible] = await db.query(
-      "SELECT COALESCE(SUM(costo_total),0) as total FROM combustible WHERE MONTH(fecha_carga)=MONTH(CURDATE()) AND YEAR(fecha_carga)=YEAR(CURDATE())"
+      "SELECT COALESCE(SUM(costo_total),0) as total FROM solicitudes_combustible WHERE MONTH(fecha_solicitud)=MONTH(CURDATE()) AND YEAR(fecha_solicitud)=YEAR(CURDATE())"
     );
     const [gastoMant] = await db.query(
-      "SELECT COALESCE(SUM(costo),0) as total FROM mantenimiento WHERE MONTH(fecha)=MONTH(CURDATE()) AND YEAR(fecha)=YEAR(CURDATE())"
+      "SELECT COALESCE(SUM(costo),0) as total FROM mantenimientos WHERE MONTH(fecha_realizada)=MONTH(CURDATE()) AND YEAR(fecha_realizada)=YEAR(CURDATE())"
     );
     const totalMes = parseFloat(gastoCombustible[0].total) + parseFloat(gastoMant[0].total);
     notificaciones.push({

@@ -24,56 +24,57 @@ function enriquecerConSoat(v) {
   return { ...v, soat: getSoatEstado(v) };
 }
 
+async function tipoVehiculoId(tipo) {
+  const nombre = (tipo || 'Camioneta').trim();
+  const [rows] = await db.query(
+    'SELECT id FROM tipos_vehiculo WHERE LOWER(nombre) = LOWER(?) LIMIT 1',
+    [nombre]
+  );
+  return rows.length ? rows[0].id : 1;
+}
+
+const toIntOrNull = (v) => (v === '' || v === null || v === undefined) ? null : parseInt(v);
+const toDateOrNull = (v) => (v === '' || v === null || v === undefined) ? null : v;
+
 // GET /api/vehiculos - Listar vehículos con filtro por año y última ubicación
 router.get('/', auth(), async (req, res) => {
   const { year, search } = req.query;
   try {
     let q = `
       SELECT v.*,
+        LOWER(COALESCE(tv.nombre, 'Camioneta')) AS tipo,
+        v.ano AS anio,
+        v.kilometraje_actual AS km_actual,
+        (SELECT fecha_solicitud FROM solicitudes_combustible WHERE vehiculo_id = v.id ORDER BY fecha_solicitud DESC LIMIT 1) as ultima_carga_fecha,
         (SELECT latitud FROM ubicaciones WHERE vehiculo_id = v.id ORDER BY timestamp DESC LIMIT 1) as ultima_latitud,
         (SELECT longitud FROM ubicaciones WHERE vehiculo_id = v.id ORDER BY timestamp DESC LIMIT 1) as ultima_longitud,
-        (SELECT timestamp FROM ubicaciones WHERE vehiculo_id = v.id ORDER BY timestamp DESC LIMIT 1) as ultima_ubicacion_fecha,
-        (SELECT km_actual FROM combustible WHERE vehiculo_id = v.id ORDER BY fecha_carga DESC LIMIT 1) as km_actual,
-        (SELECT fecha_carga FROM combustible WHERE vehiculo_id = v.id ORDER BY fecha_carga DESC LIMIT 1) as ultima_carga_fecha
+        (SELECT timestamp FROM ubicaciones WHERE vehiculo_id = v.id ORDER BY timestamp DESC LIMIT 1) as ultima_ubicacion_fecha
       FROM vehiculos v
-      WHERE 1=1
+      LEFT JOIN tipos_vehiculo tv ON tv.id = v.tipo_vehiculo_id
+      WHERE v.activo = 1
     `;
     const params = [];
-    
-    // El campo 'año' no existe en vehiculos, usamos el created_at como referencia
-    // O permitimos búsqueda por placa/marca como alternativa
+
     if (year && !isNaN(year)) {
-      q += ' AND YEAR(v.created_at) = ?';
+      q += ' AND v.ano = ?';
       params.push(parseInt(year));
     }
     if (search) {
-      q += ' AND (v.placa LIKE ? OR v.marca LIKE ? OR v.color LIKE ?)';
-      params.push(`%${search}%`, `%${search}%`, `%${search}%`);
+      q += ' AND (v.placa LIKE ? OR v.marca LIKE ? OR v.modelo LIKE ? OR v.color LIKE ?)';
+      params.push(`%${search}%`, `%${search}%`, `%${search}%`, `%${search}%`);
     }
     q += ' ORDER BY v.placa ASC';
-    
+
     const [rows] = await db.query(q, params);
-    
-    // Enriquecer con datos de último combustible y ubicación
-    const result = await Promise.all(rows.map(async (v) => {
-      // Obtener último km de combustible o kilometraje_manual
-      const [ultimoKm] = await db.query(`
-        SELECT COALESCE(
-          (SELECT km_actual FROM combustible WHERE vehiculo_id = ? ORDER BY fecha_carga DESC LIMIT 1),
-          (SELECT km_actual FROM kilometraje_manual WHERE vehiculo_id = ? ORDER BY fecha_registro DESC LIMIT 1),
-          0
-        ) as km_actual
-      `, [v.id, v.id]);
-      
-      return {
-        ...v,
-        km_actual: parseInt(ultimoKm[0]?.km_actual) || 0,
-        ultima_ubicacion: v.ultima_latitud ? {
-          latitud: parseFloat(v.ultima_latitud),
-          longitud: parseFloat(v.ultima_longitud),
-          fecha: v.ultima_ubicacion_fecha
-        } : null
-      };
+
+    const result = rows.map((v) => ({
+      ...v,
+      km_actual: parseFloat(v.km_actual) || 0,
+      ultima_ubicacion: v.ultima_latitud ? {
+        latitud: parseFloat(v.ultima_latitud),
+        longitud: parseFloat(v.ultima_longitud),
+        fecha: v.ultima_ubicacion_fecha
+      } : null
     }));
 
     res.json(result.map(enriquecerConSoat));
@@ -90,18 +91,17 @@ router.post('/', auth(['admin']), async (req, res) => {
   if (!soat_numero || !soat_empresa || !soat_fecha_vencimiento)
     return res.status(400).json({ error: 'Los datos del SOAT (número, aseguradora y fecha de vencimiento) son obligatorios' });
   try {
-    const toIntOrNull = (v) => (v === '' || v === null || v === undefined) ? null : parseInt(v);
-    const toDateOrNull = (v) => (v === '' || v === null || v === undefined) ? null : v;
+    const tipoId = await tipoVehiculoId(tipo);
     const [result] = await db.query(
-      `INSERT INTO vehiculos (placa, tipo, color, marca, modelo, anio, soat_numero, soat_empresa, soat_fecha_inicio, soat_fecha_vencimiento)
+      `INSERT INTO vehiculos (placa, tipo_vehiculo_id, color, marca, modelo, ano, soat_numero, soat_empresa, soat_fecha_inicio, soat_fecha_vencimiento)
        VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?)`,
       [
         placa.toUpperCase(),
-        tipo || 'camioneta',
+        tipoId,
         color || null,
-        marca || null,
-        modelo || null,
-        toIntOrNull(anio),
+        marca || 'Sin especificar',
+        modelo || 'Sin especificar',
+        toIntOrNull(anio) || new Date().getFullYear(),
         soat_numero || null,
         soat_empresa || null,
         toDateOrNull(soat_fecha_inicio),
@@ -121,47 +121,42 @@ router.post('/', auth(['admin']), async (req, res) => {
 router.get('/:id', auth(), async (req, res) => {
   try {
     const [vehiculos] = await db.query(`
-      SELECT v.*
+      SELECT v.*,
+        LOWER(COALESCE(tv.nombre, 'Camioneta')) AS tipo,
+        v.ano AS anio,
+        v.kilometraje_actual AS km_actual
       FROM vehiculos v
-      WHERE v.id = ?
+      LEFT JOIN tipos_vehiculo tv ON tv.id = v.tipo_vehiculo_id
+      WHERE v.id = ? AND v.activo = 1
     `, [req.params.id]);
-    
+
     if (!vehiculos.length)
       return res.status(404).json({ error: 'Vehículo no encontrado' });
-    
+
     const v = vehiculos[0];
-    
+
     // Última ubicación
     const [ubicacion] = await db.query(
       'SELECT * FROM ubicaciones WHERE vehiculo_id = ? ORDER BY timestamp DESC LIMIT 1',
       [v.id]
     );
-    
-    // Último km (combustible o manual)
-    const [ultimoKm] = await db.query(`
-      SELECT COALESCE(
-        (SELECT km_actual FROM combustible WHERE vehiculo_id = ? ORDER BY fecha_carga DESC LIMIT 1),
-        (SELECT km_actual FROM kilometraje_manual WHERE vehiculo_id = ? ORDER BY fecha_registro DESC LIMIT 1),
-        0
-      ) as km_actual
-    `, [v.id, v.id]);
-    
+
     // Totales de cargas de combustible
     const [totalesCombustible] = await db.query(`
-      SELECT COUNT(*) as total_cargas, COALESCE(SUM(litros),0) as total_litros,
+      SELECT COUNT(*) as total_cargas, COALESCE(SUM(galones_surtidos),0) as total_litros,
         COALESCE(SUM(costo_total),0) as total_gasto
-      FROM combustible WHERE vehiculo_id = ?
+      FROM solicitudes_combustible WHERE vehiculo_id = ?
     `, [v.id]);
-    
+
     // Total mantenimientos
     const [totalesMantenimiento] = await db.query(`
       SELECT COUNT(*) as total_mantenimientos, COALESCE(SUM(costo),0) as total_gasto
-      FROM mantenimiento WHERE vehiculo_id = ?
+      FROM mantenimientos WHERE vehiculo_id = ?
     `, [v.id]);
-    
+
     res.json({
       ...v,
-      km_actual: parseInt(ultimoKm[0]?.km_actual) || 0,
+      km_actual: parseFloat(v.km_actual) || 0,
       ultima_ubicacion: ubicacion.length ? {
         latitud: parseFloat(ubicacion[0].latitud),
         longitud: parseFloat(ubicacion[0].longitud),
@@ -198,11 +193,11 @@ router.post('/:id/ubicacion', auth(), async (req, res) => {
   const { latitud, longitud } = req.body;
   if (!latitud || !longitud)
     return res.status(400).json({ error: 'Latitud y longitud son requeridas' });
-  
+
   try {
     const [result] = await db.query(
-      'INSERT INTO ubicaciones (vehiculo_id, latitud, longitud) VALUES (?, ?, ?)',
-      [req.params.id, latitud, longitud]
+      'INSERT INTO ubicaciones (vehiculo_id, usuario_id, latitud, longitud, timestamp) VALUES (?, ?, ?, ?, NOW())',
+      [req.params.id, req.user?.id || null, latitud, longitud]
     );
     res.status(201).json({ id: result.insertId, message: 'Ubicación registrada' });
   } catch (err) {
@@ -212,37 +207,30 @@ router.post('/:id/ubicacion', auth(), async (req, res) => {
 
 // POST /api/vehiculos/:id/kilometraje - Registrar avance manual de KM
 router.post('/:id/kilometraje', auth(), async (req, res) => {
-  const { km_actual, observaciones } = req.body;
+  const { km_actual } = req.body;
   if (!km_actual || isNaN(km_actual))
     return res.status(400).json({ error: 'KM actual es requerido y debe ser numérico' });
-  
+
   try {
-    const [result] = await db.query(
-      'INSERT INTO kilometraje_manual (vehiculo_id, km_actual, observaciones) VALUES (?, ?, ?)',
-      [req.params.id, parseInt(km_actual), observaciones || '']
+    await db.query(
+      'UPDATE vehiculos SET kilometraje_actual = ? WHERE id = ?',
+      [parseFloat(km_actual), req.params.id]
     );
-    res.status(201).json({ id: result.insertId, message: 'Kilometraje registrado exitosamente' });
+    res.status(201).json({ message: 'Kilometraje registrado exitosamente' });
   } catch (err) {
     res.status(500).json({ error: err.message });
   }
 });
 
-// GET /api/vehiculos/:id/historial-km - Historial de KM (combustible + manual)
+// GET /api/vehiculos/:id/historial-km - Historial de KM (combustible)
 router.get('/:id/historial-km', auth(), async (req, res) => {
   try {
     const [combustible] = await db.query(
-      `SELECT fecha_carga as fecha, km_actual, litros, 'combustible' as tipo
-       FROM combustible WHERE vehiculo_id = ? ORDER BY fecha_carga ASC`,
+      `SELECT fecha_solicitud as fecha, kilometraje_actual as km_actual, galones_surtidos as litros, 'combustible' as tipo
+       FROM solicitudes_combustible WHERE vehiculo_id = ? ORDER BY fecha_solicitud ASC`,
       [req.params.id]
     );
-    const [manual] = await db.query(
-      `SELECT fecha_registro as fecha, km_actual, NULL as litros, 'manual' as tipo
-       FROM kilometraje_manual WHERE vehiculo_id = ? ORDER BY fecha_registro ASC`,
-      [req.params.id]
-    );
-    // Combinar y ordenar
-    const historial = [...combustible, ...manual].sort((a, b) => new Date(a.fecha) - new Date(b.fecha));
-    res.json(historial);
+    res.json(combustible);
   } catch (err) {
     res.status(500).json({ error: err.message });
   }
@@ -256,26 +244,26 @@ router.put('/:id', auth(['admin']), async (req, res) => {
     if (!existing.length)
       return res.status(404).json({ error: 'Vehículo no encontrado' });
 
-    const toIntOrNull = (v) => (v === '' || v === null || v === undefined) ? null : parseInt(v);
-    const toDateOrNull = (v) => (v === '' || v === null || v === undefined) ? null : v;
-
     const nuevoSoatNumero = soat_numero !== undefined ? soat_numero : existing[0].soat_numero;
     const nuevoSoatEmpresa = soat_empresa !== undefined ? soat_empresa : existing[0].soat_empresa;
     const nuevoSoatVenc = soat_fecha_vencimiento !== undefined ? toDateOrNull(soat_fecha_vencimiento) : existing[0].soat_fecha_vencimiento;
     if (!nuevoSoatNumero || !nuevoSoatEmpresa || !nuevoSoatVenc)
       return res.status(400).json({ error: 'Los datos del SOAT (número, aseguradora y fecha de vencimiento) son obligatorios' });
 
+    const tipoId = await tipoVehiculoId(tipo !== undefined ? tipo : existing[0].tipo_vehiculo_id);
+    const anioValue = anio !== undefined ? (toIntOrNull(anio) || new Date().getFullYear()) : existing[0].ano;
+
     await db.query(
-      `UPDATE vehiculos SET placa = ?, tipo = ?, color = ?, marca = ?, modelo = ?, anio = ?,
+      `UPDATE vehiculos SET placa = ?, tipo_vehiculo_id = ?, color = ?, marca = ?, modelo = ?, ano = ?,
         soat_numero = ?, soat_empresa = ?, soat_fecha_inicio = ?, soat_fecha_vencimiento = ?
        WHERE id = ?`,
       [
-        placa || existing[0].placa,
-        tipo || existing[0].tipo,
+        placa ? placa.toUpperCase() : existing[0].placa,
+        tipoId,
         color !== undefined ? color : existing[0].color,
         marca !== undefined ? marca : existing[0].marca,
         modelo !== undefined ? modelo : existing[0].modelo,
-        anio !== undefined ? toIntOrNull(anio) : existing[0].anio,
+        anioValue,
         nuevoSoatNumero,
         nuevoSoatEmpresa,
         soat_fecha_inicio !== undefined ? toDateOrNull(soat_fecha_inicio) : existing[0].soat_fecha_inicio,
@@ -285,24 +273,28 @@ router.put('/:id', auth(['admin']), async (req, res) => {
     );
 
     const [updated] = await db.query(
-      'SELECT * FROM vehiculos WHERE id = ?',
+      `SELECT v.*, LOWER(COALESCE(tv.nombre, 'Camioneta')) AS tipo,
+        v.ano AS anio, v.kilometraje_actual AS km_actual
+       FROM vehiculos v
+       LEFT JOIN tipos_vehiculo tv ON tv.id = v.tipo_vehiculo_id
+       WHERE v.id = ?`,
       [req.params.id]
     );
-    res.json(enriquecerConSoat(updated[0]));
+    res.json(enriquecerConSoat({ ...updated[0], km_actual: parseFloat(updated[0].km_actual) || 0 }));
   } catch (err) {
     console.error('Error en PUT /vehiculos:', err);
     res.status(500).json({ error: err.message });
   }
 });
 
-// DELETE /api/vehiculos/:id - Eliminar vehículo (solo admin)
+// DELETE /api/vehiculos/:id - Desactivar vehículo (solo admin)
 router.delete('/:id', auth(['admin']), async (req, res) => {
   try {
     const [existing] = await db.query('SELECT * FROM vehiculos WHERE id = ?', [req.params.id]);
     if (!existing.length)
       return res.status(404).json({ error: 'Vehículo no encontrado' });
 
-    await db.query('DELETE FROM vehiculos WHERE id = ?', [req.params.id]);
+    await db.query('UPDATE vehiculos SET activo = 0 WHERE id = ?', [req.params.id]);
     res.json({ message: 'Vehículo eliminado correctamente' });
   } catch (err) {
     console.error('Error en DELETE /vehiculos:', err);
