@@ -35,7 +35,10 @@ INSERT INTO vehiculos (placa, tipo, color, marca, modelo, anio) VALUES
 ('LMN-0006', 'camioneta',  'Plata',    'BMW',        '320i',           2023),
 ('XYZ-7777', 'camioneta',  'Rojo',     'Ford',       'Ranger',         2021),
 ('XYZ-8888', 'minivan',  'Verde',    'Suzuki',     'V-Strom',        2022),
-('XYZ-9999', 'camioneta',  'Azul',     'Toyota',     'RAV4',           2023);
+('XYZ-9999', 'camioneta',  'Azul',     'Toyota',     'RAV4',           2023),
+('VHC-0001', 'camioneta',  'Rojo',     'Toyota',     'Corolla',        2021),
+('VHC-0002', 'camion',     'Azul',     'Volvo',      'FH16',           2022),
+('VHC-0003', 'minivan',    'Blanco',   'Toyota',     'Sienna',         2022);
 
 -- ============================================================
 -- TICKETS (historial de entradas y salidas)
