@@ -4,7 +4,7 @@ import api from '../api/axios';
 import { Search, Car, MapPin, Fuel, Calendar, Gauge, Filter, ChevronDown, ChevronUp, AlertCircle, CalendarDays, Plus, X, Save, ShieldCheck } from 'lucide-react';
 import toast from 'react-hot-toast';
 
-const EMPTY_VEHICULO = { placa: '', tipo: 'auto', color: '', marca: '', modelo: '', anio: '', soat_numero: '', soat_empresa: '', soat_fecha_inicio: '', soat_fecha_vencimiento: '' };
+const EMPTY_VEHICULO = { placa: '', tipo: 'camioneta', color: '', marca: '', modelo: '', anio: '', soat_numero: '', soat_empresa: '', soat_fecha_inicio: '', soat_fecha_vencimiento: '' };
 
 const SOAT_STYLES = {
   vigente: 'text-emerald-400 bg-emerald-900/20 border-emerald-700/50',
@@ -331,10 +331,9 @@ export default function Vehiculos() {
                 <div><label className="block text-park-muted text-sm mb-1">Placa *</label><input className="input" value={vehForm.placa} onChange={e => setVehForm({ ...vehForm, placa: e.target.value })} required placeholder="Ej: ABC123" /></div>
                 <div><label className="block text-park-muted text-sm mb-1">Tipo</label>
                   <select className="select" value={vehForm.tipo} onChange={e => setVehForm({ ...vehForm, tipo: e.target.value })}>
-                    <option value="auto">Auto</option>
-                    <option value="moto">Moto</option>
-                    <option value="discapacitado">Discapacitado</option>
-                    <option value="VIP">VIP</option>
+                    <option value="camioneta">Camioneta</option>
+                    <option value="camion">Camion</option>
+                    <option value="minivan">Minivan</option>
                   </select>
                 </div>
                 <div><label className="block text-park-muted text-sm mb-1">Marca</label><input className="input" value={vehForm.marca} onChange={e => setVehForm({ ...vehForm, marca: e.target.value })} placeholder="Ej: Toyota" /></div>

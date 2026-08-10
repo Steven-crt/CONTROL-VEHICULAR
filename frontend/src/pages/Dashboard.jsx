@@ -6,7 +6,7 @@ import {
 } from 'recharts';
 import { Car, DollarSign, Wrench, Fuel, PieChart as PieIcon } from 'lucide-react';
 
-const TIPO_COLORS = { auto: '#3b82f6', moto: '#8b5cf6', VIP: '#f59e0b', discapacitado: '#10b981' };
+const TIPO_COLORS = { camioneta: '#3b82f6', camion: '#f59e0b', minivan: '#10b981' };
 const PIE_FALLBACK = ['#3b82f6', '#8b5cf6', '#f59e0b', '#10b981', '#ef4444'];
 
 import { useConfig } from '../contexts/ConfigContext';

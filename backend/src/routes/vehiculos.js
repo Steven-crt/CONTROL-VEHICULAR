@@ -97,7 +97,7 @@ router.post('/', auth(['admin']), async (req, res) => {
        VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?)`,
       [
         placa.toUpperCase(),
-        tipo || 'auto',
+        tipo || 'camioneta',
         color || null,
         marca || null,
         modelo || null,

@@ -76,7 +76,7 @@ CREATE TABLE IF NOT EXISTS tarifas (
 CREATE TABLE IF NOT EXISTS vehiculos (
   id INT AUTO_INCREMENT PRIMARY KEY,
   placa VARCHAR(20) NOT NULL,
-  tipo ENUM('auto', 'moto', 'discapacitado', 'VIP') NOT NULL DEFAULT 'auto',
+  tipo ENUM('camioneta', 'camion', 'minivan') NOT NULL DEFAULT 'camioneta',
   color VARCHAR(50),
   marca VARCHAR(50),
   modelo VARCHAR(50),
@@ -221,7 +221,7 @@ INSERT INTO configuracion (clave, valor, descripcion) VALUES
 ('logo_url', '', 'URL del logo del negocio'),
 ('total_vehiculos', '30', 'Total de vehículos en flota'),
 ('formato_placa', 'ABC-1234', 'Formato de placa vehicular'),
-('tipos_vehiculo', 'Auto, Moto, Camioneta, Bus', 'Tipos de vehículo permitidos'),
+('tipos_vehiculo', 'Camioneta, Camión, Minivan', 'Tipos de vehículo permitidos'),
 ('intervalo_mant_km', '5000', 'Kilómetros entre mantenimientos'),
 ('intervalo_mant_dias', '90', 'Días entre mantenimientos'),
 ('alerta_combustible', '50', 'Kilómetros mínimos para alerta de combustible'),

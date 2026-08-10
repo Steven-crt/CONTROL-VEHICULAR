@@ -16,7 +16,7 @@ const CAMPOS_NEGOCIO = [
 const CAMPOS_FLOTA = [
   { key: 'total_vehiculos', label: 'Total de Vehículos en Flota', type: 'number', placeholder: '30' },
   { key: 'formato_placa', label: 'Formato de Placa', type: 'text', placeholder: 'ABC-1234' },
-  { key: 'tipos_vehiculo', label: 'Tipos de Vehículo Permitidos', type: 'text', placeholder: 'Auto, Moto, Camioneta' },
+  { key: 'tipos_vehiculo', label: 'Tipos de Vehículo Permitidos', type: 'text', placeholder: 'Camioneta, Camión, Minivan' },
 ];
 
 const CAMPOS_MANTENIMIENTO = [

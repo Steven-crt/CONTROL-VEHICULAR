@@ -174,7 +174,7 @@ export default function VehiculoDetalle() {
   const handleStartEdit = () => {
     setEditForm({
       placa: vehiculo.placa || '',
-      tipo: vehiculo.tipo || 'auto',
+      tipo: vehiculo.tipo || 'camioneta',
       color: vehiculo.color || '',
       marca: vehiculo.marca || '',
       modelo: vehiculo.modelo || '',
@@ -307,10 +307,9 @@ export default function VehiculoDetalle() {
             <div>
               <label className="text-park-muted text-xs font-medium mb-1 block">Tipo</label>
               <select className="select" value={editForm.tipo} onChange={e => setEditForm({...editForm, tipo: e.target.value})}>
-                <option value="auto">Auto</option>
-                <option value="moto">Moto</option>
-                <option value="discapacitado">Discapacitado</option>
-                <option value="VIP">VIP</option>
+                <option value="camioneta">Camioneta</option>
+                <option value="camion">Camion</option>
+                <option value="minivan">Minivan</option>
               </select>
             </div>
             <div>
