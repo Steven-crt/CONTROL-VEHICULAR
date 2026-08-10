@@ -248,12 +248,28 @@ async function addColumn(conn, table, column, definition, after) {
       await conn.query('UPDATE usuarios SET rol_id = rol WHERE rol_id IS NULL AND rol IS NOT NULL');
       console.log('+ usuarios.rol copiado a rol_id');
     }
-    await conn.query(`
-      INSERT INTO usuarios (nombre, username, password, email, rol_id, activo) VALUES
-      ('Administrador', 'admin', '$2b$10$92IXUNpkjO0rOQ5byMi.Ye4oKoEa3Ro9llC/.og/at2.uheWG/igi', 'admin@controlvehicular.com', 'admin', 1)
-      ON DUPLICATE KEY UPDATE rol_id = 'admin', activo = 1
-    `);
-    console.log('+ usuario admin garantizado');
+    const [rolCol] = await conn.query(
+      `SELECT column_type AS t FROM information_schema.columns
+       WHERE table_schema = DATABASE() AND table_name = 'usuarios' AND column_name = 'rol_id'`
+    );
+    const rolEsNumerico = rolCol.length > 0 && /^(tinyint|smallint|mediumint|int|bigint|decimal)/i.test(rolCol[0].t);
+    const [adminExiste] = await conn.query(
+      `SELECT COUNT(*) AS n FROM usuarios
+       WHERE username = 'admin' OR email = 'admin@controlvehicular.com'`
+    );
+    if (adminExiste[0].n > 0) {
+      await conn.query(
+        `UPDATE usuarios SET activo = 1, rol_id = ? WHERE username = 'admin' OR email = 'admin@controlvehicular.com'`,
+        [rolEsNumerico ? 1 : 'admin']
+      );
+      console.log('= usuario admin ya existe (garantizado activo)');
+    } else {
+      await conn.query(
+        `INSERT INTO usuarios (nombre, username, apellido, password, email, rol_id, activo) VALUES (?, ?, ?, ?, ?, ?, 1)`,
+        ['Administrador', 'admin', 'Sistema', '$2b$10$92IXUNpkjO0rOQ5byMi.Ye4oKoEa3Ro9llC/.og/at2.uheWG/igi', 'admin@controlvehicular.com', rolEsNumerico ? 1 : 'admin']
+      );
+      console.log('+ usuario admin creado');
+    }
 
     // ---- 7) Semillas de configuración --------------------------------------
     const SEED = [
@@ -275,11 +291,11 @@ async function addColumn(conn, table, column, definition, after) {
     ];
     for (const [clave, valor] of SEED) {
       await conn.query(
-        'INSERT INTO configuracion (clave, valor) VALUES (?, ?) ON DUPLICATE KEY UPDATE valor = VALUES(valor)',
+        'INSERT IGNORE INTO configuracion (clave, valor) VALUES (?, ?)',
         [clave, valor]
       );
     }
-    console.log(`+ ${SEED.length} claves de configuración sembradas`);
+    console.log(`+ ${SEED.length} claves de configuración sembradas (sin pisar valores existentes)`);
 
     console.log('MIGRACIÓN COMPLETA OK');
   } finally {
