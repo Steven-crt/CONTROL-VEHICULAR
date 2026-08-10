@@ -5,8 +5,23 @@ const path = require('path');
 
 const app = express();
 
-const corsOrigin = process.env.CORS_ORIGIN || 'http://localhost:5173';
-app.use(cors({ origin: corsOrigin.split(','), credentials: true }));
+// CORS: acepta múltiples orígenes separados por coma en CORS_ORIGIN
+const allowedOrigins = (process.env.CORS_ORIGIN || 'http://localhost:5173')
+  .split(',')
+  .map(o => o.trim());
+
+app.use(cors({
+  origin: (origin, callback) => {
+    // Permitir peticiones sin origin (Postman, curl, etc.)
+    if (!origin) return callback(null, true);
+    if (allowedOrigins.includes(origin)) return callback(null, true);
+    // Permitir cualquier subdominio de vercel.app en desarrollo
+    if (origin.endsWith('.vercel.app')) return callback(null, true);
+    callback(new Error(`CORS: origen no permitido → ${origin}`));
+  },
+  credentials: true
+}));
+
 app.use(express.json());
 app.use(express.urlencoded({ extended: true }));
 app.use('/uploads', express.static(path.join(__dirname, '../uploads')));
@@ -37,6 +52,7 @@ app.use((err, req, res, next) => {
 const PORT = process.env.PORT || 3001;
 app.listen(PORT, () => {
   console.log(`🚀 Gestión Vehicular API corriendo en http://localhost:${PORT}`);
+  console.log(`✅ CORS habilitado para: ${allowedOrigins.join(', ')} + *.vercel.app`);
 });
 
 module.exports = app;
