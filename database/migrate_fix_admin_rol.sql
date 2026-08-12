@@ -1,6 +1,6 @@
 -- ============================================================
 -- Migración: Asegurar que el usuario admin tenga TODOS los permisos
--- Usuario: admin  /  Contraseña: password
+-- Usuario: admin  /  Contraseña: admin123
 -- Ejecutar en Aiven SQL Console
 -- ============================================================
 
@@ -26,10 +26,10 @@ SET @sql2 = CONCAT(
   'UPDATE usuarios SET rol_id = ', @val, ', activo = 1 WHERE username = ''admin''');
 PREPARE stmt2 FROM @sql2; EXECUTE stmt2; DEALLOCATE PREPARE stmt2;
 
--- 4. Crear el admin si no existe (contraseña: password) o corregir la existente
+-- 4. Crear el admin si no existe (contraseña: admin123) o corregir la existente
 SET @val2 = @val;
 SET @sql3 = CONCAT(
   'INSERT INTO usuarios (nombre, username, password, email, rol_id, activo) VALUES ',
-  '(''Administrador'', ''admin'', ''$2b$10$92IXUNpkjO0rOQ5byMi.Ye4oKoEa3Ro9llC/.og/at2.uheWG/igi'', ''admin@controlvehicular.com'', ', @val2, ', 1) ',
-  'ON DUPLICATE KEY UPDATE rol_id = ', @val2, ', activo = 1, password = ''$2b$10$92IXUNpkjO0rOQ5byMi.Ye4oKoEa3Ro9llC/.og/at2.uheWG/igi''');
+  '(''Administrador'', ''admin'', ''$2a$10$JpcKNGH35B8N7bbshOzXKOKDWCHNBQ4pQiwiEWb/PxN.zc4BpXT2e'', ''admin@controlvehicular.com'', ', @val2, ', 1) ',
+  'ON DUPLICATE KEY UPDATE rol_id = ', @val2, ', activo = 1, password = ''$2a$10$JpcKNGH35B8N7bbshOzXKOKDWCHNBQ4pQiwiEWb/PxN.zc4BpXT2e''');
 PREPARE stmt3 FROM @sql3; EXECUTE stmt3; DEALLOCATE PREPARE stmt3;

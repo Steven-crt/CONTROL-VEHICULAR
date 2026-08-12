@@ -26,6 +26,6 @@ DEALLOCATE PREPARE stmt2;
 -- 3. Actualizar usuario admin existente
 UPDATE usuarios SET username = 'admin' WHERE username IS NULL OR username = '' LIMIT 1;
 
--- 4. Insertar admin si no existe
+-- 4. Insertar admin si no existe (contraseña: admin123)
 INSERT IGNORE INTO usuarios (nombre, username, password, email, rol, activo) VALUES
-('Administrador', 'admin', '$2b$10$92IXUNpkjO0rOQ5byMi.Ye4oKoEa3Ro9llC/.og/at2.uheWG/igi', 'admin@controlvehicular.com', 'admin', 1);
+('Administrador', 'admin', '$2a$10$JpcKNGH35B8N7bbshOzXKOKDWCHNBQ4pQiwiEWb/PxN.zc4BpXT2e', 'admin@controlvehicular.com', 'admin', 1);

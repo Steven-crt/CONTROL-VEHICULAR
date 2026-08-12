@@ -1,6 +1,7 @@
 const jwt = require('jsonwebtoken');
 const db = require('../db');
 const { getRol } = require('../utils/roles');
+const { getJwtSecret } = require('../utils/jwtSecret');
 require('dotenv').config();
 
 const authMiddleware = (roles = []) => {
@@ -12,7 +13,7 @@ const authMiddleware = (roles = []) => {
 
     const token = authHeader.split(' ')[1];
     try {
-      const decoded = jwt.verify(token, process.env.JWT_SECRET);
+      const decoded = jwt.verify(token, getJwtSecret());
       const [rows] = await db.query(
         'SELECT * FROM usuarios WHERE id = ? AND activo = 1',
         [decoded.id]

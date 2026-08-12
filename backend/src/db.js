@@ -1,14 +1,11 @@
 const mysql = require('mysql2/promise');
+const { buildDbConfig } = require('./utils/dbConfig');
 require('dotenv').config();
 
-const useSSL = process.env.DB_SSL !== 'false'; // SSL activo por defecto en producción
+const useSSL = process.env.DB_SSL !== 'false'; // SSL activo por defecto en producción (Aiven lo exige)
 
 const poolConfig = {
-  host: process.env.DB_HOST || 'localhost',
-  port: parseInt(process.env.DB_PORT, 10) || 3306,
-  user: process.env.DB_USER || 'root',
-  password: process.env.DB_PASSWORD || '',
-  database: process.env.DB_NAME || 'parqueo_db',
+  ...buildDbConfig(),
   waitForConnections: true,
   connectionLimit: 10,
   queueLimit: 0,
@@ -20,19 +17,24 @@ const poolConfig = {
 
 const pool = mysql.createPool(poolConfig);
 
+const origen = process.env.DATABASE_URL ? 'DATABASE_URL (URI de Aiven)' : 'variables DB_*';
+
 // Verificar conexión al iniciar
 pool.getConnection()
   .then(conn => {
-    console.log(`✅ Conectado a MySQL: ${process.env.DB_HOST}/${process.env.DB_NAME} (SSL: ${useSSL})`);
+    console.log(`✅ Conectado a MySQL: ${poolConfig.host}/${poolConfig.database} (SSL: ${useSSL}) — origen: ${origen}`);
     conn.release();
   })
   .catch(err => {
     console.error('❌ Error de conexión MySQL:', err.message);
-    console.error('   Host:', process.env.DB_HOST);
-    console.error('   Puerto:', process.env.DB_PORT);
-    console.error('   Usuario:', process.env.DB_USER);
-    console.error('   Base de datos:', process.env.DB_NAME);
+    console.error('   Origen de configuración:', origen);
+    console.error('   Host:', poolConfig.host);
+    console.error('   Puerto:', poolConfig.port);
+    console.error('   Usuario:', poolConfig.user);
+    console.error('   Base de datos:', poolConfig.database);
     console.error('   SSL:', useSSL);
+    console.error('   💡 Revisa las variables en Render (DB_HOST, DB_PORT, DB_USER, DB_PASSWORD, DB_NAME)');
+    console.error('      o usa DATABASE_URL con la URI completa que Aiven te da en "Connection info".');
     // No se lanza el error para que el servidor arranque igual
     // (Render puede reintentar después)
   });

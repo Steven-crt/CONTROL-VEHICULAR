@@ -287,10 +287,12 @@ INSERT INTO tarifas (tipo_vehiculo, modalidad, precio, tiempo_gracia, descripcio
 
 -- ============================================================
 -- DATOS SEMILLA: usuario admin
--- password: admin123 (bcrypt $2b$10$...)
+-- password: admin123 (bcrypt)
+-- NOTA: antes había aquí un hash de "password" con comentario "admin123";
+-- ahora el hash corresponde realmente a admin123 para que coincida con la UI.
 -- ============================================================
 INSERT INTO usuarios (nombre, username, password, email, rol) VALUES
-('Administrador', 'admin', '$2b$10$92IXUNpkjO0rOQ5byMi.Ye4oKoEa3Ro9llC/.og/at2.uheWG/igi', 'admin@parksmart.com', 'admin'),
-('Operador 1', 'operador1', '$2b$10$92IXUNpkjO0rOQ5byMi.Ye4oKoEa3Ro9llC/.og/at2.uheWG/igi', 'operador@parksmart.com', 'operador'),
-('Cajero 1', 'cajero1', '$2b$10$92IXUNpkjO0rOQ5byMi.Ye4oKoEa3Ro9llC/.og/at2.uheWG/igi', 'cajero@parksmart.com', 'cajero')
+('Administrador', 'admin', '$2a$10$JpcKNGH35B8N7bbshOzXKOKDWCHNBQ4pQiwiEWb/PxN.zc4BpXT2e', 'admin@parksmart.com', 'admin'),
+('Operador 1', 'operador1', '$2a$10$JpcKNGH35B8N7bbshOzXKOKDWCHNBQ4pQiwiEWb/PxN.zc4BpXT2e', 'operador@parksmart.com', 'operador'),
+('Cajero 1', 'cajero1', '$2a$10$JpcKNGH35B8N7bbshOzXKOKDWCHNBQ4pQiwiEWb/PxN.zc4BpXT2e', 'cajero@parksmart.com', 'cajero')
 ON DUPLICATE KEY UPDATE nombre = nombre;

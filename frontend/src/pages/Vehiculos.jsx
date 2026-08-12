@@ -1,6 +1,7 @@
 import { useState, useEffect } from 'react';
 import { useNavigate } from 'react-router-dom';
 import api from '../api/axios';
+import { useAuth } from '../contexts/AuthContext';
 import { Search, Car, MapPin, Fuel, Calendar, Gauge, Filter, ChevronDown, ChevronUp, AlertCircle, CalendarDays, Plus, X, Save, ShieldCheck } from 'lucide-react';
 import toast from 'react-hot-toast';
 
@@ -25,6 +26,8 @@ function getSoatBadge(soat) {
 
 export default function Vehiculos() {
   const navigate = useNavigate();
+  const { usuario } = useAuth();
+  const esAdmin = usuario?.rol === 'admin';
   const [vehiculos, setVehiculos] = useState([]);
   const [loading, setLoading] = useState(true);
   const [search, setSearch] = useState('');
@@ -115,9 +118,11 @@ export default function Vehiculos() {
           <p className="text-park-muted text-sm">
             <span className="text-park-accent font-medium">{vehiculos.length}</span> vehículo{vehiculos.length !== 1 ? 's' : ''}
           </p>
-          <button onClick={() => { setVehForm(EMPTY_VEHICULO); setShowModal(true); }} className="btn-primary">
-            <Plus className="w-4 h-4" /> Nuevo Vehículo
-          </button>
+          {esAdmin && (
+            <button onClick={() => { setVehForm(EMPTY_VEHICULO); setShowModal(true); }} className="btn-primary">
+              <Plus className="w-4 h-4" /> Nuevo Vehículo
+            </button>
+          )}
         </div>
       </div>
 

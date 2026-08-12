@@ -1,15 +1,18 @@
 require('dotenv').config();
 const mysql = require('mysql2/promise');
+const bcrypt = require('bcryptjs');
+const { buildDbConfig } = require('../src/utils/dbConfig');
 
+// Usa DATABASE_URL (URI de Aiven) o las variables DB_*; SSL activo por defecto en producción
+const useSSL = process.env.DB_SSL !== 'false';
 const cfg = {
-  host: process.env.DB_HOST || 'localhost',
-  port: Number(process.env.DB_PORT || 3306),
-  user: process.env.DB_USER || 'root',
-  password: process.env.DB_PASSWORD || '',
-  database: process.env.DB_NAME || 'defaultdb',
-  ssl: process.env.DB_SSL === 'true' ? { rejectUnauthorized: false } : undefined,
+  ...buildDbConfig(),
+  ssl: useSSL ? { rejectUnauthorized: false } : undefined,
   multipleStatements: true,
 };
+
+// Contraseña por defecto del admin: admin123
+const ADMIN_PASSWORD_HASH = bcrypt.hashSync('admin123', 10);
 
 async function tableExists(conn, table) {
   const [rows] = await conn.query(
@@ -266,9 +269,9 @@ async function addColumn(conn, table, column, definition, after) {
     } else {
       await conn.query(
         `INSERT INTO usuarios (nombre, username, apellido, password, email, rol_id, activo) VALUES (?, ?, ?, ?, ?, ?, 1)`,
-        ['Administrador', 'admin', 'Sistema', '$2b$10$92IXUNpkjO0rOQ5byMi.Ye4oKoEa3Ro9llC/.og/at2.uheWG/igi', 'admin@controlvehicular.com', rolEsNumerico ? 1 : 'admin']
+        ['Administrador', 'admin', 'Sistema', ADMIN_PASSWORD_HASH, 'admin@controlvehicular.com', rolEsNumerico ? 1 : 'admin']
       );
-      console.log('+ usuario admin creado');
+      console.log('+ usuario admin creado (contraseña: admin123)');
     }
 
     // ---- 7) Semillas de configuración --------------------------------------

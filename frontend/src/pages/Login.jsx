@@ -23,7 +23,11 @@ export default function Login() {
       toast.success('¡Bienvenido al sistema!');
       navigate('/dashboard');
     } catch (err) {
-      toast.error(err.response?.data?.error || 'Error de autenticación');
+      if (!err.response) {
+        toast.error('No se pudo conectar con el servidor. Verifica que el backend esté activo en Render.');
+      } else {
+        toast.error(err.response?.data?.error || 'Error de autenticación');
+      }
     } finally {
       setLoading(false);
     }
@@ -91,14 +95,14 @@ export default function Login() {
               </form>
 
               <div className="demo-section">
-                <p className="demo-label">Credenciales de prueba:</p>
+                <p className="demo-label">Credenciales de acceso:</p>
                 <button
                   type="button"
                   className="demo-btn"
-                  onClick={() => setForm({ username: 'admin', password: 'password' })}
+                  onClick={() => setForm({ username: 'admin', password: 'admin123' })}
                 >
-                  <span className="demo-btn-title">Admin</span>
-                  <span className="demo-btn-sub">admin / password</span>
+                  <span className="demo-btn-title">Administrador</span>
+                  <span className="demo-btn-sub">admin / admin123</span>
                 </button>
               </div>
 

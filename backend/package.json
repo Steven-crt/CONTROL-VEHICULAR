@@ -7,7 +7,8 @@
     "start": "node src/server.js",
     "dev": "nodemon src/server.js",
     "migrate:soat": "node scripts/migrate_soat.js",
-    "migrate:full": "node scripts/migrar_completo.js"
+    "migrate:full": "node scripts/migrar_completo.js",
+    "reset:admin": "node scripts/reset_admin.js"
   },
   "dependencies": {
     "bcryptjs": "^2.4.3",

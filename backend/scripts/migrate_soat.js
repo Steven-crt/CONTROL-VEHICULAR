@@ -1,7 +1,9 @@
 require('dotenv').config();
 const mysql = require('mysql2/promise');
+const { buildDbConfig } = require('../src/utils/dbConfig');
 
-const useSSL = process.env.DB_SSL === 'true';
+// Usa DATABASE_URL (URI de Aiven) o las variables DB_*; SSL activo por defecto en producción
+const useSSL = process.env.DB_SSL !== 'false';
 
 const columns = [
   { name: 'soat_numero', def: 'VARCHAR(50) NULL', after: 'anio' },
@@ -12,11 +14,7 @@ const columns = [
 
 async function main() {
   const conn = await mysql.createConnection({
-    host: process.env.DB_HOST || 'localhost',
-    port: process.env.DB_PORT || 3306,
-    user: process.env.DB_USER || 'root',
-    password: process.env.DB_PASSWORD || '',
-    database: process.env.DB_NAME || 'parqueo_db',
+    ...buildDbConfig(),
     ssl: useSSL ? { rejectUnauthorized: false } : undefined,
   });
 

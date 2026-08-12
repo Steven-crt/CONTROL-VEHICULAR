@@ -4,6 +4,7 @@ const db = require('../db');
 const bcrypt = require('bcryptjs');
 const jwt = require('jsonwebtoken');
 const { getRol } = require('../utils/roles');
+const { getJwtSecret } = require('../utils/jwtSecret');
 require('dotenv').config();
 
 // POST /api/auth/login
@@ -29,7 +30,7 @@ router.post('/login', async (req, res) => {
 
     const token = jwt.sign(
       { id: usuario.id, username: usuario.username, nombre: usuario.nombre, rol },
-      process.env.JWT_SECRET,
+      getJwtSecret(),
       { expiresIn: process.env.JWT_EXPIRES_IN || '8h' }
     );
 
@@ -44,6 +45,7 @@ router.post('/login', async (req, res) => {
       }
     });
   } catch (err) {
+    console.error('❌ Error en POST /api/auth/login:', err);
     res.status(500).json({ error: err.message });
   }
 });
@@ -54,7 +56,7 @@ router.get('/me', async (req, res) => {
   if (!authHeader) return res.status(401).json({ error: 'No autorizado' });
   const token = authHeader.split(' ')[1];
   try {
-    const decoded = jwt.verify(token, process.env.JWT_SECRET);
+    const decoded = jwt.verify(token, getJwtSecret());
     const [rows] = await db.query('SELECT * FROM usuarios WHERE id = ?', [decoded.id]);
     if (rows.length === 0) return res.status(404).json({ error: 'Usuario no encontrado' });
     const u = rows[0];
