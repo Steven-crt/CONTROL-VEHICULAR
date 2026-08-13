@@ -568,7 +568,7 @@ export default function VehiculoDetalle() {
             )}
           </>
         )}
-
+  
         {/* TAB MANTENIMIENTO */}
         {activeTab === 'mantenimiento' && (
           <>

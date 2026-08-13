@@ -12,18 +12,23 @@ if (!process.env.JWT_SECRET) {
   void getJwtSecret(); // dispara la advertencia con el fallback
 }
 
-// CORS: acepta múltiples orígenes separados por coma en CORS_ORIGIN
+// CORS: solo orígenes explícitamente autorizados en CORS_ORIGIN
+// NO se permite *.vercel.app genérico — solo los dominios exactos configurados
 const allowedOrigins = (process.env.CORS_ORIGIN || 'http://localhost:5173')
   .split(',')
-  .map(o => o.trim());
+  .map(o => o.trim())
+  .filter(Boolean);
 
 app.use(cors({
   origin: (origin, callback) => {
-    // Permitir peticiones sin origin (Postman, curl, etc.)
-    if (!origin) return callback(null, true);
+    // Permitir peticiones sin origin solo en desarrollo local
+    if (!origin) {
+      const isLocalDev = process.env.NODE_ENV !== 'production';
+      return isLocalDev
+        ? callback(null, true)
+        : callback(new Error('CORS: origen requerido en producción'));
+    }
     if (allowedOrigins.includes(origin)) return callback(null, true);
-    // Permitir cualquier subdominio de vercel.app en desarrollo
-    if (origin.endsWith('.vercel.app')) return callback(null, true);
     callback(new Error(`CORS: origen no permitido → ${origin}`));
   },
   credentials: true
@@ -100,7 +105,7 @@ app.use((err, req, res, next) => {
 const PORT = process.env.PORT || 3001;
 app.listen(PORT, () => {
   console.log(`🚀 Gestión Vehicular API corriendo en http://localhost:${PORT}`);
-  console.log(`✅ CORS habilitado para: ${allowedOrigins.join(', ')} + *.vercel.app`);
+  console.log(`✅ CORS habilitado para: ${allowedOrigins.join(', ')}`);
   console.log(`🔍 Diagnóstico: abre http://localhost:${PORT}/api/health para ver el estado de la BD`);
 });
 

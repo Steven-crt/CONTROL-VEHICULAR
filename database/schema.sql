@@ -21,6 +21,11 @@ CREATE TABLE IF NOT EXISTS usuarios (
   updated_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP
 );
 
+-- Índices para escalabilidad
+CREATE INDEX idx_usuarios_username ON usuarios(username);
+CREATE INDEX idx_usuarios_activo ON usuarios(activo);
+CREATE INDEX idx_usuarios_email ON usuarios(email);
+
 -- ============================================================
 -- TABLA: configuracion
 -- ============================================================
@@ -43,6 +48,8 @@ CREATE TABLE IF NOT EXISTS zonas (
   activo TINYINT(1) DEFAULT 1
 );
 
+CREATE INDEX idx_zonas_activo ON zonas(activo);
+
 -- ============================================================
 -- TABLA: espacios
 -- ============================================================
@@ -55,6 +62,10 @@ CREATE TABLE IF NOT EXISTS espacios (
   created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
   FOREIGN KEY (zona_id) REFERENCES zonas(id) ON DELETE SET NULL
 );
+
+CREATE INDEX idx_espacios_zona ON espacios(zona_id);
+CREATE INDEX idx_espacios_estado ON espacios(estado);
+CREATE INDEX idx_espacios_numero ON espacios(numero);
 
 -- ============================================================
 -- TABLA: tarifas
@@ -69,6 +80,9 @@ CREATE TABLE IF NOT EXISTS tarifas (
   activo TINYINT(1) DEFAULT 1,
   created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP
 );
+
+CREATE INDEX idx_tarifas_tipo_modalidad ON tarifas(tipo_vehiculo, modalidad);
+CREATE INDEX idx_tarifas_activo ON tarifas(activo);
 
 -- ============================================================
 -- TABLA: vehiculos
@@ -85,8 +99,17 @@ CREATE TABLE IF NOT EXISTS vehiculos (
   soat_empresa VARCHAR(100),
   soat_fecha_inicio DATE,
   soat_fecha_vencimiento DATE,
-  created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP
+  created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
+  activo TINYINT(1) NOT NULL DEFAULT 1
 );
+
+-- Índices para escalabilidad en consultas frecuentes
+CREATE INDEX idx_vehiculos_placa ON vehiculos(placa);
+CREATE INDEX idx_vehiculos_marca ON vehiculos(marca);
+CREATE INDEX idx_vehiculos_modelo ON vehiculos(modelo);
+CREATE INDEX idx_vehiculos_anio ON vehiculos(anio);
+CREATE INDEX idx_vehiculos_activo ON vehiculos(activo);
+CREATE INDEX idx_vehiculos_soat_vencimiento ON vehiculos(soat_fecha_vencimiento);
 
 -- ============================================================
 -- TABLA: tickets (entradas y salidas)
@@ -113,6 +136,11 @@ CREATE TABLE IF NOT EXISTS tickets (
   FOREIGN KEY (usuario_salida_id) REFERENCES usuarios(id) ON DELETE SET NULL
 );
 
+CREATE INDEX idx_tickets_placa ON tickets(placa);
+CREATE INDEX idx_tickets_hora_entrada ON tickets(hora_entrada);
+CREATE INDEX idx_tickets_estado ON tickets(estado);
+CREATE INDEX idx_tickets_espacio ON tickets(espacio_id);
+
 -- ============================================================
 -- TABLA: pagos
 -- ============================================================
@@ -129,6 +157,10 @@ CREATE TABLE IF NOT EXISTS pagos (
   FOREIGN KEY (ticket_id) REFERENCES tickets(id),
   FOREIGN KEY (usuario_id) REFERENCES usuarios(id) ON DELETE SET NULL
 );
+
+CREATE INDEX idx_pagos_ticket ON pagos(ticket_id);
+CREATE INDEX idx_pagos_fecha ON pagos(fecha_pago);
+CREATE INDEX idx_pagos_metodo ON pagos(metodo_pago);
 
 -- ============================================================
 -- TABLA: combustible (Control de combustible)
@@ -148,6 +180,10 @@ CREATE TABLE IF NOT EXISTS combustible (
   FOREIGN KEY (vehiculo_id) REFERENCES vehiculos(id) ON DELETE CASCADE
 );
 
+CREATE INDEX idx_combustible_vehiculo ON combustible(vehiculo_id);
+CREATE INDEX idx_combustible_fecha ON combustible(fecha_carga);
+CREATE INDEX idx_combustible_vehiculo_fecha ON combustible(vehiculo_id, fecha_carga);
+
 -- ============================================================
 -- TABLA: mantenimiento (Historial de mantenimiento)
 -- ============================================================
@@ -165,6 +201,11 @@ CREATE TABLE IF NOT EXISTS mantenimiento (
   FOREIGN KEY (vehiculo_id) REFERENCES vehiculos(id) ON DELETE CASCADE
 );
 
+CREATE INDEX idx_mantenimiento_vehiculo ON mantenimiento(vehiculo_id);
+CREATE INDEX idx_mantenimiento_fecha ON mantenimiento(fecha);
+CREATE INDEX idx_mantenimiento_tipo ON mantenimiento(tipo_servicio);
+CREATE INDEX idx_mantenimiento_vehiculo_fecha ON mantenimiento(vehiculo_id, fecha);
+
 -- ============================================================
 -- TABLA: ubicaciones (Histórico GPS)
 -- ============================================================
@@ -178,6 +219,10 @@ CREATE TABLE IF NOT EXISTS ubicaciones (
   FOREIGN KEY (vehiculo_id) REFERENCES vehiculos(id) ON DELETE CASCADE
 );
 
+CREATE INDEX idx_ubicaciones_vehiculo ON ubicaciones(vehiculo_id);
+CREATE INDEX idx_ubicaciones_timestamp ON ubicaciones(timestamp);
+CREATE INDEX idx_ubicaciones_vehiculo_timestamp ON ubicaciones(vehiculo_id, timestamp DESC);
+
 -- ============================================================
 -- TABLA: kilometraje_manual (Lecturas manuales de KM)
 -- ============================================================
@@ -190,6 +235,9 @@ CREATE TABLE IF NOT EXISTS kilometraje_manual (
   created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
   FOREIGN KEY (vehiculo_id) REFERENCES vehiculos(id) ON DELETE CASCADE
 );
+
+CREATE INDEX idx_kilometraje_vehiculo ON kilometraje_manual(vehiculo_id);
+CREATE INDEX idx_kilometraje_fecha ON kilometraje_manual(fecha_registro);
 
 -- ============================================================
 -- TABLA: cierres_caja
@@ -207,6 +255,9 @@ CREATE TABLE IF NOT EXISTS cierres_caja (
   observaciones TEXT,
   FOREIGN KEY (usuario_id) REFERENCES usuarios(id) ON DELETE SET NULL
 );
+
+CREATE INDEX idx_cierres_usuario ON cierres_caja(usuario_id);
+CREATE INDEX idx_cierres_fecha ON cierres_caja(fecha_cierre);
 
 -- ============================================================
 -- DATOS SEMILLA: configuracion
@@ -288,8 +339,6 @@ INSERT INTO tarifas (tipo_vehiculo, modalidad, precio, tiempo_gracia, descripcio
 -- ============================================================
 -- DATOS SEMILLA: usuario admin
 -- password: admin123 (bcrypt)
--- NOTA: antes había aquí un hash de "password" con comentario "admin123";
--- ahora el hash corresponde realmente a admin123 para que coincida con la UI.
 -- ============================================================
 INSERT INTO usuarios (nombre, username, password, email, rol) VALUES
 ('Administrador', 'admin', '$2a$10$JpcKNGH35B8N7bbshOzXKOKDWCHNBQ4pQiwiEWb/PxN.zc4BpXT2e', 'admin@parksmart.com', 'admin'),

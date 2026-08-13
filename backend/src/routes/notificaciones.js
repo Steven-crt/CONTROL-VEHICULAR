@@ -3,19 +3,34 @@ const router = express.Router();
 const db = require('../db');
 const auth = require('../middleware/auth');
 
+// NOTA: Para escalabilidad, las queries se pueden optimizar con CTEs en MySQL 8+ o usando tablas temporales
+// Aquí mantengo compatibilidad con MySQL 5.7+ pero preparado para migración futura
+
 router.get('/', auth(), async (req, res) => {
   try {
     const notificaciones = [];
 
     // 1. Vehículos con bajo rendimiento de combustible (< 8 km/l)
+    // Optimización: usar una subquery escalonada para calcular el KM previo
     const [bajoRendimiento] = await db.query(`
       SELECT c.vehiculo_id, v.placa, v.marca, v.modelo,
-        ROUND(AVG((c.kilometraje_actual - COALESCE(
-          (SELECT kilometraje_actual FROM solicitudes_combustible c2 WHERE c2.vehiculo_id = c.vehiculo_id AND c2.fecha_solicitud < c.fecha_solicitud ORDER BY c2.fecha_solicitud DESC LIMIT 1),
-          0
-        )) / c.galones_surtidos), 2) as rendimiento
+        ROUND(AVG(
+          CASE
+            WHEN c.kilometraje_actual > 0 AND c.galones_surtidos > 0 THEN
+              (c.kilometraje_actual - COALESCE(
+                (SELECT c2.kilometraje_actual
+                 FROM solicitudes_combustible c2
+                 WHERE c2.vehiculo_id = c.vehiculo_id
+                   AND c2.fecha_solicitud < c.fecha_solicitud
+                 ORDER BY c2.fecha_solicitud DESC LIMIT 1),
+                0
+              )) / c.galones_surtidos
+            ELSE 0
+          END
+        ), 2) as rendimiento
       FROM solicitudes_combustible c
       JOIN vehiculos v ON c.vehiculo_id = v.id
+      WHERE c.kilometraje_actual > 0 AND c.galones_surtidos > 0
       GROUP BY c.vehiculo_id
       HAVING rendimiento < 8 AND rendimiento > 0
       ORDER BY rendimiento ASC
@@ -54,19 +69,22 @@ router.get('/', auth(), async (req, res) => {
     });
 
     // 3. Mantenimientos preventivos próximos (km cercano al intervalo)
+    // Optimización: usar una sola subquery para obtener el último KM de mantenimiento por vehículo
     const [config] = await db.query(`SELECT valor FROM configuracion WHERE clave = 'intervalo_mant_km'`);
     const intervaloKm = parseInt(config[0]?.valor) || 5000;
     const [mantenciones] = await db.query(`
       SELECT v.id, v.placa, v.marca, v.modelo,
         v.kilometraje_actual as km_actual,
-        COALESCE(
-          (SELECT MAX(kilometraje_realizado) FROM mantenimientos WHERE vehiculo_id = v.id),
-          0
-        ) as ultimo_km_mant
+        COALESCE(m.max_km, 0) as ultimo_km_mant
       FROM vehiculos v
+      LEFT JOIN (
+        SELECT vehiculo_id, MAX(kilometraje_realizado) as max_km
+        FROM mantenimientos
+        GROUP BY vehiculo_id
+      ) m ON m.vehiculo_id = v.id
       WHERE v.activo = 1 AND v.kilometraje_actual > 0
-        AND (v.kilometraje_actual - COALESCE((SELECT MAX(kilometraje_realizado) FROM mantenimientos WHERE vehiculo_id = v.id), 0)) >= (? * 0.8)
-      ORDER BY (v.kilometraje_actual - COALESCE((SELECT MAX(kilometraje_realizado) FROM mantenimientos WHERE vehiculo_id = v.id), 0)) DESC
+        AND (v.kilometraje_actual - COALESCE(m.max_km, 0)) >= (? * 0.8)
+      ORDER BY (v.kilometraje_actual - COALESCE(m.max_km, 0)) DESC
       LIMIT 5
     `, [intervaloKm]);
     mantenciones.forEach(v => {
@@ -154,7 +172,8 @@ router.get('/', auth(), async (req, res) => {
 
     res.json(notificaciones);
   } catch (err) {
-    res.status(500).json({ error: err.message });
+    console.error('Error en GET /notificaciones:', err);
+    res.status(500).json({ error: 'Error interno del servidor' });
   }
 });
 

@@ -10,6 +10,7 @@
     "preview": "vite preview"
   },
   "dependencies": {
+    "@types/three": "^0.185.4",
     "axios": "^1.13.6",
     "lucide-react": "^0.577.0",
     "react": "^19.2.4",
@@ -17,7 +18,8 @@
     "react-hot-toast": "^2.6.0",
     "react-router-dom": "^7.13.1",
     "recharts": "^3.8.0",
-    "styled-components": "^6.4.4"
+    "styled-components": "^6.4.4",
+    "three": "^0.185.1"
   },
   "devDependencies": {
     "@eslint/js": "^9.39.4",

@@ -4,7 +4,7 @@ import toast from 'react-hot-toast';
 import { Save, Settings, UploadCloud, Truck, Shield, Fuel, Wrench } from 'lucide-react';
 
 const CAMPOS_NEGOCIO = [
-  { key: 'nombre_negocio', label: 'Nombre de la Empresa', type: 'text', placeholder: 'Mi Empresa de Flota' },
+  { key: 'nombre_negocio', label: 'Nombre de la Empresa', type: 'text', placeholder: 'Control Vehicular' },
   { key: 'ruc', label: 'RUC / ID Fiscal', type: 'text', placeholder: '1234567890001' },
   { key: 'direccion', label: 'Dirección', type: 'text', placeholder: 'Av. Principal 123' },
   { key: 'telefono', label: 'Teléfono', type: 'text', placeholder: '0999999999' },

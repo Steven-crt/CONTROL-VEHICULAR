@@ -1,9 +1,5 @@
 import axios from 'axios';
 
-// URL de la API:
-// 1) VITE_API_URL si está definida (recomendado en producción: https://control-vehicular-pkze.onrender.com/api)
-// 2) localhost en desarrollo
-// 3) mismo origen en cualquier otro caso
 const API_URL =
   import.meta.env.VITE_API_URL ||
   (['localhost', '127.0.0.1'].includes(window.location.hostname)

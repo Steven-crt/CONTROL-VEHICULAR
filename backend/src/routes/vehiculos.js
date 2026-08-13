@@ -60,8 +60,10 @@ router.get('/', auth(), async (req, res) => {
       params.push(parseInt(year));
     }
     if (search) {
+      // Limitar longitud del término de búsqueda
+      const termino = String(search).slice(0, 100);
       q += ' AND (v.placa LIKE ? OR v.marca LIKE ? OR v.modelo LIKE ? OR v.color LIKE ?)';
-      params.push(`%${search}%`, `%${search}%`, `%${search}%`, `%${search}%`);
+      params.push(`%${termino}%`, `%${termino}%`, `%${termino}%`, `%${termino}%`);
     }
     q += ' ORDER BY v.placa ASC';
 
@@ -80,7 +82,7 @@ router.get('/', auth(), async (req, res) => {
     res.json(result.map(enriquecerConSoat));
   } catch (err) {
     console.error('Error en GET /vehiculos:', err);
-    res.status(500).json({ error: err.message });
+    res.status(500).json({ error: 'Error interno del servidor' });
   }
 });
 
@@ -113,7 +115,7 @@ router.post('/', auth(['admin']), async (req, res) => {
     if (err.code === 'ER_DUP_ENTRY')
       return res.status(409).json({ error: 'Ya existe un vehículo con esa placa' });
     console.error('Error en POST /vehiculos:', err);
-    res.status(500).json({ error: err.message });
+    res.status(500).json({ error: 'Error interno del servidor' });
   }
 });
 
@@ -137,7 +139,7 @@ router.get('/:id', auth(), async (req, res) => {
 
     // Última ubicación
     const [ubicacion] = await db.query(
-      'SELECT * FROM ubicaciones WHERE vehiculo_id = ? ORDER BY timestamp DESC LIMIT 1',
+      'SELECT latitud, longitud, timestamp FROM ubicaciones WHERE vehiculo_id = ? ORDER BY timestamp DESC LIMIT 1',
       [v.id]
     );
 
@@ -169,7 +171,8 @@ router.get('/:id', auth(), async (req, res) => {
       }
     });
   } catch (err) {
-    res.status(500).json({ error: err.message });
+    console.error('Error en GET /vehiculos/:id:', err);
+    res.status(500).json({ error: 'Error interno del servidor' });
   }
 });
 
@@ -177,48 +180,67 @@ router.get('/:id', auth(), async (req, res) => {
 router.get('/:id/ubicacion', auth(), async (req, res) => {
   try {
     const [rows] = await db.query(
-      'SELECT * FROM ubicaciones WHERE vehiculo_id = ? ORDER BY timestamp DESC LIMIT 1',
+      'SELECT latitud, longitud, timestamp FROM ubicaciones WHERE vehiculo_id = ? ORDER BY timestamp DESC LIMIT 1',
       [req.params.id]
     );
     if (!rows.length)
       return res.status(404).json({ error: 'No hay ubicaciones registradas para este vehículo' });
     res.json(rows[0]);
   } catch (err) {
-    res.status(500).json({ error: err.message });
+    console.error('Error en GET /vehiculos/:id/ubicacion:', err);
+    res.status(500).json({ error: 'Error interno del servidor' });
   }
 });
 
 // POST /api/vehiculos/:id/ubicacion - Registrar nueva ubicación GPS
 router.post('/:id/ubicacion', auth(), async (req, res) => {
   const { latitud, longitud } = req.body;
-  if (!latitud || !longitud)
+  if (latitud === undefined || longitud === undefined)
     return res.status(400).json({ error: 'Latitud y longitud son requeridas' });
+
+  const lat = parseFloat(latitud);
+  const lng = parseFloat(longitud);
+
+  if (isNaN(lat) || isNaN(lng))
+    return res.status(400).json({ error: 'Latitud y longitud deben ser valores numéricos' });
+  if (lat < -90 || lat > 90)
+    return res.status(400).json({ error: 'Latitud debe estar entre -90 y 90' });
+  if (lng < -180 || lng > 180)
+    return res.status(400).json({ error: 'Longitud debe estar entre -180 y 180' });
 
   try {
     const [result] = await db.query(
       'INSERT INTO ubicaciones (vehiculo_id, usuario_id, latitud, longitud, timestamp) VALUES (?, ?, ?, ?, NOW())',
-      [req.params.id, req.user?.id || null, latitud, longitud]
+      [req.params.id, req.user?.id || null, lat, lng]
     );
     res.status(201).json({ id: result.insertId, message: 'Ubicación registrada' });
   } catch (err) {
-    res.status(500).json({ error: err.message });
+    console.error('Error en POST /vehiculos/:id/ubicacion:', err);
+    res.status(500).json({ error: 'Error interno del servidor' });
   }
 });
 
 // POST /api/vehiculos/:id/kilometraje - Registrar avance manual de KM
 router.post('/:id/kilometraje', auth(), async (req, res) => {
   const { km_actual } = req.body;
-  if (!km_actual || isNaN(km_actual))
-    return res.status(400).json({ error: 'KM actual es requerido y debe ser numérico' });
+  if (km_actual === undefined || km_actual === null || km_actual === '')
+    return res.status(400).json({ error: 'KM actual es requerido' });
+
+  const km = parseFloat(km_actual);
+  if (isNaN(km))
+    return res.status(400).json({ error: 'KM actual debe ser un valor numérico' });
+  if (km < 0 || km > 9999999)
+    return res.status(400).json({ error: 'KM actual fuera de rango válido (0 - 9,999,999)' });
 
   try {
     await db.query(
       'UPDATE vehiculos SET kilometraje_actual = ? WHERE id = ?',
-      [parseFloat(km_actual), req.params.id]
+      [km, req.params.id]
     );
     res.status(201).json({ message: 'Kilometraje registrado exitosamente' });
   } catch (err) {
-    res.status(500).json({ error: err.message });
+    console.error('Error en POST /vehiculos/:id/kilometraje:', err);
+    res.status(500).json({ error: 'Error interno del servidor' });
   }
 });
 
@@ -232,7 +254,8 @@ router.get('/:id/historial-km', auth(), async (req, res) => {
     );
     res.json(combustible);
   } catch (err) {
-    res.status(500).json({ error: err.message });
+    console.error('Error en GET /vehiculos/:id/historial-km:', err);
+    res.status(500).json({ error: 'Error interno del servidor' });
   }
 });
 
@@ -282,23 +305,23 @@ router.put('/:id', auth(['admin']), async (req, res) => {
     );
     res.json(enriquecerConSoat({ ...updated[0], km_actual: parseFloat(updated[0].km_actual) || 0 }));
   } catch (err) {
-    console.error('Error en PUT /vehiculos:', err);
-    res.status(500).json({ error: err.message });
+    console.error('Error en PUT /vehiculos/:id:', err);
+    res.status(500).json({ error: 'Error interno del servidor' });
   }
 });
 
 // DELETE /api/vehiculos/:id - Desactivar vehículo (solo admin)
 router.delete('/:id', auth(['admin']), async (req, res) => {
   try {
-    const [existing] = await db.query('SELECT * FROM vehiculos WHERE id = ?', [req.params.id]);
+    const [existing] = await db.query('SELECT id FROM vehiculos WHERE id = ?', [req.params.id]);
     if (!existing.length)
       return res.status(404).json({ error: 'Vehículo no encontrado' });
 
     await db.query('UPDATE vehiculos SET activo = 0 WHERE id = ?', [req.params.id]);
     res.json({ message: 'Vehículo eliminado correctamente' });
   } catch (err) {
-    console.error('Error en DELETE /vehiculos:', err);
-    res.status(500).json({ error: err.message });
+    console.error('Error en DELETE /vehiculos/:id:', err);
+    res.status(500).json({ error: 'Error interno del servidor' });
   }
 });
 

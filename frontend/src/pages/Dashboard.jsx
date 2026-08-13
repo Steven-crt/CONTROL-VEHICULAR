@@ -65,7 +65,7 @@ export default function Dashboard() {
 
   if (loading) return (
     <div className="flex items-center justify-center h-64">
-      <div className="text-park-accent animate-pulse font-medium tracking-wide">Actualizando métricas...</div>
+      <div className="text-park-accent animate-pulse font-medium tracking-wide">Cargando datos...</div>
     </div>
   );
 
@@ -94,7 +94,7 @@ export default function Dashboard() {
           icon={Car}
           label="Total Vehículos"
           value={data?.total_vehiculos || 0}
-          sub="Vehículos registrados en el sistema"
+          sub="En el sistema"
           color="text-blue-400"
           iconBg="bg-blue-500/20"
           cardBg="bg-gradient-to-b from-blue-500/5 to-transparent border-t-blue-500"
@@ -103,7 +103,7 @@ export default function Dashboard() {
           icon={Fuel}
           label="Gasto Combustible"
           value={`${moneda}${(data?.gastos_combustible_mes || 0).toFixed(2)}`}
-          sub="Gasto del mes actual"
+          sub="Este mes"
           color="text-amber-400"
           iconBg="bg-amber-500/20"
           cardBg="bg-gradient-to-b from-amber-500/5 to-transparent border-t-amber-500"
@@ -112,7 +112,7 @@ export default function Dashboard() {
           icon={Wrench}
           label="Gasto Mantenimiento"
           value={`${moneda}${(data?.gastos_mantenimiento_mes || 0).toFixed(2)}`}
-          sub="Gasto del mes actual"
+          sub="Este mes"
           color="text-emerald-400"
           iconBg="bg-emerald-500/20"
           cardBg="bg-gradient-to-b from-emerald-500/5 to-transparent border-t-emerald-500"
@@ -126,7 +126,7 @@ export default function Dashboard() {
             <h3 className="text-white font-bold text-lg flex items-center gap-2">
               <PieIcon className="w-5 h-5 text-purple-500" /> Tipos de Vehículos
             </h3>
-            <p className="text-park-muted text-xs mt-1">Distribución del parque automotor</p>
+            <p className="text-park-muted text-xs mt-1">Parque automotor por tipo</p>
           </div>
           <div className="flex-1 flex items-center justify-center min-h-[260px]">
             {tiposData.length > 0 ? (
@@ -166,7 +166,7 @@ export default function Dashboard() {
               <h3 className="text-white font-bold text-lg flex items-center gap-2">
                 <Fuel className="w-5 h-5 text-amber-500" /> Gastos de Combustible
               </h3>
-              <p className="text-park-muted text-xs mt-1">Evolución mensual de gasto en combustible</p>
+              <p className="text-park-muted text-xs mt-1">Evolución mensual</p>
             </div>
           </div>
           {combustibleChart.length > 0 ? (
@@ -193,7 +193,7 @@ export default function Dashboard() {
               <h3 className="text-white font-bold text-lg flex items-center gap-2">
                 <Wrench className="w-5 h-5 text-emerald-500" /> Mantenimiento por Servicio
               </h3>
-              <p className="text-park-muted text-xs mt-1">Cantidad de servicios de mantenimiento realizados</p>
+              <p className="text-park-muted text-xs mt-1">Servicios realizados</p>
             </div>
           </div>
           {mantenimientoChart.length > 0 ? (

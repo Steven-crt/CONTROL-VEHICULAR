@@ -7,15 +7,44 @@ const useSSL = process.env.DB_SSL !== 'false'; // SSL activo por defecto en prod
 const poolConfig = {
   ...buildDbConfig(),
   waitForConnections: true,
-  connectionLimit: 10,
+  connectionLimit: 25, // Aumentado de 10 para soportar más tráfico
   queueLimit: 0,
+  idleTimeout: 60000, // Cerrar conexiones inactivas después de 60s
+  connectTimeout: 10000, // 10s máximo para conectar
+  acquireTimeout: 30000, // 30s máximo para adquirir conexión
   timezone: '+00:00',
-  connectTimeout: 30000,
   // SSL requerido por Aiven — rejectUnauthorized: false acepta el cert de Aiven sin CA local
   ssl: useSSL ? { rejectUnauthorized: false } : undefined
 };
 
 const pool = mysql.createPool(poolConfig);
+
+// Contador de conexiones activas para monitoreo
+let activeConnections = 0;
+const trackConnection = {
+  getConnection: pool.getConnection.bind(pool),
+  release: pool.releaseConnection.bind(pool)
+};
+
+pool.getConnection = async () => {
+  activeConnections++;
+  console.log(`[Pool] Conexión adquirida (${activeConnections} activas)`);
+  try {
+    const conn = await trackConnection.getConnection();
+    // Añadir callback de release para tracking
+    const originalRelease = conn.release;
+    conn.release = () => {
+      activeConnections--;
+      console.log(`[Pool] Conexión liberada (${activeConnections} activas)`);
+      return originalRelease.call(conn);
+    };
+    return conn;
+  } catch (err) {
+    activeConnections--;
+    console.error('[Pool] Error al adquirir conexión:', err.message);
+    throw err;
+  }
+};
 
 const origen = process.env.DATABASE_URL ? 'DATABASE_URL (URI de Aiven)' : 'variables DB_*';
 
@@ -23,6 +52,7 @@ const origen = process.env.DATABASE_URL ? 'DATABASE_URL (URI de Aiven)' : 'varia
 pool.getConnection()
   .then(conn => {
     console.log(`✅ Conectado a MySQL: ${poolConfig.host}/${poolConfig.database} (SSL: ${useSSL}) — origen: ${origen}`);
+    console.log(`📦 Pool: ${poolConfig.connectionLimit} conexiones máx., timeout: ${poolConfig.acquireTimeout}ms`);
     conn.release();
   })
   .catch(err => {

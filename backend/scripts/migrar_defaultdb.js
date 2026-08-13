@@ -10,7 +10,7 @@ const cfg = {
 };
 
 const SEED = [
-  ['nombre_negocio', 'Mi Empresa de Flota'],
+  ['nombre_negocio', 'Control Vehicular'],
   ['ruc', ''],
   ['direccion', ''],
   ['telefono', ''],
