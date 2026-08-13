@@ -2,6 +2,15 @@ const express = require('express');
 const router = express.Router();
 const db = require('../db');
 const auth = require('../middleware/auth');
+const { internalError } = require('../utils/httpErrors');
+
+const LIMIT_MAX = 200;
+
+function parseLimit(valor) {
+  const n = parseInt(valor, 10);
+  if (!Number.isFinite(n) || n <= 0) return 50;
+  return Math.min(n, LIMIT_MAX);
+}
 
 const CARGA_SELECT = `
   SELECT c.id, c.codigo, c.vehiculo_id, v.placa, v.marca, v.modelo,
@@ -34,7 +43,8 @@ async function actualizarKmVehiculo(vehiculo_id, km) {
 
 // GET /api/combustible - Listar cargas de combustible con filtros
 router.get('/', auth(), async (req, res) => {
-  const { vehiculo_id, tipo_combustible, desde, hasta, limit = 50 } = req.query;
+  const { vehiculo_id, tipo_combustible, desde, hasta } = req.query;
+  const limit = parseLimit(req.query.limit);
   try {
     let q = `${CARGA_SELECT} WHERE 1=1`;
     const params = [];
@@ -43,7 +53,7 @@ router.get('/', auth(), async (req, res) => {
     if (desde) { q += ' AND c.fecha_solicitud >= ?'; params.push(desde); }
     if (hasta) { q += ' AND c.fecha_solicitud <= ?'; params.push(hasta + ' 23:59:59'); }
     q += ' ORDER BY c.fecha_solicitud DESC LIMIT ?';
-    params.push(parseInt(limit));
+    params.push(limit);
 
     const [rows] = await db.query(q, params);
 
@@ -72,7 +82,7 @@ router.get('/', auth(), async (req, res) => {
 
     res.json(enriched);
   } catch (err) {
-    res.status(500).json({ error: err.message });
+    internalError(res, err, 'combustible');
   }
 });
 
@@ -131,7 +141,7 @@ router.get('/historial/:vehiculo_id', auth(), async (req, res) => {
       }
     });
   } catch (err) {
-    res.status(500).json({ error: err.message });
+    internalError(res, err, 'combustible');
   }
 });
 
@@ -173,7 +183,7 @@ router.post('/', auth(), async (req, res) => {
     await actualizarKmVehiculo(vehiculo_id, km_actual);
     res.status(201).json({ id: result.insertId, message: 'Carga de combustible registrada' });
   } catch (err) {
-    res.status(500).json({ error: err.message });
+    internalError(res, err, 'combustible');
   }
 });
 
@@ -185,7 +195,7 @@ router.get('/tipos', auth(), async (req, res) => {
     );
     res.json(rows.map(r => r.tipo_combustible));
   } catch (err) {
-    res.status(500).json({ error: err.message });
+    internalError(res, err, 'combustible');
   }
 });
 

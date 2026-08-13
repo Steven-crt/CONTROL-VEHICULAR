@@ -5,6 +5,7 @@ const bcrypt = require('bcryptjs');
 const auth = require('../middleware/auth');
 const { getRol } = require('../utils/roles');
 const { getRolColumn, rolValueToStore } = require('../utils/rolColumn');
+const { internalError } = require('../utils/httpErrors');
 
 // GET /api/usuarios
 router.get('/', auth(['admin']), async (req, res) => {
@@ -17,7 +18,7 @@ router.get('/', auth(['admin']), async (req, res) => {
     rows.forEach(u => { u.rol = getRol(u); });
     res.json(rows);
   } catch (err) {
-    res.status(500).json({ error: err.message });
+    internalError(res, err, 'usuarios');
   }
 });
 
@@ -34,7 +35,7 @@ router.get('/:id', auth(['admin']), async (req, res) => {
     rows[0].rol = getRol(rows[0]);
     res.json(rows[0]);
   } catch (err) {
-    res.status(500).json({ error: err.message });
+    internalError(res, err, 'usuarios');
   }
 });
 
@@ -55,7 +56,7 @@ router.post('/', auth(['admin']), async (req, res) => {
   } catch (err) {
     if (err.code === 'ER_DUP_ENTRY')
       return res.status(409).json({ error: 'El nombre de usuario ya existe' });
-    res.status(500).json({ error: err.message });
+    internalError(res, err, 'usuarios');
   }
 });
 
@@ -80,7 +81,7 @@ router.put('/:id', auth(['admin']), async (req, res) => {
     }
     res.json({ message: 'Usuario actualizado' });
   } catch (err) {
-    res.status(500).json({ error: err.message });
+    internalError(res, err, 'usuarios');
   }
 });
 
@@ -90,7 +91,7 @@ router.delete('/:id', auth(['admin']), async (req, res) => {
     await db.query('UPDATE usuarios SET activo=0 WHERE id=?', [req.params.id]);
     res.json({ message: 'Usuario desactivado' });
   } catch (err) {
-    res.status(500).json({ error: err.message });
+    internalError(res, err, 'usuarios');
   }
 });
 

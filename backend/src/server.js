@@ -7,10 +7,8 @@ const app = express();
 const db = require('./db');
 const { getJwtSecret } = require('./utils/jwtSecret');
 
-if (!process.env.JWT_SECRET) {
-  console.warn('⚠️  JWT_SECRET no configurado en el entorno — revisa Render > Environment.');
-  void getJwtSecret(); // dispara la advertencia con el fallback
-}
+getJwtSecret(); // valida el secreto al arrancar (fail-fast en producción si falta)
+app.set('trust proxy', 1); // Render/LB: req.ip lee X-Forwarded-For real
 
 // CORS: solo orígenes explícitamente autorizados en CORS_ORIGIN
 // NO se permite *.vercel.app genérico — solo los dominios exactos configurados
@@ -41,9 +39,18 @@ app.use((req, res, next) => {
   return apiCors(req, res, next);
 });
 
+// Cabeceras de seguridad mínimas (equivalentes a helmet para esta API)
+app.use((req, res, next) => {
+  res.setHeader('X-Content-Type-Options', 'nosniff');
+  res.setHeader('X-Frame-Options', 'DENY');
+  res.setHeader('Referrer-Policy', 'strict-origin-when-cross-origin');
+  res.setHeader('Permissions-Policy', 'camera=(), microphone=(), geolocation=()');
+  next();
+});
+
 app.use(express.json());
 app.use(express.urlencoded({ extended: true }));
-app.use('/uploads', express.static(path.join(__dirname, '../uploads')));
+app.use('/uploads', express.static(path.join(__dirname, '../uploads'), { fallthrough: false }));
 
 // Rutas
 app.use('/api/auth', require('./routes/auth'));

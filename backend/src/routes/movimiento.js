@@ -2,6 +2,7 @@ const express = require('express');
 const router = express.Router();
 const db = require('../db');
 const auth = require('../middleware/auth');
+const { internalError } = require('../utils/httpErrors');
 
 // POST /api/movimiento/calcular - Calcular consumo en un período
 router.post('/calcular', auth(), async (req, res) => {
@@ -209,8 +210,7 @@ router.post('/calcular', auth(), async (req, res) => {
     });
 
   } catch (err) {
-    console.error('Error en POST /movimiento/calcular:', err);
-    res.status(500).json({ error: err.message });
+    internalError(res, err, 'movimiento/calcular');
   }
 });
 

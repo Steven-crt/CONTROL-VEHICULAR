@@ -2,16 +2,21 @@ const express = require('express');
 const router = express.Router();
 const db = require('../db');
 const auth = require('../middleware/auth');
+const { internalError } = require('../utils/httpErrors');
+
+const INICIO_MES = "DATE_FORMAT(CURDATE(), '%Y-%m-01')";
 
 // GET /api/reportes/dashboard - stats para el dashboard (gestión vehicular)
 router.get('/dashboard', auth(), async (req, res) => {
   try {
     const [totalVehiculos] = await db.query('SELECT COUNT(*) as total FROM vehiculos WHERE activo = 1');
     const [gastosCombustible] = await db.query(
-      "SELECT COALESCE(SUM(costo_total),0) as total FROM solicitudes_combustible WHERE MONTH(fecha_solicitud)=MONTH(CURDATE()) AND YEAR(fecha_solicitud)=YEAR(CURDATE())"
+      `SELECT COALESCE(SUM(costo_total),0) as total FROM solicitudes_combustible
+       WHERE fecha_solicitud >= ${INICIO_MES} AND fecha_solicitud < DATE_ADD(${INICIO_MES}, INTERVAL 1 MONTH)`
     );
     const [gastosMantenimiento] = await db.query(
-      "SELECT COALESCE(SUM(costo),0) as total FROM mantenimientos WHERE MONTH(fecha_realizada)=MONTH(CURDATE()) AND YEAR(fecha_realizada)=YEAR(CURDATE())"
+      `SELECT COALESCE(SUM(costo),0) as total FROM mantenimientos
+       WHERE fecha_realizada >= ${INICIO_MES} AND fecha_realizada < DATE_ADD(${INICIO_MES}, INTERVAL 1 MONTH)`
     );
     const [porTipo] = await db.query(
       `SELECT LOWER(COALESCE(tv.nombre, 'Otro')) as name, COUNT(*) as value
@@ -62,7 +67,7 @@ router.get('/dashboard', auth(), async (req, res) => {
       mantenimiento_por_tipo: mantPorTipo
     });
   } catch (err) {
-    res.status(500).json({ error: err.message });
+    internalError(res, err, 'reportes/dashboard');
   }
 });
 
@@ -95,7 +100,7 @@ router.get('/vehiculos-resumen', auth(), async (req, res) => {
       por_anio: porAnio
     });
   } catch (err) {
-    res.status(500).json({ error: err.message });
+    internalError(res, err, 'reportes/dashboard');
   }
 });
 
@@ -130,7 +135,7 @@ router.get('/combustible-resumen', auth(), async (req, res) => {
       litros: parseFloat(totalGeneral[0].litros)
     });
   } catch (err) {
-    res.status(500).json({ error: err.message });
+    internalError(res, err, 'reportes/dashboard');
   }
 });
 
@@ -172,7 +177,7 @@ router.get('/mantenimiento-resumen', auth(), async (req, res) => {
       por_tipo: porTipo.map(d => ({ ...d, total: parseFloat(d.total) }))
     });
   } catch (err) {
-    res.status(500).json({ error: err.message });
+    internalError(res, err, 'reportes/dashboard');
   }
 });
 
@@ -209,7 +214,7 @@ router.get('/gastos-consolidado', auth(), async (req, res) => {
 
     res.json(consolidado);
   } catch (err) {
-    res.status(500).json({ error: err.message });
+    internalError(res, err, 'reportes/dashboard');
   }
 });
 
@@ -225,7 +230,7 @@ router.get('/vehiculos-recientes', auth(), async (req, res) => {
     `);
     res.json(rows);
   } catch (err) {
-    res.status(500).json({ error: err.message });
+    internalError(res, err, 'reportes/dashboard');
   }
 });
 

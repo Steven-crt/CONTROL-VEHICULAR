@@ -7,11 +7,29 @@ const { getRol } = require('../utils/roles');
 const { getJwtSecret } = require('../utils/jwtSecret');
 require('dotenv').config();
 
-// Rate limiting simple en memoria para prevenir brute force en login
-// Estructura: { ip_usuario: { intentos, bloqueadoHasta } }
+// Rate limiting en memoria para prevenir brute force en login.
+// NOTA: en un despliegue multi-instancia esto debería ser Redis; para una sola
+// instancia es suficiente y evita la dependencia extra.
+// Estructura: { ip_usuario: { intentos, primeraFalla, bloqueadoHasta } }
 const intentosFallidos = new Map();
 const MAX_INTENTOS = 5;
 const VENTANA_MS = 15 * 60 * 1000; // 15 minutos
+
+// Barrer periódicamente entradas viejas para evitar fuga de memoria
+setInterval(() => {
+  const ahora = Date.now();
+  for (const [ip, reg] of intentosFallidos) {
+    if (ahora - reg.primeraFalla > VENTANA_MS && (!reg.bloqueadoHasta || ahora > reg.bloqueadoHasta)) {
+      intentosFallidos.delete(ip);
+    }
+  }
+}, 10 * 60 * 1000).unref();
+
+function obtenerIp(req) {
+  const fwd = req.headers['x-forwarded-for'];
+  if (fwd) return String(fwd).split(',')[0].trim();
+  return req.ip || req.socket?.remoteAddress || 'unknown';
+}
 
 function checkRateLimit(ip) {
   const ahora = Date.now();
@@ -45,7 +63,7 @@ function limpiarIntentosExitoso(ip) {
 
 // POST /api/auth/login
 router.post('/login', async (req, res) => {
-  const ip = req.ip || req.headers['x-forwarded-for'] || 'unknown';
+  const ip = obtenerIp(req);
 
   // Verificar rate limit
   const limiteEstado = checkRateLimit(ip);
