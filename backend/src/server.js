@@ -19,12 +19,12 @@ const allowedOrigins = (process.env.CORS_ORIGIN || 'http://localhost:5173')
 
 const apiCors = cors({
   origin: (origin, callback) => {
-    // Permitir peticiones sin origin solo en desarrollo local
+    // Sin cabecera Origin = cliente no navegador (curl, health checks, monitores,
+    // Render). CORS solo aplica a navegadores: se deja pasar sin cabeceras CORS.
     if (!origin) {
-      const isLocalDev = process.env.NODE_ENV !== 'production';
-      return isLocalDev
+      return process.env.NODE_ENV !== 'production'
         ? callback(null, true)
-        : callback(new Error('CORS: origen requerido en producción'));
+        : callback(null, false);
     }
     if (allowedOrigins.includes(origin)) return callback(null, true);
     callback(new Error(`CORS: origen no permitido → ${origin}`));
@@ -66,6 +66,9 @@ app.use('/api/notificaciones', require('./routes/notificaciones'));
 
 // Health check con diagnóstico de conexión a la base de datos
 const TABLAS_REQUERIDAS = ['usuarios', 'vehiculos', 'tipos_vehiculo', 'solicitudes_combustible', 'mantenimientos', 'configuracion', 'ubicaciones'];
+
+// Respuesta simple en la raíz: Render hace su health check a la URL primaria (sin Origin)
+app.get('/', (req, res) => res.json({ status: 'ok', service: 'Gestion Vehicular API', health: '/api/health' }));
 
 app.get('/api/health', async (req, res) => {
   const info = {

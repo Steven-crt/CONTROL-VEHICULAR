@@ -11,7 +11,6 @@ const poolConfig = {
   queueLimit: 0,
   idleTimeout: 60000, // Cerrar conexiones inactivas después de 60s
   connectTimeout: 10000, // 10s máximo para conectar
-  acquireTimeout: 30000, // 30s máximo para adquirir conexión
   timezone: '+00:00',
   // SSL requerido por Aiven — rejectUnauthorized: false acepta el cert de Aiven sin CA local
   ssl: useSSL ? { rejectUnauthorized: false } : undefined
@@ -52,7 +51,7 @@ const origen = process.env.DATABASE_URL ? 'DATABASE_URL (URI de Aiven)' : 'varia
 pool.getConnection()
   .then(conn => {
     console.log(`✅ Conectado a MySQL: ${poolConfig.host}/${poolConfig.database} (SSL: ${useSSL}) — origen: ${origen}`);
-    console.log(`📦 Pool: ${poolConfig.connectionLimit} conexiones máx., timeout: ${poolConfig.acquireTimeout}ms`);
+    console.log(`📦 Pool: ${poolConfig.connectionLimit} conexiones máx., connectTimeout: ${poolConfig.connectTimeout}ms`);
     conn.release();
   })
   .catch(err => {
