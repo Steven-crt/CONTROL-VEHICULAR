@@ -19,7 +19,7 @@ const allowedOrigins = (process.env.CORS_ORIGIN || 'http://localhost:5173')
   .map(o => o.trim())
   .filter(Boolean);
 
-app.use(cors({
+const apiCors = cors({
   origin: (origin, callback) => {
     // Permitir peticiones sin origin solo en desarrollo local
     if (!origin) {
@@ -32,7 +32,14 @@ app.use(cors({
     callback(new Error(`CORS: origen no permitido → ${origin}`));
   },
   credentials: true
-}));
+});
+
+// /api/health queda exento del CORS estricto para permitir health checks,
+// curl y navegación directa (peticiones sin cabecera Origin)
+app.use((req, res, next) => {
+  if (req.path === '/api/health') return cors({ origin: true })(req, res, next);
+  return apiCors(req, res, next);
+});
 
 app.use(express.json());
 app.use(express.urlencoded({ extended: true }));
