@@ -40,17 +40,36 @@ const toDateOrNull = (v) => (v === '' || v === null || v === undefined) ? null :
 router.get('/', auth(), async (req, res) => {
   const { year, search } = req.query;
   try {
+    // Última ubicación con ROW_NUMBER() en una sola pasada sobre ubicaciones
+    // (una subquery correlacionada por fila escalaba mal con muchos vehículos)
     let q = `
       SELECT v.*,
         LOWER(COALESCE(tv.nombre, 'Camioneta')) AS tipo,
         v.ano AS anio,
         v.kilometraje_actual AS km_actual,
-        (SELECT fecha_solicitud FROM solicitudes_combustible WHERE vehiculo_id = v.id ORDER BY fecha_solicitud DESC LIMIT 1) as ultima_carga_fecha,
-        (SELECT latitud FROM ubicaciones WHERE vehiculo_id = v.id ORDER BY timestamp DESC LIMIT 1) as ultima_latitud,
-        (SELECT longitud FROM ubicaciones WHERE vehiculo_id = v.id ORDER BY timestamp DESC LIMIT 1) as ultima_longitud,
-        (SELECT timestamp FROM ubicaciones WHERE vehiculo_id = v.id ORDER BY timestamp DESC LIMIT 1) as ultima_ubicacion_fecha
+        sc.ultima_carga_fecha,
+        ub.ultima_latitud,
+        ub.ultima_longitud,
+        ub.ultima_ubicacion_fecha
       FROM vehiculos v
       LEFT JOIN tipos_vehiculo tv ON tv.id = v.tipo_vehiculo_id
+      LEFT JOIN (
+        SELECT vehiculo_id, MAX(fecha_solicitud) AS ultima_carga_fecha
+        FROM solicitudes_combustible
+        GROUP BY vehiculo_id
+      ) sc ON sc.vehiculo_id = v.id
+      LEFT JOIN (
+        SELECT vehiculo_id, ultima_latitud, ultima_longitud, ultima_ubicacion_fecha
+        FROM (
+          SELECT vehiculo_id,
+            latitud AS ultima_latitud,
+            longitud AS ultima_longitud,
+            timestamp AS ultima_ubicacion_fecha,
+            ROW_NUMBER() OVER (PARTITION BY vehiculo_id ORDER BY timestamp DESC) AS rn
+          FROM ubicaciones
+        ) ult
+        WHERE rn = 1
+      ) ub ON ub.vehiculo_id = v.id
       WHERE v.activo = 1
     `;
     const params = [];

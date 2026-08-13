@@ -12,7 +12,14 @@ function parseLimit(valor) {
   return Math.min(n, LIMIT_MAX);
 }
 
+// km_anterior con LAG() en una sola pasada sobre el historial completo
+// (sustituye la subquery correlacionada por fila que escalaba mal)
 const CARGA_SELECT = `
+  WITH historial_km AS (
+    SELECT id, vehiculo_id, fecha_solicitud, kilometraje_actual,
+      LAG(kilometraje_actual) OVER (PARTITION BY vehiculo_id ORDER BY fecha_solicitud, id) AS km_anterior
+    FROM solicitudes_combustible
+  )
   SELECT c.id, c.codigo, c.vehiculo_id, v.placa, v.marca, v.modelo,
     c.galones_solicitados AS litros_solicitados,
     c.galones_surtidos AS litros,
@@ -22,11 +29,10 @@ const CARGA_SELECT = `
     c.tipo_combustible, c.estado,
     c.fecha_solicitud AS fecha_carga,
     c.fecha_atencion, c.solicitante_id, c.atendido_por_id, c.observaciones,
-    (SELECT kilometraje_actual FROM solicitudes_combustible c2
-       WHERE c2.vehiculo_id = c.vehiculo_id AND c2.fecha_solicitud < c.fecha_solicitud
-       ORDER BY c2.fecha_solicitud DESC LIMIT 1) AS km_anterior
+    hk.km_anterior
   FROM solicitudes_combustible c
   JOIN vehiculos v ON c.vehiculo_id = v.id
+  LEFT JOIN historial_km hk ON hk.id = c.id
 `;
 
 function genCodigo(prefix) {

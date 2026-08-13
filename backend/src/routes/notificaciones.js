@@ -3,36 +3,34 @@ const router = express.Router();
 const db = require('../db');
 const auth = require('../middleware/auth');
 
-// NOTA: Para escalabilidad, las queries se pueden optimizar con CTEs en MySQL 8+ o usando tablas temporales
-// Aquí mantengo compatibilidad con MySQL 5.7+ pero preparado para migración futura
+const INICIO_MES = "DATE_FORMAT(CURDATE(), '%Y-%m-01')";
 
 router.get('/', auth(), async (req, res) => {
   try {
     const notificaciones = [];
 
     // 1. Vehículos con bajo rendimiento de combustible (< 8 km/l)
-    // Optimización: usar una subquery escalonada para calcular el KM previo
+    // km anterior con LAG() en una sola pasada (sin subquery correlacionada por fila);
+    // se ignora la primera carga porque no hay km previo para comparar
     const [bajoRendimiento] = await db.query(`
+      WITH historial_km AS (
+        SELECT id, vehiculo_id, fecha_solicitud, kilometraje_actual, galones_surtidos,
+          LAG(kilometraje_actual) OVER (PARTITION BY vehiculo_id ORDER BY fecha_solicitud, id) AS km_anterior
+        FROM solicitudes_combustible
+        WHERE kilometraje_actual > 0 AND galones_surtidos > 0
+      )
       SELECT c.vehiculo_id, v.placa, v.marca, v.modelo,
         ROUND(AVG(
           CASE
-            WHEN c.kilometraje_actual > 0 AND c.galones_surtidos > 0 THEN
-              (c.kilometraje_actual - COALESCE(
-                (SELECT c2.kilometraje_actual
-                 FROM solicitudes_combustible c2
-                 WHERE c2.vehiculo_id = c.vehiculo_id
-                   AND c2.fecha_solicitud < c.fecha_solicitud
-                 ORDER BY c2.fecha_solicitud DESC LIMIT 1),
-                0
-              )) / c.galones_surtidos
-            ELSE 0
+            WHEN c.km_anterior IS NOT NULL AND c.kilometraje_actual > c.km_anterior THEN
+              (c.kilometraje_actual - c.km_anterior) / c.galones_surtidos
+            ELSE NULL
           END
         ), 2) as rendimiento
-      FROM solicitudes_combustible c
+      FROM historial_km c
       JOIN vehiculos v ON c.vehiculo_id = v.id
-      WHERE c.kilometraje_actual > 0 AND c.galones_surtidos > 0
       GROUP BY c.vehiculo_id
-      HAVING rendimiento < 8 AND rendimiento > 0
+      HAVING rendimiento IS NOT NULL AND rendimiento < 8
       ORDER BY rendimiento ASC
       LIMIT 5
     `);
@@ -156,10 +154,12 @@ router.get('/', auth(), async (req, res) => {
 
     // 6. Gastos del mes
     const [gastoCombustible] = await db.query(
-      "SELECT COALESCE(SUM(costo_total),0) as total FROM solicitudes_combustible WHERE MONTH(fecha_solicitud)=MONTH(CURDATE()) AND YEAR(fecha_solicitud)=YEAR(CURDATE())"
+      `SELECT COALESCE(SUM(costo_total),0) as total FROM solicitudes_combustible
+       WHERE fecha_solicitud >= ${INICIO_MES} AND fecha_solicitud < DATE_ADD(${INICIO_MES}, INTERVAL 1 MONTH)`
     );
     const [gastoMant] = await db.query(
-      "SELECT COALESCE(SUM(costo),0) as total FROM mantenimientos WHERE MONTH(fecha_realizada)=MONTH(CURDATE()) AND YEAR(fecha_realizada)=YEAR(CURDATE())"
+      `SELECT COALESCE(SUM(costo),0) as total FROM mantenimientos
+       WHERE fecha_realizada >= ${INICIO_MES} AND fecha_realizada < DATE_ADD(${INICIO_MES}, INTERVAL 1 MONTH)`
     );
     const totalMes = parseFloat(gastoCombustible[0].total) + parseFloat(gastoMant[0].total);
     notificaciones.push({
