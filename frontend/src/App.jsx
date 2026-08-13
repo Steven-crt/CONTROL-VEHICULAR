@@ -51,20 +51,22 @@ function AppRoutes() {
 
 export default function App() {
   return (
-    <ConfigProvider>
-      <AuthProvider>
-        <BrowserRouter>
-          <Toaster
-            position="top-right"
-            toastOptions={{
-              style: { background: '#132040', color: '#e2e8f0', border: '1px solid #1e3a5f' },
-              success: { iconTheme: { primary: '#10b981', secondary: '#132040' } },
-              error: { iconTheme: { primary: '#ef4444', secondary: '#132040' } },
-            }}
-          />
-          <AppRoutes />
-        </BrowserRouter>
-      </AuthProvider>
-    </ConfigProvider>
+    <ThemeProvider>
+      <ConfigProvider>
+        <AuthProvider>
+          <BrowserRouter>
+            <Toaster
+              position="top-right"
+              toastOptions={{
+                style: { background: '#132040', color: '#e2e8f0', border: '1px solid #1e3a5f' },
+                success: { iconTheme: { primary: '#10b981', secondary: '#132040' } },
+                error: { iconTheme: { primary: '#ef4444', secondary: '#132040' } },
+              }}
+            />
+            <AppRoutes />
+          </BrowserRouter>
+        </AuthProvider>
+      </ConfigProvider>
+    </ThemeProvider>
   );
 }
