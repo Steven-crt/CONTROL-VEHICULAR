@@ -16,8 +16,8 @@ import Configuracion from './pages/Configuracion';
 function PrivateRoute({ children }) {
   const { usuario, loading } = useAuth();
   if (loading) return (
-    <div className="min-h-screen bg-park-dark flex items-center justify-center">
-      <div className="text-park-accent text-xl animate-pulse">Cargando Sistema...</div>
+    <div className="min-h-screen bg-cv-dark flex items-center justify-center">
+      <div className="text-cv-accent text-xl animate-pulse">Cargando...</div>
     </div>
   );
   return usuario ? children : <Navigate to="/login" />;

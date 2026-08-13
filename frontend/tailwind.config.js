@@ -7,19 +7,15 @@ export default {
   theme: {
     extend: {
       colors: {
-        park: {
+        cv: {
           dark:    '#0b1220',
-          darker:  '#060d18',
           sidebar: '#0f1d35',
           card:    '#132040',
           border:  '#1e3a5f',
           primary: '#1e3a5f',
           accent:  '#f59e0b',
           'accent-light': '#fbbf24',
-          libre:   '#10b981',
-          ocupado: '#ef4444',
-          mant:    '#6b7280',
-          VIP:     '#8b5cf6',
+          danger:  '#ef4444',
           text:    '#e2e8f0',
           muted:   '#94a3b8',
         }

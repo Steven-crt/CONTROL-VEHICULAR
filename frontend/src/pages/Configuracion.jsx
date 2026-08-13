@@ -37,7 +37,7 @@ function CampoForm({ campo, config, setConfig, children }) {
   const isWide = ['nombre_negocio', 'direccion', 'logo_url', 'tipos_vehiculo'].includes(key);
   return (
     <div className={isWide ? 'sm:col-span-2' : ''}>
-      <label className="block text-park-muted text-sm font-medium mb-1.5">{label}</label>
+      <label className="block text-cv-muted text-sm font-medium mb-1.5">{label}</label>
       {children || (
         type === 'select' ? (
           <select
@@ -63,11 +63,11 @@ function CampoForm({ campo, config, setConfig, children }) {
 
 function Seccion({ icon: Icon, titulo, subtitulo, campos, config, setConfig, loading, handleFileUpload }) {
   return (
-    <div className="border-t border-park-border pt-4">
+    <div className="border-t border-cv-border pt-4">
       <div className="flex items-center gap-2 pb-4">
-        <Icon className="w-4 h-4 text-park-accent" />
-        <h3 className="text-park-muted text-xs font-semibold uppercase tracking-wider">{titulo}</h3>
-        {subtitulo && <span className="text-park-muted/50 text-xs">— {subtitulo}</span>}
+        <Icon className="w-4 h-4 text-cv-accent" />
+        <h3 className="text-cv-muted text-xs font-semibold uppercase tracking-wider">{titulo}</h3>
+        {subtitulo && <span className="text-cv-muted/50 text-xs">— {subtitulo}</span>}
       </div>
       <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
         {campos.map(campo => (
@@ -143,12 +143,12 @@ export default function Configuracion() {
     <div className="max-w-2xl mx-auto space-y-6 animate-fade-in">
       <div className="card">
         <div className="flex items-center gap-3 mb-6">
-          <div className="w-10 h-10 bg-park-accent/10 rounded-xl flex items-center justify-center">
-            <Settings className="w-5 h-5 text-park-accent" />
+          <div className="w-10 h-10 bg-cv-accent/10 rounded-xl flex items-center justify-center">
+            <Settings className="w-5 h-5 text-cv-accent" />
           </div>
           <div>
-            <h2 className="text-park-text font-semibold">Configuración del Sistema</h2>
-            <p className="text-park-muted text-xs">Parámetros del sistema de control vehicular</p>
+            <h2 className="text-cv-text font-semibold">Configuración del Sistema</h2>
+            <p className="text-cv-muted text-xs">Parámetros del sistema de control vehicular</p>
           </div>
         </div>
 
@@ -158,18 +158,18 @@ export default function Configuracion() {
           <Seccion icon={Wrench} titulo="Mantenimiento" subtitulo="alertas preventivas" campos={CAMPOS_MANTENIMIENTO} config={config} setConfig={setConfig} loading={loading} />
           <Seccion icon={Shield} titulo="Seguridad y Monitoreo" campos={CAMPOS_SEGURIDAD} config={config} setConfig={setConfig} loading={loading} />
 
-          <div className="border-t border-park-border pt-4">
-            <h3 className="text-park-muted text-xs font-semibold uppercase tracking-wider pb-4">Información del Sistema</h3>
-            <div className="grid grid-cols-1 sm:grid-cols-2 gap-3 text-sm text-park-muted">
+          <div className="border-t border-cv-border pt-4">
+            <h3 className="text-cv-muted text-xs font-semibold uppercase tracking-wider pb-4">Información del Sistema</h3>
+            <div className="grid grid-cols-1 sm:grid-cols-2 gap-3 text-sm text-cv-muted">
               {[
                 ['Versión', 'Control Vehicular v1.0'],
                 ['Backend', 'Node.js + Express'],
                 ['Base de Datos', 'MySQL 8.x'],
                 ['Frontend', 'React 19 + Vite'],
               ].map(([k, v]) => (
-                <div key={k} className="bg-park-sidebar rounded-lg px-3 py-2 flex justify-between">
+                <div key={k} className="bg-cv-sidebar rounded-lg px-3 py-2 flex justify-between">
                   <span>{k}</span>
-                  <span className="text-park-text font-medium">{v}</span>
+                  <span className="text-cv-text font-medium">{v}</span>
                 </div>
               ))}
             </div>

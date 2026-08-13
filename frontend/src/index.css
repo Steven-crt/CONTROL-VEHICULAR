@@ -5,7 +5,7 @@
 
 @layer base {
   body {
-    @apply bg-park-dark text-park-text font-sans;
+    @apply bg-cv-dark text-cv-text font-sans;
   }
   * {
     scrollbar-width: thin;
@@ -18,36 +18,33 @@
 
 @layer components {
   .card {
-    @apply bg-park-card border border-park-border rounded-xl p-5 shadow-lg;
+    @apply bg-cv-card border border-cv-border rounded-xl p-5 shadow-lg;
   }
   .btn-primary {
-    @apply bg-park-accent hover:bg-park-accent-light text-park-dark font-semibold px-4 py-2 rounded-lg transition-all duration-200 flex items-center gap-2 disabled:opacity-50 disabled:cursor-not-allowed;
+    @apply bg-cv-accent hover:bg-cv-accent-light text-cv-dark font-semibold px-4 py-2 rounded-lg transition-all duration-200 flex items-center gap-2 disabled:opacity-50 disabled:cursor-not-allowed;
   }
   .btn-secondary {
-    @apply bg-park-border hover:bg-park-primary text-park-text font-medium px-4 py-2 rounded-lg transition-all duration-200 flex items-center gap-2;
+    @apply bg-cv-border hover:bg-cv-primary text-cv-text font-medium px-4 py-2 rounded-lg transition-all duration-200 flex items-center gap-2;
   }
   .btn-danger {
-    @apply bg-park-ocupado hover:bg-red-600 text-white font-medium px-4 py-2 rounded-lg transition-all duration-200 flex items-center gap-2;
+    @apply bg-cv-danger hover:bg-red-600 text-white font-medium px-4 py-2 rounded-lg transition-all duration-200 flex items-center gap-2;
   }
   .input {
-    @apply bg-park-sidebar border border-park-border text-park-text placeholder-park-muted rounded-lg px-3 py-2 w-full focus:outline-none focus:border-park-accent transition-colors;
+    @apply bg-cv-sidebar border border-cv-border text-cv-text placeholder-cv-muted rounded-lg px-3 py-2 w-full focus:outline-none focus:border-cv-accent transition-colors;
   }
   .select {
-    @apply bg-park-sidebar border border-park-border text-park-text rounded-lg px-3 py-2 w-full focus:outline-none focus:border-park-accent transition-colors;
+    @apply bg-cv-sidebar border border-cv-border text-cv-text rounded-lg px-3 py-2 w-full focus:outline-none focus:border-cv-accent transition-colors;
   }
-  .badge-libre {
+  .badge-activo {
     @apply inline-flex items-center px-2 py-0.5 rounded-full text-xs font-medium bg-emerald-900/40 text-emerald-400 border border-emerald-700/50;
   }
-  .badge-ocupado {
-    @apply inline-flex items-center px-2 py-0.5 rounded-full text-xs font-medium bg-red-900/40 text-red-400 border border-red-700/50;
-  }
-  .badge-mant {
+  .badge-inactivo {
     @apply inline-flex items-center px-2 py-0.5 rounded-full text-xs font-medium bg-gray-700/40 text-gray-400 border border-gray-600/50;
   }
   .table-header {
-    @apply text-park-muted text-xs font-semibold uppercase tracking-wider;
+    @apply text-cv-muted text-xs font-semibold uppercase tracking-wider;
   }
   .table-cell {
-    @apply text-park-text text-sm py-3 px-4 border-b border-park-border/30;
+    @apply text-cv-text text-sm py-3 px-4 border-b border-cv-border/30;
   }
 }

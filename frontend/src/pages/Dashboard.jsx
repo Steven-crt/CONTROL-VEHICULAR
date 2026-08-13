@@ -19,9 +19,9 @@ function StatCard({ icon: Icon, label, value, sub, color, iconBg, cardBg }) {
         <Icon className={`w-7 h-7 ${color}`} />
       </div>
       <div className="relative z-10 flex-1">
-        <p className="text-park-muted text-xs font-bold uppercase tracking-widest">{label}</p>
-        <p className="text-park-text text-3xl font-black mt-1 tracking-tight">{value}</p>
-        {sub && <p className="text-park-muted text-xs mt-1 font-medium">{sub}</p>}
+        <p className="text-cv-muted text-xs font-bold uppercase tracking-widest">{label}</p>
+        <p className="text-cv-text text-3xl font-black mt-1 tracking-tight">{value}</p>
+        {sub && <p className="text-cv-muted text-xs mt-1 font-medium">{sub}</p>}
       </div>
     </div>
   );
@@ -65,7 +65,7 @@ export default function Dashboard() {
 
   if (loading) return (
     <div className="flex items-center justify-center h-64">
-      <div className="text-park-accent animate-pulse font-medium tracking-wide">Cargando datos...</div>
+      <div className="text-cv-accent animate-pulse font-medium tracking-wide">Cargando datos...</div>
     </div>
   );
 
@@ -126,7 +126,7 @@ export default function Dashboard() {
             <h3 className="text-white font-bold text-lg flex items-center gap-2">
               <PieIcon className="w-5 h-5 text-purple-500" /> Tipos de Vehículos
             </h3>
-            <p className="text-park-muted text-xs mt-1">Parque automotor por tipo</p>
+            <p className="text-cv-muted text-xs mt-1">Flota por tipo de vehículo</p>
           </div>
           <div className="flex-1 flex items-center justify-center min-h-[260px]">
             {tiposData.length > 0 ? (
@@ -152,7 +152,7 @@ export default function Dashboard() {
                 </PieChart>
               </ResponsiveContainer>
             ) : (
-              <div className="text-park-muted text-sm border-2 border-dashed border-park-border rounded-xl p-8 text-center w-full">
+              <div className="text-cv-muted text-sm border-2 border-dashed border-cv-border rounded-xl p-8 text-center w-full">
                 No hay vehículos registrados
               </div>
             )}
@@ -166,7 +166,7 @@ export default function Dashboard() {
               <h3 className="text-white font-bold text-lg flex items-center gap-2">
                 <Fuel className="w-5 h-5 text-amber-500" /> Gastos de Combustible
               </h3>
-              <p className="text-park-muted text-xs mt-1">Evolución mensual</p>
+              <p className="text-cv-muted text-xs mt-1">Evolución mensual</p>
             </div>
           </div>
           {combustibleChart.length > 0 ? (
@@ -180,7 +180,7 @@ export default function Dashboard() {
               </BarChart>
             </ResponsiveContainer>
           ) : (
-            <div className="h-64 flex items-center justify-center text-park-muted text-sm border-2 border-dashed border-park-border rounded-xl">
+            <div className="h-64 flex items-center justify-center text-cv-muted text-sm border-2 border-dashed border-cv-border rounded-xl">
               Sin datos de combustible
             </div>
           )}
@@ -193,7 +193,7 @@ export default function Dashboard() {
               <h3 className="text-white font-bold text-lg flex items-center gap-2">
                 <Wrench className="w-5 h-5 text-emerald-500" /> Mantenimiento por Servicio
               </h3>
-              <p className="text-park-muted text-xs mt-1">Servicios realizados</p>
+              <p className="text-cv-muted text-xs mt-1">Servicios realizados</p>
             </div>
           </div>
           {mantenimientoChart.length > 0 ? (
@@ -207,7 +207,7 @@ export default function Dashboard() {
               </BarChart>
             </ResponsiveContainer>
           ) : (
-            <div className="h-64 flex items-center justify-center text-park-muted text-sm border-2 border-dashed border-park-border rounded-xl">
+            <div className="h-64 flex items-center justify-center text-cv-muted text-sm border-2 border-dashed border-cv-border rounded-xl">
               Sin datos de mantenimiento
             </div>
           )}
@@ -220,16 +220,16 @@ export default function Dashboard() {
           </h3>
           <div className="space-y-3 flex-1">
             {(data?.ultimos_vehiculos || []).map((e, i) => (
-              <div key={i} className="flex items-center justify-between p-3 rounded-xl bg-park-border/20 hover:bg-park-border/40 transition-colors">
+              <div key={i} className="flex items-center justify-between p-3 rounded-xl bg-cv-border/20 hover:bg-cv-border/40 transition-colors">
                 <div className="flex items-center gap-3">
                   <div className="w-2.5 h-2.5 rounded-full bg-blue-400 shadow-blue-400/50 shadow-[0_0_8px_rgba(0,0,0,0.5)]" />
                   <div>
                     <p className="text-white font-bold text-sm tracking-wide">{e.placa}</p>
-                    <p className="text-park-muted text-[10px] uppercase font-semibold">{e.marca} {e.modelo} - {e.tipo}</p>
+                    <p className="text-cv-muted text-[10px] uppercase font-semibold">{e.marca} {e.modelo} - {e.tipo}</p>
                   </div>
                 </div>
                 <div className="text-right">
-                  <span className="bg-[#0f172a] text-slate-300 px-2.5 py-1 rounded-md text-xs font-medium border border-park-border/50">
+                  <span className="bg-[#0f172a] text-slate-300 px-2.5 py-1 rounded-md text-xs font-medium border border-cv-border/50">
                     {new Date(e.created_at).toLocaleDateString('es-EC', { day: '2-digit', month: 'short' })}
                   </span>
                 </div>

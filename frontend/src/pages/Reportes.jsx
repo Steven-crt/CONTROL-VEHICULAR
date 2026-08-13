@@ -10,8 +10,8 @@ import { useConfig } from '../contexts/ConfigContext';
 const COLORS = ['#3b82f6', '#8b5cf6', '#f59e0b', '#10b981', '#ef4444', '#06b6d4'];
 const customTooltip = ({ active, payload, label }, currency) => {
   if (active && payload?.length) return (
-    <div className="bg-park-card border border-park-border rounded-lg p-3 text-sm shadow-xl">
-      <p className="text-park-muted mb-1">{label}</p>
+    <div className="bg-cv-card border border-cv-border rounded-lg p-3 text-sm shadow-xl">
+      <p className="text-cv-muted mb-1">{label}</p>
       {payload.map((p, i) => (
         <p key={i} className="font-bold" style={{ color: p.color }}>
           {p.name}: {currency}{Number(p.value || 0).toFixed(2)}
@@ -29,8 +29,8 @@ function StatCard({ icon: Icon, label, value, color, iconBg }) {
         <Icon className={`w-6 h-6 ${color}`} />
       </div>
       <div>
-        <p className="text-park-muted text-xs font-bold uppercase tracking-wider">{label}</p>
-        <p className="text-park-text text-2xl font-black mt-0.5">{value}</p>
+        <p className="text-cv-muted text-xs font-bold uppercase tracking-wider">{label}</p>
+        <p className="text-cv-text text-2xl font-black mt-0.5">{value}</p>
       </div>
     </div>
   );
@@ -77,19 +77,19 @@ export default function Reportes() {
       {/* Filtros */}
       <div className="card flex flex-col sm:flex-row flex-wrap items-start sm:items-end gap-4">
         <div>
-          <label className="block text-park-muted text-sm mb-1">Desde</label>
+          <label className="block text-cv-muted text-sm mb-1">Desde</label>
           <input type="date" className="input" value={desde} onChange={e => setDesde(e.target.value)} />
         </div>
         <div>
-          <label className="block text-park-muted text-sm mb-1">Hasta</label>
+          <label className="block text-cv-muted text-sm mb-1">Hasta</label>
           <input type="date" className="input" value={hasta} onChange={e => setHasta(e.target.value)} />
         </div>
         <button onClick={fetch} disabled={loading} className="btn-primary">
           <TrendingUp className="w-4 h-4" /> {loading ? 'Cargando...' : 'Generar Reporte'}
         </button>
         <div className="w-full sm:w-auto sm:ml-auto text-left sm:text-right mt-2 sm:mt-0">
-          <p className="text-park-muted text-xs">Total gastos período</p>
-          <p className="text-park-accent text-2xl font-black">{currency}{totalGastos.toFixed(2)}</p>
+          <p className="text-cv-muted text-xs">Total gastos período</p>
+          <p className="text-cv-accent text-2xl font-black">{currency}{totalGastos.toFixed(2)}</p>
         </div>
       </div>
 
@@ -103,7 +103,7 @@ export default function Reportes() {
 
       {/* Gráfico gastos consolidados */}
       <div className="card">
-        <h3 className="text-park-text font-semibold mb-4 flex items-center gap-2">
+        <h3 className="text-cv-text font-semibold mb-4 flex items-center gap-2">
           <DollarSign className="w-4 h-4 text-amber-500" /> Gastos Consolidados (Combustible + Mantenimiento)
         </h3>
         {gastosConsolidado.length > 0 ? (
@@ -119,14 +119,14 @@ export default function Reportes() {
             </BarChart>
           </ResponsiveContainer>
         ) : (
-          <div className="h-48 flex items-center justify-center text-park-muted">Sin datos de gastos en el período</div>
+          <div className="h-48 flex items-center justify-center text-cv-muted">Sin datos de gastos en el período</div>
         )}
       </div>
 
       <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
         {/* Distribución por tipo */}
         <div className="card">
-          <h3 className="text-park-text font-semibold mb-4 flex items-center gap-2">
+          <h3 className="text-cv-text font-semibold mb-4 flex items-center gap-2">
             <Car className="w-4 h-4 text-blue-500" /> Vehículos por Tipo
           </h3>
           {vehiculosResumen?.por_tipo?.length > 0 ? (
@@ -142,13 +142,13 @@ export default function Reportes() {
               </PieChart>
             </ResponsiveContainer>
           ) : (
-            <div className="h-44 flex items-center justify-center text-park-muted">Sin datos</div>
+            <div className="h-44 flex items-center justify-center text-cv-muted">Sin datos</div>
           )}
         </div>
 
         {/* Distribución por marca */}
         <div className="card">
-          <h3 className="text-park-text font-semibold mb-4 flex items-center gap-2">
+          <h3 className="text-cv-text font-semibold mb-4 flex items-center gap-2">
             <Car className="w-4 h-4 text-purple-500" /> Vehículos por Marca
           </h3>
           {vehiculosResumen?.por_marca?.length > 0 ? (
@@ -162,7 +162,7 @@ export default function Reportes() {
               </BarChart>
             </ResponsiveContainer>
           ) : (
-            <div className="h-44 flex items-center justify-center text-park-muted">Sin datos</div>
+            <div className="h-44 flex items-center justify-center text-cv-muted">Sin datos</div>
           )}
         </div>
       </div>
@@ -170,15 +170,15 @@ export default function Reportes() {
       {/* Gastos de mantenimiento por tipo */}
       {mantenimiento.por_tipo?.length > 0 && (
         <div className="card">
-          <h3 className="text-park-text font-semibold mb-4 flex items-center gap-2">
+          <h3 className="text-cv-text font-semibold mb-4 flex items-center gap-2">
             <Wrench className="w-4 h-4 text-emerald-500" /> Mantenimiento por Tipo de Servicio
           </h3>
           <div className="grid grid-cols-2 sm:grid-cols-3 lg:grid-cols-4 gap-3">
             {mantenimiento.por_tipo.map((t, i) => (
-              <div key={i} className="bg-park-border/20 rounded-xl p-3 text-center">
-                <p className="text-park-muted text-xs uppercase font-semibold">{t.name}</p>
-                <p className="text-park-text text-lg font-black mt-1">{t.value}</p>
-                <p className="text-park-accent text-sm">{currency}{t.total.toFixed(2)}</p>
+              <div key={i} className="bg-cv-border/20 rounded-xl p-3 text-center">
+                <p className="text-cv-muted text-xs uppercase font-semibold">{t.name}</p>
+                <p className="text-cv-text text-lg font-black mt-1">{t.value}</p>
+                <p className="text-cv-accent text-sm">{currency}{t.total.toFixed(2)}</p>
               </div>
             ))}
           </div>
@@ -187,13 +187,13 @@ export default function Reportes() {
 
       {/* Vehículos recientes */}
       <div className="card">
-        <h3 className="text-park-text font-semibold mb-4 flex items-center gap-2">
-          <Calendar className="w-4 h-4 text-park-accent" /> Últimos Vehículos Registrados
+        <h3 className="text-cv-text font-semibold mb-4 flex items-center gap-2">
+          <Calendar className="w-4 h-4 text-cv-accent" /> Últimos Vehículos Registrados
         </h3>
         <div className="overflow-x-auto">
           <table className="w-full text-sm">
             <thead>
-              <tr className="border-b border-park-border">
+              <tr className="border-b border-cv-border">
                 {['Placa', 'Tipo', 'Marca', 'Modelo', 'Color', 'Fecha'].map(h => (
                   <th key={h} className="table-header text-left pb-3 px-2">{h}</th>
                 ))}
@@ -201,18 +201,18 @@ export default function Reportes() {
             </thead>
             <tbody>
               {vehiculosRecientes.map(v => (
-                <tr key={v.id} className="hover:bg-park-border/10 transition-colors">
+                <tr key={v.id} className="hover:bg-cv-border/10 transition-colors">
                   <td className="table-cell px-2 font-bold">{v.placa}</td>
                   <td className="table-cell px-2 capitalize">{v.tipo}</td>
-                  <td className="table-cell px-2 text-park-muted">{v.marca || '-'}</td>
-                  <td className="table-cell px-2 text-park-muted">{v.modelo || '-'}</td>
-                  <td className="table-cell px-2 text-park-muted">{v.color || '-'}</td>
-                  <td className="table-cell px-2 text-park-muted">{new Date(v.created_at).toLocaleDateString('es-EC')}</td>
+                  <td className="table-cell px-2 text-cv-muted">{v.marca || '-'}</td>
+                  <td className="table-cell px-2 text-cv-muted">{v.modelo || '-'}</td>
+                  <td className="table-cell px-2 text-cv-muted">{v.color || '-'}</td>
+                  <td className="table-cell px-2 text-cv-muted">{new Date(v.created_at).toLocaleDateString('es-EC')}</td>
                 </tr>
               ))}
             </tbody>
           </table>
-          {!vehiculosRecientes.length && <p className="text-center text-park-muted py-6">Sin vehículos registrados</p>}
+          {!vehiculosRecientes.length && <p className="text-center text-cv-muted py-6">Sin vehículos registrados</p>}
         </div>
       </div>
     </div>

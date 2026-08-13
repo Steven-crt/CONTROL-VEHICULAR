@@ -16,7 +16,7 @@ const SOAT_STYLES = {
   vigente: { badge: 'text-emerald-400 bg-emerald-900/20 border-emerald-700/50', alerta: 'border-emerald-700/50 bg-emerald-900/20', icono: 'text-emerald-400' },
   por_vencer: { badge: 'text-amber-400 bg-amber-900/20 border-amber-700/50', alerta: 'border-amber-700/50 bg-amber-900/20', icono: 'text-amber-400' },
   vencido: { badge: 'text-red-400 bg-red-900/20 border-red-700/50', alerta: 'border-red-700/50 bg-red-900/20', icono: 'text-red-400' },
-  sin_soat: { badge: 'text-park-muted bg-park-border/20 border-park-border/50', alerta: 'border-park-border/50 bg-park-border/10', icono: 'text-park-muted' },
+  sin_soat: { badge: 'text-cv-muted bg-cv-border/20 border-cv-border/50', alerta: 'border-cv-border/50 bg-cv-border/10', icono: 'text-cv-muted' },
 };
 
 function getSoatInfo(v) {
@@ -215,7 +215,7 @@ export default function VehiculoDetalle() {
   if (loading) {
     return (
       <div className="flex items-center justify-center h-64">
-        <div className="text-park-accent animate-pulse font-medium">Cargando información del vehículo...</div>
+        <div className="text-cv-accent animate-pulse font-medium">Cargando información del vehículo...</div>
       </div>
     );
   }
@@ -254,7 +254,7 @@ export default function VehiculoDetalle() {
         </button>
         <div className="flex-1">
           <h1 className="text-2xl font-bold text-white flex items-center gap-3">
-            <Car className="w-7 h-7 text-park-accent" />
+            <Car className="w-7 h-7 text-cv-accent" />
             {editing ? 'Editando vehículo' : vehiculo.placa}
           </h1>
         </div>
@@ -289,23 +289,23 @@ export default function VehiculoDetalle() {
         {editing ? (
           <div className="grid grid-cols-2 sm:grid-cols-3 lg:grid-cols-6 gap-4">
             <div>
-              <label className="text-park-muted text-xs font-medium mb-1 block">Placa *</label>
+              <label className="text-cv-muted text-xs font-medium mb-1 block">Placa *</label>
               <input className="input" value={editForm.placa} onChange={e => setEditForm({...editForm, placa: e.target.value})} />
             </div>
             <div>
-              <label className="text-park-muted text-xs font-medium mb-1 block">Marca</label>
+              <label className="text-cv-muted text-xs font-medium mb-1 block">Marca</label>
               <input className="input" value={editForm.marca} onChange={e => setEditForm({...editForm, marca: e.target.value})} />
             </div>
             <div>
-              <label className="text-park-muted text-xs font-medium mb-1 block">Modelo</label>
+              <label className="text-cv-muted text-xs font-medium mb-1 block">Modelo</label>
               <input className="input" value={editForm.modelo} onChange={e => setEditForm({...editForm, modelo: e.target.value})} />
             </div>
             <div>
-              <label className="text-park-muted text-xs font-medium mb-1 block">Año</label>
+              <label className="text-cv-muted text-xs font-medium mb-1 block">Año</label>
               <input type="number" className="input" value={editForm.anio} onChange={e => setEditForm({...editForm, anio: e.target.value})} />
             </div>
             <div>
-              <label className="text-park-muted text-xs font-medium mb-1 block">Tipo</label>
+              <label className="text-cv-muted text-xs font-medium mb-1 block">Tipo</label>
               <select className="select" value={editForm.tipo} onChange={e => setEditForm({...editForm, tipo: e.target.value})}>
                 <option value="camioneta">Camioneta</option>
                 <option value="camion">Camion</option>
@@ -313,19 +313,19 @@ export default function VehiculoDetalle() {
               </select>
             </div>
             <div>
-              <label className="text-park-muted text-xs font-medium mb-1 block">Color</label>
+              <label className="text-cv-muted text-xs font-medium mb-1 block">Color</label>
               <input className="input" value={editForm.color} onChange={e => setEditForm({...editForm, color: e.target.value})} />
             </div>
           </div>
         ) : (
           <div className="grid grid-cols-2 sm:grid-cols-3 lg:grid-cols-6 gap-4">
-            <InfoItem icon={Car} label="Placa" value={vehiculo.placa} color="text-park-accent font-bold" />
+            <InfoItem icon={Car} label="Placa" value={vehiculo.placa} color="text-cv-accent font-bold" />
             <InfoItem icon={Car} label="Marca" value={vehiculo.marca || 'N/A'} />
             <InfoItem icon={Car} label="Modelo" value={vehiculo.modelo || 'N/A'} />
             <InfoItem icon={CalendarDays} label="Año" value={vehiculo.anio || 'N/A'} />
             <InfoItem icon={Car} label="Tipo" value={vehiculo.tipo} capitalize />
             <InfoItem icon={Car} label="Color" value={vehiculo.color || 'N/A'} capitalize />
-            <InfoItem icon={Gauge} label="KM Actual" value={`${(vehiculo.km_actual || 0).toLocaleString()} km`} color="text-park-accent" />
+            <InfoItem icon={Gauge} label="KM Actual" value={`${(vehiculo.km_actual || 0).toLocaleString()} km`} color="text-cv-accent" />
             <InfoItem icon={MapPin} label="Ubicación" value={vehiculo.ultima_ubicacion ? `${vehiculo.ultima_ubicacion.latitud.toFixed(4)}, ${vehiculo.ultima_ubicacion.longitud.toFixed(4)}` : 'Sin datos'} />
             <InfoItem icon={Fuel} label="Total Combustible" value={`${vehiculo.totales?.combustible?.total_cargas || 0} cargas`} />
           </div>
@@ -359,24 +359,24 @@ export default function VehiculoDetalle() {
       {editing && (
         <div className="card">
           <div className="flex items-center gap-2 mb-4">
-            <ShieldCheck className="w-5 h-5 text-park-accent" />
-            <h4 className="text-park-text font-semibold">SOAT (Seguro Obligatorio)</h4>
+            <ShieldCheck className="w-5 h-5 text-cv-accent" />
+            <h4 className="text-cv-text font-semibold">SOAT (Seguro Obligatorio)</h4>
           </div>
           <div className="grid grid-cols-2 sm:grid-cols-3 lg:grid-cols-4 gap-4">
             <div>
-              <label className="text-park-muted text-xs font-medium mb-1 block">Número de Póliza *</label>
+              <label className="text-cv-muted text-xs font-medium mb-1 block">Número de Póliza *</label>
               <input className="input" required value={editForm.soat_numero} onChange={e => setEditForm({...editForm, soat_numero: e.target.value})} placeholder="Ej: SOAT-2024-001234" />
             </div>
             <div>
-              <label className="text-park-muted text-xs font-medium mb-1 block">Aseguradora *</label>
+              <label className="text-cv-muted text-xs font-medium mb-1 block">Aseguradora *</label>
               <input className="input" required value={editForm.soat_empresa} onChange={e => setEditForm({...editForm, soat_empresa: e.target.value})} placeholder="Ej: Mapfre" />
             </div>
             <div>
-              <label className="text-park-muted text-xs font-medium mb-1 block">Fecha Inicio</label>
+              <label className="text-cv-muted text-xs font-medium mb-1 block">Fecha Inicio</label>
               <input type="date" className="input" value={editForm.soat_fecha_inicio} onChange={e => setEditForm({...editForm, soat_fecha_inicio: e.target.value})} />
             </div>
             <div>
-              <label className="text-park-muted text-xs font-medium mb-1 block">Fecha Vencimiento *</label>
+              <label className="text-cv-muted text-xs font-medium mb-1 block">Fecha Vencimiento *</label>
               <input type="date" className="input" required value={editForm.soat_fecha_vencimiento} onChange={e => setEditForm({...editForm, soat_fecha_vencimiento: e.target.value})} />
             </div>
           </div>
@@ -384,22 +384,22 @@ export default function VehiculoDetalle() {
       )}
 
       {/* Tabs */}
-      <div className="flex border-b border-park-border gap-1">
+      <div className="flex border-b border-cv-border gap-1">
         {tabs.map(tab => (
           <button
             key={tab.id}
             onClick={() => setActiveTab(tab.id)}
             className={`flex items-center gap-2 px-4 py-3 text-sm font-medium transition-all border-b-2 -mb-px ${
               activeTab === tab.id
-                ? 'text-park-accent border-park-accent'
-                : 'text-park-muted border-transparent hover:text-park-text hover:border-park-border'
+                ? 'text-cv-accent border-cv-accent'
+                : 'text-cv-muted border-transparent hover:text-cv-text hover:border-cv-border'
             }`}
           >
             <tab.icon className="w-4 h-4" />
             {tab.label}
             {tab.count !== null && (
               <span className={`ml-1 px-1.5 py-0.5 rounded-full text-xs ${
-                activeTab === tab.id ? 'bg-park-accent/20 text-park-accent' : 'bg-park-border/50 text-park-muted'
+                activeTab === tab.id ? 'bg-cv-accent/20 text-cv-accent' : 'bg-cv-border/50 text-cv-muted'
               }`}>
                 {tab.count}
               </span>
@@ -425,7 +425,7 @@ export default function VehiculoDetalle() {
             <div className="card">
               <div className="flex flex-col sm:flex-row gap-3 items-start sm:items-center justify-between">
                 <div className="flex items-center gap-3 flex-wrap">
-                  <Filter className="w-4 h-4 text-park-muted" />
+                  <Filter className="w-4 h-4 text-cv-muted" />
                   <select
                     className="select text-sm w-auto"
                     value={filtroCombustible}
@@ -451,35 +451,35 @@ export default function VehiculoDetalle() {
 
             {/* Combustible form */}
             {showCombustibleForm && (
-              <form onSubmit={handleRegistrarCombustible} className="card border-park-accent/30">
+              <form onSubmit={handleRegistrarCombustible} className="card border-cv-accent/30">
                 <h4 className="text-white font-semibold mb-4">Registrar Carga de Combustible</h4>
                 <div className="grid grid-cols-1 sm:grid-cols-3 gap-4">
                   <div>
-                    <label className="text-park-muted text-xs font-medium mb-1 block">Litros *</label>
+                    <label className="text-cv-muted text-xs font-medium mb-1 block">Litros *</label>
                     <input type="number" step="0.01" required className="input"
                       placeholder="Ej: 15.5"
                       onChange={e => setFormData({...formData, litros: e.target.value})} />
                   </div>
                   <div>
-                    <label className="text-park-muted text-xs font-medium mb-1 block">Precio Unitario</label>
+                    <label className="text-cv-muted text-xs font-medium mb-1 block">Precio Unitario</label>
                     <input type="number" step="0.01" className="input"
                       placeholder="Ej: 1.05"
                       onChange={e => setFormData({...formData, precio_unitario: e.target.value})} />
                   </div>
                   <div>
-                    <label className="text-park-muted text-xs font-medium mb-1 block">Costo Total</label>
+                    <label className="text-cv-muted text-xs font-medium mb-1 block">Costo Total</label>
                     <input type="number" step="0.01" className="input"
                       placeholder="Calculado si se omite"
                       onChange={e => setFormData({...formData, costo_total: e.target.value})} />
                   </div>
                   <div>
-                    <label className="text-park-muted text-xs font-medium mb-1 block">KM Actual *</label>
+                    <label className="text-cv-muted text-xs font-medium mb-1 block">KM Actual *</label>
                     <input type="number" required className="input"
                       placeholder="Ej: 15000"
                       onChange={e => setFormData({...formData, km_actual: e.target.value})} />
                   </div>
                   <div>
-                    <label className="text-park-muted text-xs font-medium mb-1 block">Tipo Combustible</label>
+                    <label className="text-cv-muted text-xs font-medium mb-1 block">Tipo Combustible</label>
                     <select className="select" onChange={e => setFormData({...formData, tipo_combustible: e.target.value})}>
                       <option value="Gasolina">Gasolina</option>
                       <option value="Diésel">Diésel</option>
@@ -489,7 +489,7 @@ export default function VehiculoDetalle() {
                     </select>
                   </div>
                   <div>
-                    <label className="text-park-muted text-xs font-medium mb-1 block">Ubicación GPS</label>
+                    <label className="text-cv-muted text-xs font-medium mb-1 block">Ubicación GPS</label>
                     <input type="text" className="input" placeholder="Lat, Lng"
                       onChange={e => setFormData({...formData, ubicacion_gps: e.target.value})} />
                   </div>
@@ -510,19 +510,19 @@ export default function VehiculoDetalle() {
               <div className="card overflow-x-auto">
                 <table className="w-full">
                   <thead>
-                    <tr className="border-b border-park-border">
-                      <th className="table-header text-left py-3 px-3 cursor-pointer hover:text-park-accent" onClick={() => handleSort('fecha')}>
+                    <tr className="border-b border-cv-border">
+                      <th className="table-header text-left py-3 px-3 cursor-pointer hover:text-cv-accent" onClick={() => handleSort('fecha')}>
                         Fecha {sortArrow('fecha')}
                       </th>
-                      <th className="table-header text-left py-3 px-3 cursor-pointer hover:text-park-accent" onClick={() => handleSort('km')}>
+                      <th className="table-header text-left py-3 px-3 cursor-pointer hover:text-cv-accent" onClick={() => handleSort('km')}>
                         KM {sortArrow('km')}
                       </th>
                       <th className="table-header text-left py-3 px-3">Litros</th>
-                      <th className="table-header text-right py-3 px-3 cursor-pointer hover:text-park-accent" onClick={() => handleSort('costo')}>
+                      <th className="table-header text-right py-3 px-3 cursor-pointer hover:text-cv-accent" onClick={() => handleSort('costo')}>
                         Costo {sortArrow('costo')}
                       </th>
                       <th className="table-header text-left py-3 px-3">Tipo</th>
-                      <th className="table-header text-right py-3 px-3 cursor-pointer hover:text-park-accent" onClick={() => handleSort('rendimiento')}>
+                      <th className="table-header text-right py-3 px-3 cursor-pointer hover:text-cv-accent" onClick={() => handleSort('rendimiento')}>
                         Rend. (Km/L) {sortArrow('rendimiento')}
                       </th>
                       <th className="table-header text-right py-3 px-3">Días</th>
@@ -530,13 +530,13 @@ export default function VehiculoDetalle() {
                   </thead>
                   <tbody>
                     {getSortedHistorial(filtrarCombustible(historialCombustible)).map((c, i) => (
-                      <tr key={c.id} className="hover:bg-park-border/20 transition-colors">
+                      <tr key={c.id} className="hover:bg-cv-border/20 transition-colors">
                         <td className="table-cell">{new Date(c.fecha_carga).toLocaleDateString('es')}</td>
                         <td className="table-cell font-mono font-medium">{c.km_actual?.toLocaleString()}</td>
                         <td className="table-cell">{parseFloat(c.litros).toFixed(1)} L</td>
                         <td className="table-cell text-right font-medium">${parseFloat(c.costo_total).toFixed(2)}</td>
                         <td className="table-cell">
-                          <span className="px-2 py-0.5 rounded-full text-xs bg-park-primary/50 text-slate-300">
+                          <span className="px-2 py-0.5 rounded-full text-xs bg-cv-primary/50 text-slate-300">
                             {c.tipo_combustible}
                           </span>
                         </td>
@@ -544,14 +544,14 @@ export default function VehiculoDetalle() {
                           {c.rendimiento_estimado ? (
                             <span className="text-emerald-400">{c.rendimiento_estimado}</span>
                           ) : (
-                            <span className="text-park-muted">—</span>
+                            <span className="text-cv-muted">—</span>
                           )}
                         </td>
                         <td className="table-cell text-right">
                           {c.dias_entre_cargas !== null ? (
-                            <span className="text-park-muted">{c.dias_entre_cargas}d</span>
+                            <span className="text-cv-muted">{c.dias_entre_cargas}d</span>
                           ) : (
-                            <span className="text-park-muted">—</span>
+                            <span className="text-cv-muted">—</span>
                           )}
                         </td>
                       </tr>
@@ -561,9 +561,9 @@ export default function VehiculoDetalle() {
               </div>
             ) : (
               <div className="card text-center py-12">
-                <Fuel className="w-12 h-12 mx-auto text-park-muted/30 mb-3" />
-                <p className="text-park-muted font-medium">No hay registros de combustible</p>
-                <p className="text-park-muted text-sm mt-1">Registre la primera carga de combustible</p>
+                <Fuel className="w-12 h-12 mx-auto text-cv-muted/30 mb-3" />
+                <p className="text-cv-muted font-medium">No hay registros de combustible</p>
+                <p className="text-cv-muted text-sm mt-1">Registre la primera carga de combustible</p>
               </div>
             )}
           </>
@@ -584,7 +584,7 @@ export default function VehiculoDetalle() {
             <div className="card">
               <div className="flex flex-col sm:flex-row gap-3 items-start sm:items-center justify-between">
                 <div className="flex items-center gap-3 flex-wrap">
-                  <Filter className="w-4 h-4 text-park-muted" />
+                  <Filter className="w-4 h-4 text-cv-muted" />
                   <select className="select text-sm w-auto" value={filtroMantenimiento}
                     onChange={(e) => setFiltroMantenimiento(e.target.value)}>
                     <option value="">Todos los servicios</option>
@@ -613,33 +613,33 @@ export default function VehiculoDetalle() {
 
             {/* Mantenimiento form */}
             {showMantenimientoForm && (
-              <form onSubmit={handleRegistrarMantenimiento} className="card border-park-accent/30">
+              <form onSubmit={handleRegistrarMantenimiento} className="card border-cv-accent/30">
                 <h4 className="text-white font-semibold mb-4">Registrar Mantenimiento</h4>
                 <div className="grid grid-cols-1 sm:grid-cols-3 gap-4">
                   <div>
-                    <label className="text-park-muted text-xs font-medium mb-1 block">Tipo Servicio</label>
+                    <label className="text-cv-muted text-xs font-medium mb-1 block">Tipo Servicio</label>
                     <select className="select" onChange={e => setFormData({...formData, tipo_servicio: e.target.value})}>
                       <option value="Preventivo">Preventivo</option>
                       <option value="Correctivo">Correctivo</option>
                     </select>
                   </div>
                   <div>
-                    <label className="text-park-muted text-xs font-medium mb-1 block">KM Actual *</label>
+                    <label className="text-cv-muted text-xs font-medium mb-1 block">KM Actual *</label>
                     <input type="number" required className="input" placeholder="Ej: 15000"
                       onChange={e => setFormData({...formData, km_actual: e.target.value})} />
                   </div>
                   <div>
-                    <label className="text-park-muted text-xs font-medium mb-1 block">Costo ($)</label>
+                    <label className="text-cv-muted text-xs font-medium mb-1 block">Costo ($)</label>
                     <input type="number" step="0.01" className="input" placeholder="Ej: 85.00"
                       onChange={e => setFormData({...formData, costo: e.target.value})} />
                   </div>
                   <div className="sm:col-span-2">
-                    <label className="text-park-muted text-xs font-medium mb-1 block">Descripción</label>
+                    <label className="text-cv-muted text-xs font-medium mb-1 block">Descripción</label>
                     <input type="text" className="input" placeholder="Describe el servicio realizado"
                       onChange={e => setFormData({...formData, descripcion: e.target.value})} />
                   </div>
                   <div>
-                    <label className="text-park-muted text-xs font-medium mb-1 block">Proveedor</label>
+                    <label className="text-cv-muted text-xs font-medium mb-1 block">Proveedor</label>
                     <input type="text" className="input" placeholder="Taller o proveedor"
                       onChange={e => setFormData({...formData, proveedor: e.target.value})} />
                   </div>
@@ -656,16 +656,16 @@ export default function VehiculoDetalle() {
               <div className="card overflow-x-auto">
                 <table className="w-full">
                   <thead>
-                    <tr className="border-b border-park-border">
-                      <th className="table-header text-left py-3 px-3 cursor-pointer hover:text-park-accent" onClick={() => handleSort('fecha')}>
+                    <tr className="border-b border-cv-border">
+                      <th className="table-header text-left py-3 px-3 cursor-pointer hover:text-cv-accent" onClick={() => handleSort('fecha')}>
                         Fecha {sortArrow('fecha')}
                       </th>
                       <th className="table-header text-left py-3 px-3">Tipo</th>
                       <th className="table-header text-left py-3 px-3">Descripción</th>
-                      <th className="table-header text-right py-3 px-3 cursor-pointer hover:text-park-accent" onClick={() => handleSort('km')}>
+                      <th className="table-header text-right py-3 px-3 cursor-pointer hover:text-cv-accent" onClick={() => handleSort('km')}>
                         KM {sortArrow('km')}
                       </th>
-                      <th className="table-header text-right py-3 px-3 cursor-pointer hover:text-park-accent" onClick={() => handleSort('costo')}>
+                      <th className="table-header text-right py-3 px-3 cursor-pointer hover:text-cv-accent" onClick={() => handleSort('costo')}>
                         Costo {sortArrow('costo')}
                       </th>
                       <th className="table-header text-left py-3 px-3">Proveedor</th>
@@ -673,7 +673,7 @@ export default function VehiculoDetalle() {
                   </thead>
                   <tbody>
                     {getSortedHistorial(filtrarMantenimiento(historialMantenimiento)).map((m) => (
-                      <tr key={m.id} className="hover:bg-park-border/20 transition-colors">
+                      <tr key={m.id} className="hover:bg-cv-border/20 transition-colors">
                         <td className="table-cell">{new Date(m.fecha).toLocaleDateString('es')}</td>
                         <td className="table-cell">
                           <span className={`px-2 py-0.5 rounded-full text-xs font-medium ${
@@ -687,13 +687,13 @@ export default function VehiculoDetalle() {
                         <td className="table-cell max-w-[250px] truncate" title={m.descripcion}>
                           {m.descripcion || '—'}
                         </td>
-                        <td className="table-cell text-right font-mono font-bold text-lg text-park-accent">
+                        <td className="table-cell text-right font-mono font-bold text-lg text-cv-accent">
                           {m.km_actual?.toLocaleString()}
                         </td>
                         <td className="table-cell text-right font-medium">
                           ${parseFloat(m.costo).toFixed(2)}
                         </td>
-                        <td className="table-cell text-park-muted text-xs">
+                        <td className="table-cell text-cv-muted text-xs">
                           {m.proveedor || '—'}
                         </td>
                       </tr>
@@ -703,9 +703,9 @@ export default function VehiculoDetalle() {
               </div>
             ) : (
               <div className="card text-center py-12">
-                <Wrench className="w-12 h-12 mx-auto text-park-muted/30 mb-3" />
-                <p className="text-park-muted font-medium">No hay registros de mantenimiento</p>
-                <p className="text-park-muted text-sm mt-1">Registre el primer mantenimiento del vehículo</p>
+                <Wrench className="w-12 h-12 mx-auto text-cv-muted/30 mb-3" />
+                <p className="text-cv-muted font-medium">No hay registros de mantenimiento</p>
+                <p className="text-cv-muted text-sm mt-1">Registre el primer mantenimiento del vehículo</p>
               </div>
             )}
           </>
@@ -716,7 +716,7 @@ export default function VehiculoDetalle() {
           <div className="space-y-6">
             <div className="card">
               <h3 className="text-white font-bold mb-4 flex items-center gap-2">
-                <BarChart3 className="w-5 h-5 text-park-accent" />
+                <BarChart3 className="w-5 h-5 text-cv-accent" />
                 Rendimiento por Carga (Km/L)
               </h3>
               {rendimientoChartData.length > 0 ? (
@@ -743,7 +743,7 @@ export default function VehiculoDetalle() {
                   </BarChart>
                 </ResponsiveContainer>
               ) : (
-                <div className="h-64 flex items-center justify-center text-park-muted text-sm border-2 border-dashed border-park-border rounded-xl">
+                <div className="h-64 flex items-center justify-center text-cv-muted text-sm border-2 border-dashed border-cv-border rounded-xl">
                   Sin datos de rendimiento disponibles
                 </div>
               )}
@@ -752,7 +752,7 @@ export default function VehiculoDetalle() {
             {/* Área chart - KM vs consumo */}
             <div className="card">
               <h3 className="text-white font-bold mb-4 flex items-center gap-2">
-                <Gauge className="w-5 h-5 text-park-accent" />
+                <Gauge className="w-5 h-5 text-cv-accent" />
                 Evolución de KM y Litros
               </h3>
               {rendimientoChartData.length > 0 ? (
@@ -784,7 +784,7 @@ export default function VehiculoDetalle() {
                   </AreaChart>
                 </ResponsiveContainer>
               ) : (
-                <div className="h-48 flex items-center justify-center text-park-muted text-sm border-2 border-dashed border-park-border rounded-xl">
+                <div className="h-48 flex items-center justify-center text-cv-muted text-sm border-2 border-dashed border-cv-border rounded-xl">
                   Sin datos de rendimiento
                 </div>
               )}
@@ -799,9 +799,9 @@ export default function VehiculoDetalle() {
 function InfoItem({ icon: Icon, label, value, color = 'text-white', capitalize = false }) {
   return (
     <div className="flex items-center gap-2">
-      <Icon className="w-4 h-4 text-park-muted shrink-0" />
+      <Icon className="w-4 h-4 text-cv-muted shrink-0" />
       <div>
-        <p className="text-park-muted text-xs">{label}</p>
+        <p className="text-cv-muted text-xs">{label}</p>
         <p className={`font-semibold ${color} ${capitalize ? 'capitalize' : ''}`}>{value}</p>
       </div>
     </div>
@@ -811,11 +811,11 @@ function InfoItem({ icon: Icon, label, value, color = 'text-white', capitalize =
 function SummaryCard({ label, value, icon: Icon, color = 'text-white' }) {
   return (
     <div className="card p-4 flex items-center gap-3">
-      <div className={`w-10 h-10 rounded-xl bg-park-primary flex items-center justify-center`}>
-        <Icon className="w-5 h-5 text-park-accent" />
+      <div className={`w-10 h-10 rounded-xl bg-cv-primary flex items-center justify-center`}>
+        <Icon className="w-5 h-5 text-cv-accent" />
       </div>
       <div>
-        <p className="text-park-muted text-xs font-medium">{label}</p>
+        <p className="text-cv-muted text-xs font-medium">{label}</p>
         <p className={`font-bold text-lg ${color}`}>{value}</p>
       </div>
     </div>

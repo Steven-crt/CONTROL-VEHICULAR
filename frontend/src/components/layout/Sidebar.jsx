@@ -26,37 +26,37 @@ export default function Sidebar({ isOpen, setIsOpen }) {
 
   return (
     <aside 
-      className={`fixed inset-y-0 left-0 z-50 w-64 bg-park-sidebar border-r border-park-border flex flex-col shrink-0 transition-transform duration-300 ease-in-out md:static md:translate-x-0 ${
+      className={`fixed inset-y-0 left-0 z-50 w-64 bg-cv-sidebar border-r border-cv-border flex flex-col shrink-0 transition-transform duration-300 ease-in-out md:static md:translate-x-0 ${
         isOpen ? 'translate-x-0' : '-translate-x-full'
       }`}
     >
-      <div className="p-5 border-b border-park-border">
+      <div className="p-5 border-b border-cv-border">
         <div className="flex items-center gap-3">
-          <div className="w-10 h-10 bg-park-accent rounded-xl flex flex-shrink-0 items-center justify-center shadow-lg overflow-hidden">
+          <div className="w-10 h-10 bg-cv-accent rounded-xl flex flex-shrink-0 items-center justify-center shadow-lg overflow-hidden">
             {config?.logo_url ? (
               <img src={config.logo_url} alt="Logo" className="w-full h-full object-cover" />
             ) : (
-              <Car className="w-5 h-5 text-park-dark" />
+              <Car className="w-5 h-5 text-cv-dark" />
             )}
           </div>
           <div className="min-w-0">
-            <h1 className="text-park-text font-bold text-lg leading-tight truncate" title={config?.nombre_negocio || 'Control Vehicular'}>{config?.nombre_negocio || 'Control Vehicular'}</h1>
-            <p className="text-park-muted text-xs truncate">Sistema de Gestión Vehicular</p>
+            <h1 className="text-cv-text font-bold text-lg leading-tight truncate" title={config?.nombre_negocio || 'Control Vehicular'}>{config?.nombre_negocio || 'Control Vehicular'}</h1>
+            <p className="text-cv-muted text-xs truncate">Sistema de Gestión Vehicular</p>
           </div>
         </div>
       </div>
 
       {/* Usuario */}
-      <div className="px-4 py-3 border-b border-park-border">
+      <div className="px-4 py-3 border-b border-cv-border">
         <div className="flex items-center gap-3">
-          <div className="w-9 h-9 rounded-full bg-park-primary flex items-center justify-center">
-            <span className="text-park-accent font-bold text-sm uppercase">
+          <div className="w-9 h-9 rounded-full bg-cv-primary flex items-center justify-center">
+            <span className="text-cv-accent font-bold text-sm uppercase">
               {usuario?.nombre?.[0] || 'U'}
             </span>
           </div>
           <div className="min-w-0">
-            <p className="text-park-text text-sm font-medium truncate">{usuario?.nombre}</p>
-            <p className="text-park-accent text-xs capitalize">{usuario?.rol}</p>
+            <p className="text-cv-text text-sm font-medium truncate">{usuario?.nombre}</p>
+            <p className="text-cv-accent text-xs capitalize">{usuario?.rol}</p>
           </div>
         </div>
       </div>
@@ -71,8 +71,8 @@ export default function Sidebar({ isOpen, setIsOpen }) {
             className={({ isActive }) =>
               `flex items-center gap-3 px-3 py-2.5 rounded-lg mb-0.5 text-sm font-medium transition-all duration-200 group
               ${isActive
-                ? 'bg-park-accent text-park-dark shadow-lg shadow-amber-500/20'
-                : 'text-park-muted hover:text-park-text hover:bg-park-border/30'
+                ? 'bg-cv-accent text-cv-dark shadow-lg shadow-amber-500/20'
+                : 'text-cv-muted hover:text-cv-text hover:bg-cv-border/30'
               }`
             }
           >
@@ -83,10 +83,10 @@ export default function Sidebar({ isOpen, setIsOpen }) {
       </nav>
 
       {/* Logout */}
-      <div className="p-3 border-t border-park-border">
+      <div className="p-3 border-t border-cv-border">
         <button
           onClick={handleLogout}
-          className="flex items-center gap-3 px-3 py-2.5 rounded-lg w-full text-sm font-medium text-park-muted hover:text-park-ocupado hover:bg-red-900/20 transition-all duration-200"
+          className="flex items-center gap-3 px-3 py-2.5 rounded-lg w-full text-sm font-medium text-cv-muted hover:text-cv-danger hover:bg-red-900/20 transition-all duration-200"
         >
           <LogOut className="w-4 h-4" />
           Cerrar Sesión

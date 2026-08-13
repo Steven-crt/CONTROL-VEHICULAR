@@ -1,17 +1,14 @@
 import { useState } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { useAuth } from '../contexts/AuthContext';
-import { useTheme } from '../contexts/ThemeContext';
 import toast from 'react-hot-toast';
 import { useConfig } from '../contexts/ConfigContext';
 import { Car, Eye, EyeOff } from 'lucide-react';
 import styled from 'styled-components';
 import Loader from '../components/Loader';
-import DottedSurface from '../components/ui/DottedSurface';
 
 export default function Login() {
   const { config } = useConfig();
-  const { theme } = useTheme();
   const [form, setForm] = useState({ username: '', password: '' });
   const [showPass, setShowPass] = useState(false);
   const [loading, setLoading] = useState(false);
@@ -22,7 +19,7 @@ export default function Login() {
     e.preventDefault();
     setLoading(true);
     try {
-      await login(form.username, password);
+      await login(form.username, form.password);
       toast.success('¡Listo! Bienvenido.');
       navigate('/dashboard');
     } catch (err) {
@@ -38,9 +35,6 @@ export default function Login() {
 
   return (
     <StyledWrapper>
-      {/* Fondo animado con DottedSurface */}
-      <DottedSurface size={6} opacity={0.6} />
-      
       <div className="login-wrapper">
         <div className="login-card">
           <div className="glow-blob blob-1" />

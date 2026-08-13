@@ -11,7 +11,7 @@ const SOAT_STYLES = {
   vigente: 'text-emerald-400 bg-emerald-900/20 border-emerald-700/50',
   por_vencer: 'text-amber-400 bg-amber-900/20 border-amber-700/50',
   vencido: 'text-red-400 bg-red-900/20 border-red-700/50',
-  sin_soat: 'text-park-muted bg-park-border/20 border-park-border/50',
+  sin_soat: 'text-cv-muted bg-cv-border/20 border-cv-border/50',
 };
 
 function getSoatBadge(soat) {
@@ -109,14 +109,14 @@ export default function Vehiculos() {
       <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4">
         <div>
           <h1 className="text-2xl font-bold text-white flex items-center gap-3">
-            <Car className="w-7 h-7 text-park-accent" />
+            <Car className="w-7 h-7 text-cv-accent" />
             Gestión de Vehículos
           </h1>
-          <p className="text-park-muted text-sm mt-1">Busque y administre la información de la flota</p>
+          <p className="text-cv-muted text-sm mt-1">Busque y administre la información de la flota</p>
         </div>
         <div className="flex items-center gap-3">
-          <p className="text-park-muted text-sm">
-            <span className="text-park-accent font-medium">{vehiculos.length}</span> vehículo{vehiculos.length !== 1 ? 's' : ''}
+          <p className="text-cv-muted text-sm">
+            <span className="text-cv-accent font-medium">{vehiculos.length}</span> vehículo{vehiculos.length !== 1 ? 's' : ''}
           </p>
           {esAdmin && (
             <button onClick={() => { setVehForm(EMPTY_VEHICULO); setShowModal(true); }} className="btn-primary">
@@ -129,12 +129,12 @@ export default function Vehiculos() {
       {/* Formulario de búsqueda */}
       <form onSubmit={handleSearch} className="card">
         <div className="flex items-center gap-2 mb-4">
-          <CalendarDays className="w-5 h-5 text-park-accent" />
+          <CalendarDays className="w-5 h-5 text-cv-accent" />
           <span className="text-white font-semibold text-sm">Filtros de búsqueda</span>
         </div>
         <div className="flex flex-col sm:flex-row gap-3">
           <div className="sm:w-44">
-            <label className="text-park-muted text-xs font-medium mb-1.5 block">
+            <label className="text-cv-muted text-xs font-medium mb-1.5 block">
               Año del Vehículo
             </label>
             <input
@@ -148,9 +148,9 @@ export default function Vehiculos() {
             />
           </div>
           <div className="flex-1">
-            <label className="text-park-muted text-xs font-medium mb-1.5 block">Texto de búsqueda (opcional)</label>
+            <label className="text-cv-muted text-xs font-medium mb-1.5 block">Texto de búsqueda (opcional)</label>
             <div className="relative">
-              <Search className="absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4 text-park-muted" />
+              <Search className="absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4 text-cv-muted" />
               <input
                 type="text"
                 placeholder="Buscar por placa, marca o modelo..."
@@ -207,10 +207,10 @@ export default function Vehiculos() {
                 <button
                   key={v.id}
                   onClick={() => navigate(`/vehiculos/${v.id}`)}
-                  className="flex items-center gap-3 px-3 py-2 rounded-lg bg-park-border/10 hover:bg-park-border/30 transition-colors text-left"
+                  className="flex items-center gap-3 px-3 py-2 rounded-lg bg-cv-border/10 hover:bg-cv-border/30 transition-colors text-left"
                 >
                   <span className="text-white font-semibold text-sm tracking-wide">{v.placa}</span>
-                  <span className="text-park-muted text-xs truncate">
+                  <span className="text-cv-muted text-xs truncate">
                     {v.marca || ''}{v.marca && v.modelo ? ' · ' : ''}{v.modelo || ''}
                   </span>
                   <span className={`ml-auto inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-medium border shrink-0 ${badge.style}`}>
@@ -227,30 +227,30 @@ export default function Vehiculos() {
       {/* Resultados */}
       {loading ? (
         <div className="flex justify-center py-20">
-          <div className="text-park-accent animate-pulse font-medium text-lg">Buscando vehículos...</div>
+          <div className="text-cv-accent animate-pulse font-medium text-lg">Buscando vehículos...</div>
         </div>
       ) : vehiculos.length === 0 ? (
         <div className="card text-center py-16">
-          <Car className="w-16 h-16 mx-auto text-park-muted/30 mb-4" />
-          <p className="text-park-muted text-lg font-medium">No se encontraron vehículos</p>
-          <p className="text-park-muted text-sm mt-1">Intente con otros criterios de búsqueda</p>
+          <Car className="w-16 h-16 mx-auto text-cv-muted/30 mb-4" />
+          <p className="text-cv-muted text-lg font-medium">No se encontraron vehículos</p>
+          <p className="text-cv-muted text-sm mt-1">Intente con otros criterios de búsqueda</p>
         </div>
       ) : (
         <div className="grid gap-4">
-          <p className="text-park-muted text-sm font-medium">
+          <p className="text-cv-muted text-sm font-medium">
             {vehiculos.length} vehículo{vehiculos.length !== 1 ? 's' : ''} encontrado{vehiculos.length !== 1 ? 's' : ''}
           </p>
           {vehiculos.map((vehiculo) => (
             <div
               key={vehiculo.id}
-              className="card hover:border-park-accent/30 transition-all duration-300 cursor-pointer group"
+              className="card hover:border-cv-accent/30 transition-all duration-300 cursor-pointer group"
               onClick={() => navigate(`/vehiculos/${vehiculo.id}`)}
             >
               <div className="flex items-start justify-between">
                 <div className="flex items-start gap-4 flex-1">
                   {/* Icono */}
-                  <div className="w-14 h-14 rounded-2xl bg-gradient-to-br from-park-accent/20 to-park-accent/5 flex items-center justify-center shrink-0 border border-park-accent/20">
-                    <Car className="w-7 h-7 text-park-accent" />
+                  <div className="w-14 h-14 rounded-2xl bg-gradient-to-br from-cv-accent/20 to-cv-accent/5 flex items-center justify-center shrink-0 border border-cv-accent/20">
+                    <Car className="w-7 h-7 text-cv-accent" />
                   </div>
 
                   {/* Info principal */}
@@ -266,23 +266,23 @@ export default function Vehiculos() {
                     </div>
 
                     <div className="flex flex-wrap gap-x-6 gap-y-1.5 text-sm">
-                      <span className="text-park-muted">
+                      <span className="text-cv-muted">
                         <span className="text-slate-400">Marca:</span>{' '}
                         <span className="text-white font-medium">{vehiculo.marca || 'N/A'}</span>
                       </span>
-                      <span className="text-park-muted">
+                      <span className="text-cv-muted">
                         <span className="text-slate-400">Modelo:</span>{' '}
                         <span className="text-white font-medium">{vehiculo.modelo || 'N/A'}</span>
                       </span>
-                      <span className="text-park-muted">
+                      <span className="text-cv-muted">
                         <span className="text-slate-400">Año:</span>{' '}
                         <span className="text-white font-medium">{vehiculo.anio || 'N/A'}</span>
                       </span>
-                      <span className="text-park-muted">
+                      <span className="text-cv-muted">
                         <span className="text-slate-400">Color:</span>{' '}
                         <span className="text-white font-medium capitalize">{vehiculo.color || 'N/A'}</span>
                       </span>
-                      <span className="text-park-muted">
+                      <span className="text-cv-muted">
                         <span className="text-slate-400">Tipo:</span>{' '}
                         <span className="text-white font-medium capitalize">{vehiculo.tipo}</span>
                       </span>
@@ -297,14 +297,14 @@ export default function Vehiculos() {
                     {/* Ubicación y estado */}
                     <div className="flex flex-wrap items-center gap-4 mt-3">
                       <div className="flex items-center gap-1.5 text-xs">
-                        <MapPin className={`w-3.5 h-3.5 ${vehiculo.ultima_ubicacion ? 'text-emerald-400' : 'text-park-muted'}`} />
-                        <span className={vehiculo.ultima_ubicacion ? 'text-slate-300' : 'text-park-muted'}>
+                        <MapPin className={`w-3.5 h-3.5 ${vehiculo.ultima_ubicacion ? 'text-emerald-400' : 'text-cv-muted'}`} />
+                        <span className={vehiculo.ultima_ubicacion ? 'text-slate-300' : 'text-cv-muted'}>
                           {getUbicacionTexto(vehiculo.ultima_ubicacion)}
                         </span>
                       </div>
                       <div className="flex items-center gap-1.5 text-xs">
-                        <Fuel className="w-3.5 h-3.5 text-park-muted" />
-                        <span className="text-park-muted">
+                        <Fuel className="w-3.5 h-3.5 text-cv-muted" />
+                        <span className="text-cv-muted">
                           {vehiculo.ultima_carga_fecha
                             ? `Última carga: ${new Date(vehiculo.ultima_carga_fecha).toLocaleDateString('es')}`
                             : 'Sin cargas registradas'}
@@ -315,7 +315,7 @@ export default function Vehiculos() {
                 </div>
 
                 {/* Chevron */}
-                <ChevronRightIcon className="w-5 h-5 text-park-muted group-hover:text-park-accent transition-colors shrink-0 mt-1" />
+                <ChevronRightIcon className="w-5 h-5 text-cv-muted group-hover:text-cv-accent transition-colors shrink-0 mt-1" />
               </div>
             </div>
           ))}
@@ -326,35 +326,35 @@ export default function Vehiculos() {
         <div className="fixed inset-0 bg-black/60 flex items-center justify-center z-50 p-4">
           <div className="card max-w-lg w-full animate-slide-in max-h-[90vh] overflow-y-auto">
             <div className="flex items-center justify-between mb-5">
-              <h3 className="text-park-text font-semibold flex items-center gap-2">
-                <Car className="w-5 h-5 text-park-accent" /> Nuevo Vehículo
+              <h3 className="text-cv-text font-semibold flex items-center gap-2">
+                <Car className="w-5 h-5 text-cv-accent" /> Nuevo Vehículo
               </h3>
-              <button onClick={() => setShowModal(false)} className="text-park-muted hover:text-park-text"><X className="w-5 h-5" /></button>
+              <button onClick={() => setShowModal(false)} className="text-cv-muted hover:text-cv-text"><X className="w-5 h-5" /></button>
             </div>
             <form onSubmit={handleSaveVehicle} className="space-y-4">
               <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-                <div><label className="block text-park-muted text-sm mb-1">Placa *</label><input className="input" value={vehForm.placa} onChange={e => setVehForm({ ...vehForm, placa: e.target.value })} required placeholder="Ej: ABC123" /></div>
-                <div><label className="block text-park-muted text-sm mb-1">Tipo</label>
+                <div><label className="block text-cv-muted text-sm mb-1">Placa *</label><input className="input" value={vehForm.placa} onChange={e => setVehForm({ ...vehForm, placa: e.target.value })} required placeholder="Ej: ABC123" /></div>
+                <div><label className="block text-cv-muted text-sm mb-1">Tipo</label>
                   <select className="select" value={vehForm.tipo} onChange={e => setVehForm({ ...vehForm, tipo: e.target.value })}>
                     <option value="camioneta">Camioneta</option>
                     <option value="camion">Camion</option>
                     <option value="minivan">Minivan</option>
                   </select>
                 </div>
-                <div><label className="block text-park-muted text-sm mb-1">Marca</label><input className="input" value={vehForm.marca} onChange={e => setVehForm({ ...vehForm, marca: e.target.value })} placeholder="Ej: Toyota" /></div>
-                <div><label className="block text-park-muted text-sm mb-1">Modelo</label><input className="input" value={vehForm.modelo} onChange={e => setVehForm({ ...vehForm, modelo: e.target.value })} placeholder="Ej: Corolla" /></div>
-                <div><label className="block text-park-muted text-sm mb-1">Año</label><input type="number" className="input" value={vehForm.anio} onChange={e => setVehForm({ ...vehForm, anio: e.target.value })} placeholder="Ej: 2023" min={1900} max={2030} /></div>
-                <div><label className="block text-park-muted text-sm mb-1">Color</label><input className="input" value={vehForm.color} onChange={e => setVehForm({ ...vehForm, color: e.target.value })} placeholder="Ej: Rojo" /></div>
+                <div><label className="block text-cv-muted text-sm mb-1">Marca</label><input className="input" value={vehForm.marca} onChange={e => setVehForm({ ...vehForm, marca: e.target.value })} placeholder="Ej: Toyota" /></div>
+                <div><label className="block text-cv-muted text-sm mb-1">Modelo</label><input className="input" value={vehForm.modelo} onChange={e => setVehForm({ ...vehForm, modelo: e.target.value })} placeholder="Ej: Corolla" /></div>
+                <div><label className="block text-cv-muted text-sm mb-1">Año</label><input type="number" className="input" value={vehForm.anio} onChange={e => setVehForm({ ...vehForm, anio: e.target.value })} placeholder="Ej: 2023" min={1900} max={2030} /></div>
+                <div><label className="block text-cv-muted text-sm mb-1">Color</label><input className="input" value={vehForm.color} onChange={e => setVehForm({ ...vehForm, color: e.target.value })} placeholder="Ej: Rojo" /></div>
               </div>
               <div className="flex items-center gap-2 pt-2">
-                <ShieldCheck className="w-4 h-4 text-park-accent" />
-                <h4 className="text-park-text font-semibold text-sm">SOAT (Seguro Obligatorio)</h4>
+                <ShieldCheck className="w-4 h-4 text-cv-accent" />
+                <h4 className="text-cv-text font-semibold text-sm">SOAT (Seguro Obligatorio)</h4>
               </div>
               <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-                <div><label className="block text-park-muted text-sm mb-1">Número de Póliza *</label><input className="input" required value={vehForm.soat_numero} onChange={e => setVehForm({ ...vehForm, soat_numero: e.target.value })} placeholder="Ej: SOAT-2024-001234" /></div>
-                <div><label className="block text-park-muted text-sm mb-1">Aseguradora *</label><input className="input" required value={vehForm.soat_empresa} onChange={e => setVehForm({ ...vehForm, soat_empresa: e.target.value })} placeholder="Ej: Mapfre" /></div>
-                <div><label className="block text-park-muted text-sm mb-1">Fecha Inicio</label><input type="date" className="input" value={vehForm.soat_fecha_inicio} onChange={e => setVehForm({ ...vehForm, soat_fecha_inicio: e.target.value })} /></div>
-                <div><label className="block text-park-muted text-sm mb-1">Fecha Vencimiento *</label><input type="date" className="input" required value={vehForm.soat_fecha_vencimiento} onChange={e => setVehForm({ ...vehForm, soat_fecha_vencimiento: e.target.value })} /></div>
+                <div><label className="block text-cv-muted text-sm mb-1">Número de Póliza *</label><input className="input" required value={vehForm.soat_numero} onChange={e => setVehForm({ ...vehForm, soat_numero: e.target.value })} placeholder="Ej: SOAT-2024-001234" /></div>
+                <div><label className="block text-cv-muted text-sm mb-1">Aseguradora *</label><input className="input" required value={vehForm.soat_empresa} onChange={e => setVehForm({ ...vehForm, soat_empresa: e.target.value })} placeholder="Ej: Mapfre" /></div>
+                <div><label className="block text-cv-muted text-sm mb-1">Fecha Inicio</label><input type="date" className="input" value={vehForm.soat_fecha_inicio} onChange={e => setVehForm({ ...vehForm, soat_fecha_inicio: e.target.value })} /></div>
+                <div><label className="block text-cv-muted text-sm mb-1">Fecha Vencimiento *</label><input type="date" className="input" required value={vehForm.soat_fecha_vencimiento} onChange={e => setVehForm({ ...vehForm, soat_fecha_vencimiento: e.target.value })} /></div>
               </div>
               <div className="flex gap-3 pt-2">
                 <button type="button" onClick={() => setShowModal(false)} className="btn-secondary flex-1 justify-center">Cancelar</button>

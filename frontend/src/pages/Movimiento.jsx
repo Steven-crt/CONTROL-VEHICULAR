@@ -86,10 +86,10 @@ export default function Movimiento() {
       {/* Encabezado */}
       <div>
         <h1 className="text-2xl font-bold text-white flex items-center gap-3">
-          <Activity className="w-7 h-7 text-park-accent" />
+          <Activity className="w-7 h-7 text-cv-accent" />
           Módulo de Movimiento
         </h1>
-        <p className="text-park-muted text-sm mt-1">
+        <p className="text-cv-muted text-sm mt-1">
           Calcule el consumo, los kilómetros recorridos y los gastos en un período específico
         </p>
       </div>
@@ -98,7 +98,7 @@ export default function Movimiento() {
       <div className="card">
         <div className="grid grid-cols-1 sm:grid-cols-4 gap-4">
           <div>
-            <label className="text-park-muted text-xs font-medium mb-1.5 block">Vehículo *</label>
+            <label className="text-cv-muted text-xs font-medium mb-1.5 block">Vehículo *</label>
             <select
               className="select"
               value={selectedVehiculo}
@@ -114,7 +114,7 @@ export default function Movimiento() {
             </select>
           </div>
           <div>
-            <label className="text-park-muted text-xs font-medium mb-1.5 block">Fecha Inicio *</label>
+            <label className="text-cv-muted text-xs font-medium mb-1.5 block">Fecha Inicio *</label>
             <input
               type="date"
               className="input"
@@ -124,7 +124,7 @@ export default function Movimiento() {
             />
           </div>
           <div>
-            <label className="text-park-muted text-xs font-medium mb-1.5 block">Fecha Fin *</label>
+            <label className="text-cv-muted text-xs font-medium mb-1.5 block">Fecha Fin *</label>
             <input
               type="date"
               className="input"
@@ -224,7 +224,7 @@ export default function Movimiento() {
             {/* Gráfico de barras: Consumo por carga */}
             <div className="card">
               <h3 className="text-white font-bold mb-4 flex items-center gap-2">
-                <BarChart className="w-5 h-5 text-park-accent" />
+                <BarChart className="w-5 h-5 text-cv-accent" />
                 Consumo por Carga (L/100km)
               </h3>
               {chartData.length > 0 ? (
@@ -238,7 +238,7 @@ export default function Movimiento() {
                         return (
                           <div className="bg-[#0f172a] border border-[#1e3a5f] rounded-xl p-3 text-sm shadow-2xl">
                             <p className="text-slate-400 mb-1">{label}</p>
-                            <p className="text-park-accent font-bold">{payload[0].value?.toFixed(2)} L/100km</p>
+                            <p className="text-cv-accent font-bold">{payload[0].value?.toFixed(2)} L/100km</p>
                             {payload[1] && <p className="text-blue-400 text-xs">${payload[1].value?.toFixed(2)}</p>}
                           </div>
                         );
@@ -255,7 +255,7 @@ export default function Movimiento() {
                   </BarChart>
                 </ResponsiveContainer>
               ) : (
-                <div className="h-64 flex items-center justify-center text-park-muted text-sm border-2 border-dashed border-park-border rounded-xl">
+                <div className="h-64 flex items-center justify-center text-cv-muted text-sm border-2 border-dashed border-cv-border rounded-xl">
                   Sin cargas de combustible en este período
                 </div>
               )}
@@ -264,7 +264,7 @@ export default function Movimiento() {
             {/* Gráfico de área: Rendimiento por carga */}
             <div className="card">
               <h3 className="text-white font-bold mb-4 flex items-center gap-2">
-                <TrendingUp className="w-5 h-5 text-park-accent" />
+                <TrendingUp className="w-5 h-5 text-cv-accent" />
                 Rendimiento por Carga (Km/L)
               </h3>
               {chartData.filter(d => d.rendimiento).length > 0 ? (
@@ -294,7 +294,7 @@ export default function Movimiento() {
                   </AreaChart>
                 </ResponsiveContainer>
               ) : (
-                <div className="h-64 flex items-center justify-center text-park-muted text-sm border-2 border-dashed border-park-border rounded-xl">
+                <div className="h-64 flex items-center justify-center text-cv-muted text-sm border-2 border-dashed border-cv-border rounded-xl">
                   Sin datos de rendimiento en este período
                 </div>
               )}
@@ -304,26 +304,26 @@ export default function Movimiento() {
           {/* Comparativa de consumo */}
           <div className="card">
             <h3 className="text-white font-bold mb-4 flex items-center gap-2">
-              <TrendingUp className="w-5 h-5 text-park-accent" />
+              <TrendingUp className="w-5 h-5 text-cv-accent" />
               Comparativa de Consumo
             </h3>
             <div className="grid grid-cols-1 sm:grid-cols-3 gap-6">
-              <div className="text-center p-4 bg-park-border/20 rounded-xl">
-                <p className="text-park-muted text-xs font-medium uppercase tracking-wider mb-2">Consumo en Período</p>
-                <p className="text-3xl font-black text-park-accent">
+              <div className="text-center p-4 bg-cv-border/20 rounded-xl">
+                <p className="text-cv-muted text-xs font-medium uppercase tracking-wider mb-2">Consumo en Período</p>
+                <p className="text-3xl font-black text-cv-accent">
                   {resultado.consumo.promedio_l100km?.toFixed(2) || 'N/A'}
                 </p>
-                <p className="text-park-muted text-xs mt-1">L/100km</p>
+                <p className="text-cv-muted text-xs mt-1">L/100km</p>
               </div>
-              <div className="text-center p-4 bg-park-border/20 rounded-xl">
-                <p className="text-park-muted text-xs font-medium uppercase tracking-wider mb-2">Consumo Histórico</p>
+              <div className="text-center p-4 bg-cv-border/20 rounded-xl">
+                <p className="text-cv-muted text-xs font-medium uppercase tracking-wider mb-2">Consumo Histórico</p>
                 <p className="text-3xl font-black text-blue-400">
                   {resultado.consumo.historico_l100km?.toFixed(2) || 'N/A'}
                 </p>
-                <p className="text-park-muted text-xs mt-1">L/100km (total vehículo)</p>
+                <p className="text-cv-muted text-xs mt-1">L/100km (total vehículo)</p>
               </div>
-              <div className="text-center p-4 bg-park-border/20 rounded-xl">
-                <p className="text-park-muted text-xs font-medium uppercase tracking-wider mb-2">Diferencia</p>
+              <div className="text-center p-4 bg-cv-border/20 rounded-xl">
+                <p className="text-cv-muted text-xs font-medium uppercase tracking-wider mb-2">Diferencia</p>
                 <p className={`text-3xl font-black ${
                   resultado.consumo.diferencia_porcentual > 0 ? 'text-red-400' : 'text-emerald-400'
                 }`}>
@@ -331,7 +331,7 @@ export default function Movimiento() {
                     ? `${resultado.consumo.diferencia_porcentual > 0 ? '+' : ''}${resultado.consumo.diferencia_porcentual.toFixed(1)}%`
                     : 'N/A'}
                 </p>
-                <p className="text-park-muted text-xs mt-1">
+                <p className="text-cv-muted text-xs mt-1">
                   {resultado.consumo.diferencia_porcentual > 0 
                     ? 'Por encima del promedio' 
                     : resultado.consumo.diferencia_porcentual < 0 
@@ -344,11 +344,11 @@ export default function Movimiento() {
             {/* Barra comparativa visual */}
             {resultado.consumo.promedio_l100km && resultado.consumo.historico_l100km && (
               <div className="mt-6">
-                <div className="flex items-center justify-between text-xs text-park-muted mb-2">
+                <div className="flex items-center justify-between text-xs text-cv-muted mb-2">
                   <span>Histórico: {resultado.consumo.historico_l100km.toFixed(2)}</span>
                   <span>Actual: {resultado.consumo.promedio_l100km.toFixed(2)}</span>
                 </div>
-                <div className="relative h-6 bg-park-border/30 rounded-full overflow-hidden">
+                <div className="relative h-6 bg-cv-border/30 rounded-full overflow-hidden">
                   <div 
                     className="absolute inset-y-0 left-0 bg-blue-500 rounded-full transition-all duration-500"
                     style={{ width: `${Math.min((resultado.consumo.historico_l100km / Math.max(resultado.consumo.promedio_l100km, resultado.consumo.historico_l100km)) * 100, 100)}%` }}
@@ -375,19 +375,19 @@ export default function Movimiento() {
           {resultado.ultimos_movimientos?.length > 0 && (
             <div className="card">
               <h3 className="text-white font-bold mb-4 flex items-center gap-2">
-                <Activity className="w-5 h-5 text-park-accent" />
+                <Activity className="w-5 h-5 text-cv-accent" />
                 Últimos Movimientos
               </h3>
               <div className="space-y-2">
                 {resultado.ultimos_movimientos.map((mov, i) => (
-                  <div key={i} className="flex items-center justify-between p-3 rounded-xl bg-park-border/20 hover:bg-park-border/40 transition-colors">
+                  <div key={i} className="flex items-center justify-between p-3 rounded-xl bg-cv-border/20 hover:bg-cv-border/40 transition-colors">
                     <div className="flex items-center gap-3">
                       <div className={`w-2.5 h-2.5 rounded-full ${
                         mov.tipo === 'combustible' ? 'bg-emerald-400' : 'bg-red-400'
                       }`} />
                       <div>
                         <p className="text-white text-sm font-medium capitalize">{mov.tipo}</p>
-                        <p className="text-park-muted text-xs">
+                        <p className="text-cv-muted text-xs">
                           {new Date(mov.fecha).toLocaleDateString('es', {
                             day: '2-digit', month: 'short', hour: '2-digit', minute: '2-digit'
                           })}
@@ -407,14 +407,14 @@ export default function Movimiento() {
           )}
 
           {/* Botón para registrar KM manual */}
-          <div className="card border-park-accent/20">
+          <div className="card border-cv-accent/20">
             <div className="flex flex-col sm:flex-row items-start sm:items-center justify-between gap-4">
               <div>
                 <h3 className="text-white font-bold flex items-center gap-2">
-                  <Gauge className="w-5 h-5 text-park-accent" />
+                  <Gauge className="w-5 h-5 text-cv-accent" />
                   ¿No tienes cargas de combustible en este período?
                 </h3>
-                <p className="text-park-muted text-sm mt-1">
+                <p className="text-cv-muted text-sm mt-1">
                   Registra lecturas manuales de kilometraje para calcular el consumo exacto
                 </p>
               </div>
@@ -440,12 +440,12 @@ export default function Movimiento() {
       {/* Modal para registrar KM manual */}
       {showKmModal && (
         <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/60 backdrop-blur-sm" onClick={() => setShowKmModal(false)}>
-          <div className="bg-park-card border border-park-border rounded-2xl p-6 w-full max-w-md mx-4 shadow-2xl" onClick={e => e.stopPropagation()}>
+          <div className="bg-cv-card border border-cv-border rounded-2xl p-6 w-full max-w-md mx-4 shadow-2xl" onClick={e => e.stopPropagation()}>
             <h3 className="text-white font-bold text-lg mb-2 flex items-center gap-2">
-              <Gauge className="w-5 h-5 text-park-accent" />
+              <Gauge className="w-5 h-5 text-cv-accent" />
               Registrar Avance de KM
             </h3>
-            <p className="text-park-muted text-sm mb-4">
+            <p className="text-cv-muted text-sm mb-4">
               Ingrese la lectura actual del odómetro para calcular el consumo sin necesidad de cargar combustible.
             </p>
             <input
@@ -497,9 +497,9 @@ export default function Movimiento() {
 
       {!resultado && !loading && (
         <div className="card text-center py-16">
-          <Activity className="w-16 h-16 mx-auto text-park-muted/30 mb-4" />
-          <p className="text-park-muted text-lg font-medium">Seleccione un vehículo y un período</p>
-          <p className="text-park-muted text-sm mt-1">
+          <Activity className="w-16 h-16 mx-auto text-cv-muted/30 mb-4" />
+          <p className="text-cv-muted text-lg font-medium">Seleccione un vehículo y un período</p>
+          <p className="text-cv-muted text-sm mt-1">
             El sistema calculará automáticamente los kilómetros recorridos, consumo y gastos
           </p>
         </div>
@@ -517,9 +517,9 @@ function KPICard({ icon: Icon, label, value, sub, color, bgColor, borderColor })
           <Icon className={`w-6 h-6 ${color}`} />
         </div>
         <div className="flex-1 min-w-0">
-          <p className="text-park-muted text-xs font-bold uppercase tracking-widest truncate">{label}</p>
+          <p className="text-cv-muted text-xs font-bold uppercase tracking-widest truncate">{label}</p>
           <p className={`text-2xl font-black mt-1 ${color}`}>{value}</p>
-          {sub && <p className="text-park-muted text-[10px] mt-0.5 font-medium truncate">{sub}</p>}
+          {sub && <p className="text-cv-muted text-[10px] mt-0.5 font-medium truncate">{sub}</p>}
         </div>
       </div>
     </div>
