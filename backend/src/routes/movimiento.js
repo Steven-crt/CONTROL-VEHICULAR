@@ -3,13 +3,20 @@ const router = express.Router();
 const db = require('../db');
 const auth = require('../middleware/auth');
 const { internalError } = require('../utils/httpErrors');
+const { intId, date, body } = require('../utils/validate');
 
 // POST /api/movimiento/calcular - Calcular consumo en un período
 router.post('/calcular', auth(), async (req, res) => {
-  const { vehiculo_id, fecha_inicio, fecha_fin } = req.body;
+  const validado = body({
+    vehiculo_id: [intId, { label: 'vehiculo_id' }],
+    fecha_inicio: [date, { required: true, label: 'fecha_inicio' }],
+    fecha_fin: [date, { required: true, label: 'fecha_fin' }]
+  }, req.body);
+  if (!validado.ok) return res.status(400).json({ error: validado.error });
+  const { vehiculo_id, fecha_inicio, fecha_fin } = validado.values;
 
-  if (!vehiculo_id || !fecha_inicio || !fecha_fin)
-    return res.status(400).json({ error: 'vehiculo_id, fecha_inicio y fecha_fin son requeridos' });
+  if (fecha_inicio > fecha_fin)
+    return res.status(400).json({ error: 'fecha_inicio no puede ser posterior a fecha_fin' });
 
   try {
     // 1. Verificar que el vehículo existe

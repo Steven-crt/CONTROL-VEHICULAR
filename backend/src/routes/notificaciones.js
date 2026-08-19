@@ -2,6 +2,7 @@ const express = require('express');
 const router = express.Router();
 const db = require('../db');
 const auth = require('../middleware/auth');
+const { internalError } = require('../utils/httpErrors');
 
 const INICIO_MES = "DATE_FORMAT(CURDATE(), '%Y-%m-01')";
 
@@ -172,8 +173,7 @@ router.get('/', auth(), async (req, res) => {
 
     res.json(notificaciones);
   } catch (err) {
-    console.error('Error en GET /notificaciones:', err);
-    res.status(500).json({ error: 'Error interno del servidor' });
+    internalError(res, err, 'notificaciones');
   }
 });
 

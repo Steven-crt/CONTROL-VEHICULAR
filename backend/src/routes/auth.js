@@ -5,6 +5,9 @@ const bcrypt = require('bcryptjs');
 const jwt = require('jsonwebtoken');
 const { getRol } = require('../utils/roles');
 const { getJwtSecret } = require('../utils/jwtSecret');
+const { obtenerIp } = require('../utils/obtenerIp');
+const { EVENTOS, logEvento } = require('../utils/audit');
+const { COOKIE_SESION } = require('../middleware/auth');
 require('dotenv').config();
 
 // Rate limiting en memoria para prevenir brute force en login.
@@ -25,11 +28,9 @@ setInterval(() => {
   }
 }, 10 * 60 * 1000).unref();
 
-function obtenerIp(req) {
-  const fwd = req.headers['x-forwarded-for'];
-  if (fwd) return String(fwd).split(',')[0].trim();
-  return req.ip || req.socket?.remoteAddress || 'unknown';
-}
+// La IP se resuelve con req.ip (Express + trust proxy). NO se lee
+// x-forwarded-for crudo: el cliente puede falsificarlo y saltarse el bloqueo.
+// (obtenerIp importado de ../utils/obtenerIp)
 
 function checkRateLimit(ip) {
   const ahora = Date.now();
@@ -65,9 +66,17 @@ function limpiarIntentosExitoso(ip) {
 router.post('/login', async (req, res) => {
   const ip = obtenerIp(req);
 
+  // Honeypot anti-bots: si el campo oculto "website" viene lleno, es un bot.
+  // El frontend legítimo JAMÁS envía este campo.
+  if (req.body?.website) {
+    logEvento(EVENTOS.LOGIN_BLOQUEADO, req, 'honeypot');
+    return res.status(400).json({ error: 'Solicitud inválida' });
+  }
+
   // Verificar rate limit
   const limiteEstado = checkRateLimit(ip);
   if (limiteEstado.bloqueado) {
+    logEvento(EVENTOS.LOGIN_BLOQUEADO, req, `ip bloqueada, retry en ${limiteEstado.segsRestantes}s`);
     return res.status(429).json({
       error: `Demasiados intentos fallidos. Intenta nuevamente en ${limiteEstado.segsRestantes} segundos.`
     });
@@ -91,6 +100,7 @@ router.post('/login', async (req, res) => {
     );
     if (rows.length === 0) {
       registrarFallo(ip);
+      logEvento(EVENTOS.LOGIN_FAIL, req, `usuario=${username.trim()}`);
       return res.status(401).json({ error: 'Credenciales inválidas' });
     }
 
@@ -98,6 +108,7 @@ router.post('/login', async (req, res) => {
     const valid = await bcrypt.compare(password, usuario.password);
     if (!valid) {
       registrarFallo(ip);
+      logEvento(EVENTOS.LOGIN_FAIL, req, `usuario=${usuario.username}`);
       return res.status(401).json({ error: 'Credenciales inválidas' });
     }
 
@@ -111,6 +122,20 @@ router.post('/login', async (req, res) => {
       getJwtSecret(),
       { expiresIn: process.env.JWT_EXPIRES_IN || '8h' }
     );
+
+    // Cookie de sesión httpOnly: no accesible desde JS (protege contra XSS).
+    // SameSite=None + Secure porque frontend (Vercel) y API (Render) están en
+    // dominios distintos. HttpOnly impide lectura por scripts maliciosos.
+    const cookieSecure = process.env.NODE_ENV === 'production';
+    res.cookie(COOKIE_SESION, token, {
+      httpOnly: true,
+      secure: cookieSecure,
+      sameSite: cookieSecure ? 'none' : 'lax',
+      maxAge: 8 * 60 * 60 * 1000, // 8h, igual que el JWT
+      path: '/'
+    });
+
+    logEvento(EVENTOS.LOGIN_OK, req, `usuario=${usuario.username}`);
 
     res.json({
       token,
@@ -129,11 +154,18 @@ router.post('/login', async (req, res) => {
   }
 });
 
+// POST /api/auth/logout — limpia la cookie de sesión
+router.post('/logout', (req, res) => {
+  res.clearCookie(COOKIE_SESION, { path: '/', httpOnly: true, sameSite: process.env.NODE_ENV === 'production' ? 'none' : 'lax', secure: process.env.NODE_ENV === 'production' });
+  res.json({ message: 'Sesión cerrada' });
+});
+
 // GET /api/auth/me
 router.get('/me', async (req, res) => {
   const authHeader = req.headers['authorization'];
-  if (!authHeader) return res.status(401).json({ error: 'No autorizado' });
-  const token = authHeader.split(' ')[1];
+  const cookieToken = req.cookies?.[COOKIE_SESION];
+  const token = cookieToken || (authHeader ? authHeader.split(' ')[1] : null);
+  if (!token) return res.status(401).json({ error: 'No autorizado' });
   try {
     const decoded = jwt.verify(token, getJwtSecret());
     const [rows] = await db.query(

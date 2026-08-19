@@ -17,25 +17,43 @@ export function AuthProvider({ children }) {
   const [usuario, setUsuario] = useState(null);
   const [loading, setLoading] = useState(true);
 
+  // Restauración de sesión:
+  // 1) Si hay cookie httpOnly de sesión, /auth/me la valida (preferente).
+  // 2) Fallback: sesión vieja guardada en localStorage (se valida con /auth/me).
   useEffect(() => {
-    const saved = localStorage.getItem('usuario');
-    const token = localStorage.getItem('token');
-    if (saved && token) {
-      setUsuario(normalizeUsuario(JSON.parse(saved)));
-    }
-    setLoading(false);
+    const restaurar = async () => {
+      try {
+        const { data } = await api.get('/auth/me');
+        setUsuario(normalizeUsuario(data));
+        localStorage.setItem('usuario', JSON.stringify(normalizeUsuario(data)));
+      } catch {
+        // Sin sesión válida
+        localStorage.removeItem('usuario');
+        setUsuario(null);
+      } finally {
+        setLoading(false);
+      }
+    };
+    restaurar();
   }, []);
 
   const login = async (username, password) => {
     const { data } = await api.post('/auth/login', { username, password });
-    const usuario = normalizeUsuario(data.usuario);
+    const usuarioNorm = normalizeUsuario(data.usuario);
+    // El token viaja en cookie httpOnly (protegido contra XSS).
+    // Se conserva también en localStorage solo como fallback de compatibilidad.
     localStorage.setItem('token', data.token);
-    localStorage.setItem('usuario', JSON.stringify(usuario));
-    setUsuario(usuario);
+    localStorage.setItem('usuario', JSON.stringify(usuarioNorm));
+    setUsuario(usuarioNorm);
     return data;
   };
 
-  const logout = () => {
+  const logout = async () => {
+    try {
+      await api.post('/auth/logout');
+    } catch {
+      // La cookie puede no existir: se limpia igual
+    }
     localStorage.removeItem('token');
     localStorage.removeItem('usuario');
     setUsuario(null);

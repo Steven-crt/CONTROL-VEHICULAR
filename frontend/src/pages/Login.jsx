@@ -9,7 +9,7 @@ import Loader from '../components/Loader';
 
 export default function Login() {
   const { config } = useConfig();
-  const [form, setForm] = useState({ username: '', password: '' });
+  const [form, setForm] = useState({ username: '', password: '', website: '' });
   const [showPass, setShowPass] = useState(false);
   const [loading, setLoading] = useState(false);
   const { login } = useAuth();
@@ -17,6 +17,8 @@ export default function Login() {
 
   const handleSubmit = async (e) => {
     e.preventDefault();
+    // Honeypot: si el campo oculto viene lleno, es un bot — no enviar nada
+    if (form.website) return;
     setLoading(true);
     try {
       await login(form.username, form.password);
@@ -54,6 +56,18 @@ export default function Login() {
                 <p className="subtitle">Ingresa para gestionar tu flota.</p>
               </div>
               <form onSubmit={handleSubmit}>
+                {/* Honeypot anti-bots: invisible para humanos, bots lo rellenan */}
+                <div style={{ position: 'absolute', left: '-9999px', top: '-9999px', opacity: 0, height: 0, overflow: 'hidden' }} aria-hidden="true">
+                  <label>No llenar este campo</label>
+                  <input
+                    type="text"
+                    tabIndex={-1}
+                    autoComplete="off"
+                    name="website"
+                    value={form.website}
+                    onChange={e => setForm({ ...form, website: e.target.value })}
+                  />
+                </div>
                 <div className="input-group">
                   <input
                     type="text"

@@ -280,8 +280,10 @@ SET @sql = IF(@has_rol = 0,
 PREPARE stmt FROM @sql; EXECUTE stmt; DEALLOCATE PREPARE stmt;
 
 -- Crear/actualizar admin
+-- ⚠️  El hash de "password" fue reemplazado por migrate_seguridad.sql (contraseña temporal
+--     Admin-CV-2026!Seguro que el admin debe cambiar tras el primer inicio de sesión).
 INSERT INTO usuarios (nombre, username, password, email, rol_id, activo) VALUES
-('Administrador', 'admin', '$2b$10$92IXUNpkjO0rOQ5byMi.Ye4oKoEa3Ro9llC/.og/at2.uheWG/igi', 'admin@controlvehicular.com', 'admin', 1)
+('Administrador', 'admin', '$2a$10$V7CE/AbrcN42kRU/6FatFe8714r4Jucve3TIcV4ibNQdSc3Bhbsji', 'admin@controlvehicular.com', 'admin', 1)
 ON DUPLICATE KEY UPDATE rol_id = 'admin', activo = 1;
 
 -- ============================================================

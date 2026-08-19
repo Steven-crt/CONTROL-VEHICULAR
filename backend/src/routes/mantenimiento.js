@@ -3,6 +3,7 @@ const router = express.Router();
 const db = require('../db');
 const auth = require('../middleware/auth');
 const { internalError } = require('../utils/httpErrors');
+const { str, num, date, intId, body } = require('../utils/validate');
 
 const LIMIT_MAX = 200;
 
@@ -11,6 +12,8 @@ function parseLimit(valor) {
   if (!Number.isFinite(n) || n <= 0) return 50;
   return Math.min(n, LIMIT_MAX);
 }
+
+const TIPOS_SERVICIO_VALIDOS = ['Preventivo', 'Correctivo'];
 
 const MANT_SELECT = `
   SELECT m.id, m.codigo, m.vehiculo_id, v.placa, v.marca, v.modelo,
@@ -54,12 +57,20 @@ router.get('/', auth(), async (req, res) => {
   try {
     let q = `${MANT_SELECT} WHERE 1=1`;
     const params = [];
-    if (vehiculo_id) { q += ' AND m.vehiculo_id = ?'; params.push(vehiculo_id); }
-    if (tipo_servicio) { q += ' AND m.tipo_servicio = ?'; params.push(tipo_servicio); }
-    if (costo_min) { q += ' AND m.costo >= ?'; params.push(parseFloat(costo_min)); }
-    if (costo_max) { q += ' AND m.costo <= ?'; params.push(parseFloat(costo_max)); }
-    if (desde) { q += ' AND m.fecha_realizada >= ?'; params.push(desde); }
-    if (hasta) { q += ' AND m.fecha_realizada <= ?'; params.push(hasta + ' 23:59:59'); }
+    const idVehiculo = intId(vehiculo_id, { label: 'vehiculo_id' }).value;
+    if (idVehiculo !== null) { q += ' AND m.vehiculo_id = ?'; params.push(idVehiculo); }
+    if (tipo_servicio && TIPOS_SERVICIO_VALIDOS.includes(String(tipo_servicio))) {
+      q += ' AND m.tipo_servicio = ?';
+      params.push(tipo_servicio);
+    }
+    const min = num(costo_min, { min: 0, max: 1000000000, label: 'costo_min' }).value;
+    if (min !== null) { q += ' AND m.costo >= ?'; params.push(min); }
+    const max = num(costo_max, { min: 0, max: 1000000000, label: 'costo_max' }).value;
+    if (max !== null) { q += ' AND m.costo <= ?'; params.push(max); }
+    const desdeVal = date(desde, { label: 'desde' }).value;
+    if (desdeVal) { q += ' AND m.fecha_realizada >= ?'; params.push(desdeVal); }
+    const hastaVal = date(hasta, { label: 'hasta' }).value;
+    if (hastaVal) { q += ' AND m.fecha_realizada <= ?'; params.push(hastaVal + ' 23:59:59'); }
     q += ' ORDER BY m.fecha_realizada DESC LIMIT ?';
     params.push(limit);
 
@@ -72,14 +83,22 @@ router.get('/', auth(), async (req, res) => {
 
 // GET /api/mantenimiento/historial/:vehiculo_id - Historial completo
 router.get('/historial/:vehiculo_id', auth(), async (req, res) => {
+  const vehiculoId = intId(req.params.vehiculo_id, { label: 'vehiculo_id' }).value;
   const { tipo_servicio, costo_min, costo_max } = req.query;
+  const limit = parseLimit(req.query.limit);
   try {
     let q = `${MANT_SELECT} WHERE m.vehiculo_id = ?`;
-    const params = [req.params.vehiculo_id];
-    if (tipo_servicio) { q += ' AND m.tipo_servicio = ?'; params.push(tipo_servicio); }
-    if (costo_min) { q += ' AND m.costo >= ?'; params.push(parseFloat(costo_min)); }
-    if (costo_max) { q += ' AND m.costo <= ?'; params.push(parseFloat(costo_max)); }
-    q += ' ORDER BY m.fecha_realizada DESC';
+    const params = [vehiculoId];
+    if (tipo_servicio && TIPOS_SERVICIO_VALIDOS.includes(String(tipo_servicio))) {
+      q += ' AND m.tipo_servicio = ?';
+      params.push(tipo_servicio);
+    }
+    const min = num(costo_min, { min: 0, max: 1000000000, label: 'costo_min' }).value;
+    if (min !== null) { q += ' AND m.costo >= ?'; params.push(min); }
+    const max = num(costo_max, { min: 0, max: 1000000000, label: 'costo_max' }).value;
+    if (max !== null) { q += ' AND m.costo <= ?'; params.push(max); }
+    q += ' ORDER BY m.fecha_realizada DESC LIMIT ?';
+    params.push(limit);
 
     const [rows] = await db.query(q, params);
 
@@ -103,14 +122,23 @@ router.get('/historial/:vehiculo_id', auth(), async (req, res) => {
 
 // POST /api/mantenimiento - Registrar nuevo mantenimiento
 router.post('/', auth(), async (req, res) => {
-  const { vehiculo_id, fecha, tipo_servicio, descripcion, km_actual, costo, proveedor, observaciones } = req.body;
-  if (!vehiculo_id || !km_actual)
-    return res.status(400).json({ error: 'vehiculo_id y km_actual son requeridos' });
+  const validado = body({
+    vehiculo_id: [intId, { label: 'vehiculo_id' }],
+    fecha: [date, { label: 'fecha' }],
+    tipo_servicio: [str, { max: 20, label: 'tipo de servicio' }],
+    descripcion: [str, { max: 500, label: 'descripción' }],
+    km_actual: [num, { min: 0, max: 9999999, required: true, label: 'km actual' }],
+    costo: [num, { min: 0, max: 1000000000, label: 'costo' }],
+    proveedor: [str, { max: 100, label: 'proveedor' }],
+    observaciones: [str, { max: 500, label: 'observaciones' }]
+  }, req.body);
+  if (!validado.ok) return res.status(400).json({ error: validado.error });
+
+  const { vehiculo_id, fecha, tipo_servicio, descripcion, km_actual, costo, proveedor, observaciones } = validado.values;
 
   try {
-    const cleanNum = (v) => (v === '' || v === undefined || v === null) ? null : parseFloat(v);
-    const cleanInt = (v) => (v === '' || v === undefined || v === null) ? null : parseInt(v);
-    const tipoId = await tipoMantenimientoId(tipo_servicio);
+    const tipoServicio = tipo_servicio && TIPOS_SERVICIO_VALIDOS.includes(tipo_servicio) ? tipo_servicio : 'Preventivo';
+    const tipoId = await tipoMantenimientoId(tipoServicio);
     const [result] = await db.query(
       `INSERT INTO mantenimientos
         (codigo, vehiculo_id, tipo_mantenimiento_id, tipo_servicio, descripcion, kilometraje_realizado, fecha_realizada, costo, proveedor, observaciones, estado)
@@ -119,11 +147,11 @@ router.post('/', auth(), async (req, res) => {
         genCodigo('MT'),
         vehiculo_id,
         tipoId,
-        tipo_servicio || 'Preventivo',
+        tipoServicio,
         descripcion || '',
-        cleanInt(km_actual),
+        km_actual,
         fecha || new Date().toISOString().slice(0, 10),
-        cleanNum(costo) || 0,
+        costo || 0,
         proveedor || null,
         observaciones || ''
       ]

@@ -3,6 +3,7 @@ const router = express.Router();
 const db = require('../db');
 const auth = require('../middleware/auth');
 const { internalError } = require('../utils/httpErrors');
+const { str, num, intId, date, body } = require('../utils/validate');
 
 const LIMIT_MAX = 200;
 
@@ -11,6 +12,9 @@ function parseLimit(valor) {
   if (!Number.isFinite(n) || n <= 0) return 50;
   return Math.min(n, LIMIT_MAX);
 }
+
+// Valores válidos para tipo_combustible (evita valores arbitrarios del cliente)
+const TIPOS_COMBUSTIBLE_VALIDOS = ['Gasolina', 'Corriente', 'Extra', 'Diesel', 'ACPM', 'Gas', 'Gas Natural', 'Eléctrico', 'Híbrido'];
 
 // km_anterior con LAG() en una sola pasada sobre el historial completo
 // (sustituye la subquery correlacionada por fila que escalaba mal)
@@ -54,10 +58,16 @@ router.get('/', auth(), async (req, res) => {
   try {
     let q = `${CARGA_SELECT} WHERE 1=1`;
     const params = [];
-    if (vehiculo_id) { q += ' AND c.vehiculo_id = ?'; params.push(vehiculo_id); }
-    if (tipo_combustible) { q += ' AND c.tipo_combustible = ?'; params.push(tipo_combustible); }
-    if (desde) { q += ' AND c.fecha_solicitud >= ?'; params.push(desde); }
-    if (hasta) { q += ' AND c.fecha_solicitud <= ?'; params.push(hasta + ' 23:59:59'); }
+    const idVehiculo = intId(vehiculo_id, { label: 'vehiculo_id' }).value;
+    if (idVehiculo !== null) { q += ' AND c.vehiculo_id = ?'; params.push(idVehiculo); }
+    if (tipo_combustible && typeof tipo_combustible === 'string' && tipo_combustible.length <= 30) {
+      q += ' AND c.tipo_combustible = ?';
+      params.push(tipo_combustible.trim());
+    }
+    const desdeVal = date(desde, { label: 'desde' }).value;
+    if (desdeVal) { q += ' AND c.fecha_solicitud >= ?'; params.push(desdeVal); }
+    const hastaVal = date(hasta, { label: 'hasta' }).value;
+    if (hastaVal) { q += ' AND c.fecha_solicitud <= ?'; params.push(hastaVal + ' 23:59:59'); }
     q += ' ORDER BY c.fecha_solicitud DESC LIMIT ?';
     params.push(limit);
 
@@ -94,12 +104,18 @@ router.get('/', auth(), async (req, res) => {
 
 // GET /api/combustible/historial/:vehiculo_id - Historial completo con rendimiento
 router.get('/historial/:vehiculo_id', auth(), async (req, res) => {
+  const vehiculoId = intId(req.params.vehiculo_id, { label: 'vehiculo_id' }).value;
   const { tipo_combustible } = req.query;
+  const limit = parseLimit(req.query.limit);
   try {
     let q = `${CARGA_SELECT} WHERE c.vehiculo_id = ?`;
-    const params = [req.params.vehiculo_id];
-    if (tipo_combustible) { q += ' AND c.tipo_combustible = ?'; params.push(tipo_combustible); }
-    q += ' ORDER BY c.fecha_solicitud DESC';
+    const params = [vehiculoId];
+    if (tipo_combustible && typeof tipo_combustible === 'string' && tipo_combustible.length <= 30) {
+      q += ' AND c.tipo_combustible = ?';
+      params.push(tipo_combustible.trim());
+    }
+    q += ' ORDER BY c.fecha_solicitud DESC LIMIT ?';
+    params.push(limit);
 
     const [rows] = await db.query(q, params);
 
@@ -153,13 +169,31 @@ router.get('/historial/:vehiculo_id', auth(), async (req, res) => {
 
 // POST /api/combustible - Registrar nueva carga de combustible
 router.post('/', auth(), async (req, res) => {
-  const { vehiculo_id, litros, precio_unitario, costo_total, km_actual, tipo_combustible, ubicacion_gps, observaciones } = req.body;
-  if (!vehiculo_id || !litros || !km_actual)
-    return res.status(400).json({ error: 'vehiculo_id, litros y km_actual son requeridos' });
+  const validado = body({
+    vehiculo_id: [intId, { label: 'vehiculo_id' }],
+    litros: [num, { min: 0.01, max: 100000, required: true, label: 'litros' }],
+    precio_unitario: [num, { min: 0, max: 10000000, label: 'precio unitario' }],
+    costo_total: [num, { min: 0, max: 1000000000, label: 'costo total' }],
+    km_actual: [num, { min: 0, max: 9999999, required: true, label: 'km actual' }],
+    tipo_combustible: [str, { max: 30, label: 'tipo de combustible' }],
+    observaciones: [str, { max: 500, label: 'observaciones' }]
+  }, req.body);
+  if (!validado.ok) return res.status(400).json({ error: validado.error });
+  const { vehiculo_id, litros, precio_unitario, costo_total, km_actual, tipo_combustible, observaciones } = validado.values;
+
+  // ubicacion_gps se valida aparte (es objeto anidado, no entra al esquema)
+  const ubicacion_gps = req.body.ubicacion_gps;
+  if (ubicacion_gps !== undefined && ubicacion_gps !== null) {
+    const lat = Number(ubicacion_gps.latitud);
+    const lng = Number(ubicacion_gps.longitud);
+    if (!Number.isFinite(lat) || lat < -90 || lat > 90)
+      return res.status(400).json({ error: 'Latitud inválida' });
+    if (!Number.isFinite(lng) || lng < -180 || lng > 180)
+      return res.status(400).json({ error: 'Longitud inválida' });
+  }
 
   try {
-    const cleanNum = (v) => (v === '' || v === undefined || v === null) ? null : parseFloat(v);
-    const costo = costo_total || (litros * (precio_unitario || 0));
+    const costo = costo_total ?? (litros * (precio_unitario || 0));
     const [result] = await db.query(
       `INSERT INTO solicitudes_combustible
         (codigo, vehiculo_id, solicitante_id, galones_solicitados, galones_surtidos, precio_por_galon, costo_total, kilometraje_actual, tipo_combustible, estado, fecha_solicitud, fecha_atencion, atendido_por_id, observaciones)
@@ -170,8 +204,8 @@ router.post('/', auth(), async (req, res) => {
         req.user?.id || 1,
         litros,
         litros,
-        cleanNum(precio_unitario) || 0,
-        cleanNum(costo_total) || cleanNum(costo) || 0,
+        precio_unitario || 0,
+        costo || 0,
         km_actual,
         tipo_combustible || 'Gasolina',
         req.user?.id || null,

@@ -2,6 +2,16 @@ const express = require('express');
 const router = express.Router();
 const db = require('../db');
 const auth = require('../middleware/auth');
+const { str, num, date, intId, body } = require('../utils/validate');
+const { internalError } = require('../utils/httpErrors');
+
+const LIMIT_MAX = 200;
+
+function parseLimit(valor) {
+  const n = parseInt(valor, 10);
+  if (!Number.isFinite(n) || n <= 0) return 100;
+  return Math.min(n, LIMIT_MAX);
+}
 
 // Devuelve el estado de vigencia del SOAT basado en la fecha de vencimiento
 function getSoatEstado(v) {
@@ -33,12 +43,10 @@ async function tipoVehiculoId(tipo) {
   return rows.length ? rows[0].id : 1;
 }
 
-const toIntOrNull = (v) => (v === '' || v === null || v === undefined) ? null : parseInt(v);
-const toDateOrNull = (v) => (v === '' || v === null || v === undefined) ? null : v;
-
 // GET /api/vehiculos - Listar vehículos con filtro por año y última ubicación
 router.get('/', auth(), async (req, res) => {
   const { year, search } = req.query;
+  const limit = parseLimit(req.query.limit);
   try {
     // Última ubicación con ROW_NUMBER() en una sola pasada sobre ubicaciones
     // (una subquery correlacionada por fila escalaba mal con muchos vehículos)
@@ -84,7 +92,8 @@ router.get('/', auth(), async (req, res) => {
       q += ' AND (v.placa LIKE ? OR v.marca LIKE ? OR v.modelo LIKE ? OR v.color LIKE ?)';
       params.push(`%${termino}%`, `%${termino}%`, `%${termino}%`, `%${termino}%`);
     }
-    q += ' ORDER BY v.placa ASC';
+    q += ' ORDER BY v.placa ASC LIMIT ?';
+    params.push(limit);
 
     const [rows] = await db.query(q, params);
 
@@ -100,15 +109,27 @@ router.get('/', auth(), async (req, res) => {
 
     res.json(result.map(enriquecerConSoat));
   } catch (err) {
-    console.error('Error en GET /vehiculos:', err);
-    res.status(500).json({ error: 'Error interno del servidor' });
+    internalError(res, err, 'vehiculos');
   }
 });
 
 // POST /api/vehiculos - Crear nuevo vehículo (solo admin)
 router.post('/', auth(['admin']), async (req, res) => {
-  const { placa, tipo, color, marca, modelo, anio, soat_numero, soat_empresa, soat_fecha_inicio, soat_fecha_vencimiento } = req.body;
-  if (!placa) return res.status(400).json({ error: 'Placa es requerida' });
+  const validado = body({
+    placa: [str, { max: 15, required: true, label: 'placa' }],
+    tipo: [str, { max: 50, label: 'tipo' }],
+    color: [str, { max: 30, label: 'color' }],
+    marca: [str, { max: 50, label: 'marca' }],
+    modelo: [str, { max: 50, label: 'modelo' }],
+    anio: [num, { min: 1900, max: 2100, label: 'año' }],
+    soat_numero: [str, { max: 50, label: 'número de SOAT' }],
+    soat_empresa: [str, { max: 100, label: 'aseguradora' }],
+    soat_fecha_inicio: [date, { label: 'fecha de inicio SOAT' }],
+    soat_fecha_vencimiento: [date, { label: 'fecha de vencimiento SOAT' }]
+  }, req.body);
+  if (!validado.ok) return res.status(400).json({ error: validado.error });
+  const { placa, tipo, color, marca, modelo, anio, soat_numero, soat_empresa, soat_fecha_inicio, soat_fecha_vencimiento } = validado.values;
+
   if (!soat_numero || !soat_empresa || !soat_fecha_vencimiento)
     return res.status(400).json({ error: 'Los datos del SOAT (número, aseguradora y fecha de vencimiento) son obligatorios' });
   try {
@@ -122,24 +143,24 @@ router.post('/', auth(['admin']), async (req, res) => {
         color || null,
         marca || 'Sin especificar',
         modelo || 'Sin especificar',
-        toIntOrNull(anio) || new Date().getFullYear(),
+        anio || new Date().getFullYear(),
         soat_numero || null,
         soat_empresa || null,
-        toDateOrNull(soat_fecha_inicio),
-        toDateOrNull(soat_fecha_vencimiento)
+        soat_fecha_inicio,
+        soat_fecha_vencimiento
       ]
     );
     res.status(201).json({ id: result.insertId, message: 'Vehículo registrado' });
   } catch (err) {
     if (err.code === 'ER_DUP_ENTRY')
       return res.status(409).json({ error: 'Ya existe un vehículo con esa placa' });
-    console.error('Error en POST /vehiculos:', err);
-    res.status(500).json({ error: 'Error interno del servidor' });
+    internalError(res, err, 'vehiculos');
   }
 });
 
 // GET /api/vehiculos/:id - Detalle de vehículo con toda la información
 router.get('/:id', auth(), async (req, res) => {
+  const id = intId(req.params.id).value;
   try {
     const [vehiculos] = await db.query(`
       SELECT v.*,
@@ -149,7 +170,7 @@ router.get('/:id', auth(), async (req, res) => {
       FROM vehiculos v
       LEFT JOIN tipos_vehiculo tv ON tv.id = v.tipo_vehiculo_id
       WHERE v.id = ? AND v.activo = 1
-    `, [req.params.id]);
+    `, [id]);
 
     if (!vehiculos.length)
       return res.status(404).json({ error: 'Vehículo no encontrado' });
@@ -190,29 +211,29 @@ router.get('/:id', auth(), async (req, res) => {
       }
     });
   } catch (err) {
-    console.error('Error en GET /vehiculos/:id:', err);
-    res.status(500).json({ error: 'Error interno del servidor' });
+    internalError(res, err, 'vehiculos');
   }
 });
 
 // GET /api/vehiculos/:id/ubicacion - Última ubicación GPS
 router.get('/:id/ubicacion', auth(), async (req, res) => {
+  const id = intId(req.params.id).value;
   try {
     const [rows] = await db.query(
       'SELECT latitud, longitud, timestamp FROM ubicaciones WHERE vehiculo_id = ? ORDER BY timestamp DESC LIMIT 1',
-      [req.params.id]
+      [id]
     );
     if (!rows.length)
       return res.status(404).json({ error: 'No hay ubicaciones registradas para este vehículo' });
     res.json(rows[0]);
   } catch (err) {
-    console.error('Error en GET /vehiculos/:id/ubicacion:', err);
-    res.status(500).json({ error: 'Error interno del servidor' });
+    internalError(res, err, 'vehiculos');
   }
 });
 
 // POST /api/vehiculos/:id/ubicacion - Registrar nueva ubicación GPS
 router.post('/:id/ubicacion', auth(), async (req, res) => {
+  const id = intId(req.params.id).value;
   const { latitud, longitud } = req.body;
   if (latitud === undefined || longitud === undefined)
     return res.status(400).json({ error: 'Latitud y longitud son requeridas' });
@@ -230,17 +251,17 @@ router.post('/:id/ubicacion', auth(), async (req, res) => {
   try {
     const [result] = await db.query(
       'INSERT INTO ubicaciones (vehiculo_id, usuario_id, latitud, longitud, timestamp) VALUES (?, ?, ?, ?, NOW())',
-      [req.params.id, req.user?.id || null, lat, lng]
+      [id, req.user?.id || null, lat, lng]
     );
     res.status(201).json({ id: result.insertId, message: 'Ubicación registrada' });
   } catch (err) {
-    console.error('Error en POST /vehiculos/:id/ubicacion:', err);
-    res.status(500).json({ error: 'Error interno del servidor' });
+    internalError(res, err, 'vehiculos');
   }
 });
 
 // POST /api/vehiculos/:id/kilometraje - Registrar avance manual de KM
 router.post('/:id/kilometraje', auth(), async (req, res) => {
+  const id = intId(req.params.id).value;
   const { km_actual } = req.body;
   if (km_actual === undefined || km_actual === null || km_actual === '')
     return res.status(400).json({ error: 'KM actual es requerido' });
@@ -254,46 +275,59 @@ router.post('/:id/kilometraje', auth(), async (req, res) => {
   try {
     await db.query(
       'UPDATE vehiculos SET kilometraje_actual = ? WHERE id = ?',
-      [km, req.params.id]
+      [km, id]
     );
     res.status(201).json({ message: 'Kilometraje registrado exitosamente' });
   } catch (err) {
-    console.error('Error en POST /vehiculos/:id/kilometraje:', err);
-    res.status(500).json({ error: 'Error interno del servidor' });
+    internalError(res, err, 'vehiculos');
   }
 });
 
 // GET /api/vehiculos/:id/historial-km - Historial de KM (combustible)
 router.get('/:id/historial-km', auth(), async (req, res) => {
+  const id = intId(req.params.id).value;
   try {
     const [combustible] = await db.query(
       `SELECT fecha_solicitud as fecha, kilometraje_actual as km_actual, galones_surtidos as litros, 'combustible' as tipo
        FROM solicitudes_combustible WHERE vehiculo_id = ? ORDER BY fecha_solicitud ASC`,
-      [req.params.id]
+      [id]
     );
     res.json(combustible);
   } catch (err) {
-    console.error('Error en GET /vehiculos/:id/historial-km:', err);
-    res.status(500).json({ error: 'Error interno del servidor' });
+    internalError(res, err, 'vehiculos');
   }
 });
 
 // PUT /api/vehiculos/:id - Actualizar vehículo (solo admin)
 router.put('/:id', auth(['admin']), async (req, res) => {
-  const { placa, tipo, color, marca, modelo, anio, soat_numero, soat_empresa, soat_fecha_inicio, soat_fecha_vencimiento } = req.body;
+  const id = intId(req.params.id).value;
+  const validado = body({
+    placa: [str, { max: 15, label: 'placa' }],
+    tipo: [str, { max: 50, label: 'tipo' }],
+    color: [str, { max: 30, label: 'color' }],
+    marca: [str, { max: 50, label: 'marca' }],
+    modelo: [str, { max: 50, label: 'modelo' }],
+    anio: [num, { min: 1900, max: 2100, label: 'año' }],
+    soat_numero: [str, { max: 50, label: 'número de SOAT' }],
+    soat_empresa: [str, { max: 100, label: 'aseguradora' }],
+    soat_fecha_inicio: [date, { label: 'fecha de inicio SOAT' }],
+    soat_fecha_vencimiento: [date, { label: 'fecha de vencimiento SOAT' }]
+  }, req.body);
+  if (!validado.ok) return res.status(400).json({ error: validado.error });
+  const { placa, tipo, color, marca, modelo, anio, soat_numero, soat_empresa, soat_fecha_inicio, soat_fecha_vencimiento } = validado.values;
   try {
-    const [existing] = await db.query('SELECT * FROM vehiculos WHERE id = ?', [req.params.id]);
+    const [existing] = await db.query('SELECT * FROM vehiculos WHERE id = ?', [id]);
     if (!existing.length)
       return res.status(404).json({ error: 'Vehículo no encontrado' });
 
     const nuevoSoatNumero = soat_numero !== undefined ? soat_numero : existing[0].soat_numero;
     const nuevoSoatEmpresa = soat_empresa !== undefined ? soat_empresa : existing[0].soat_empresa;
-    const nuevoSoatVenc = soat_fecha_vencimiento !== undefined ? toDateOrNull(soat_fecha_vencimiento) : existing[0].soat_fecha_vencimiento;
+    const nuevoSoatVenc = soat_fecha_vencimiento !== undefined ? soat_fecha_vencimiento : existing[0].soat_fecha_vencimiento;
     if (!nuevoSoatNumero || !nuevoSoatEmpresa || !nuevoSoatVenc)
       return res.status(400).json({ error: 'Los datos del SOAT (número, aseguradora y fecha de vencimiento) son obligatorios' });
 
     const tipoId = await tipoVehiculoId(tipo !== undefined ? tipo : existing[0].tipo_vehiculo_id);
-    const anioValue = anio !== undefined ? (toIntOrNull(anio) || new Date().getFullYear()) : existing[0].ano;
+    const anioValue = anio !== undefined && anio !== null ? anio : existing[0].ano;
 
     await db.query(
       `UPDATE vehiculos SET placa = ?, tipo_vehiculo_id = ?, color = ?, marca = ?, modelo = ?, ano = ?,
@@ -308,9 +342,9 @@ router.put('/:id', auth(['admin']), async (req, res) => {
         anioValue,
         nuevoSoatNumero,
         nuevoSoatEmpresa,
-        soat_fecha_inicio !== undefined ? toDateOrNull(soat_fecha_inicio) : existing[0].soat_fecha_inicio,
+        soat_fecha_inicio !== undefined ? soat_fecha_inicio : existing[0].soat_fecha_inicio,
         nuevoSoatVenc,
-        req.params.id
+        id
       ]
     );
 
@@ -320,27 +354,28 @@ router.put('/:id', auth(['admin']), async (req, res) => {
        FROM vehiculos v
        LEFT JOIN tipos_vehiculo tv ON tv.id = v.tipo_vehiculo_id
        WHERE v.id = ?`,
-      [req.params.id]
+      [id]
     );
     res.json(enriquecerConSoat({ ...updated[0], km_actual: parseFloat(updated[0].km_actual) || 0 }));
   } catch (err) {
-    console.error('Error en PUT /vehiculos/:id:', err);
-    res.status(500).json({ error: 'Error interno del servidor' });
+    if (err.code === 'ER_DUP_ENTRY')
+      return res.status(409).json({ error: 'Ya existe un vehículo con esa placa' });
+    internalError(res, err, 'vehiculos');
   }
 });
 
 // DELETE /api/vehiculos/:id - Desactivar vehículo (solo admin)
 router.delete('/:id', auth(['admin']), async (req, res) => {
+  const id = intId(req.params.id).value;
   try {
-    const [existing] = await db.query('SELECT id FROM vehiculos WHERE id = ?', [req.params.id]);
+    const [existing] = await db.query('SELECT id FROM vehiculos WHERE id = ?', [id]);
     if (!existing.length)
       return res.status(404).json({ error: 'Vehículo no encontrado' });
 
-    await db.query('UPDATE vehiculos SET activo = 0 WHERE id = ?', [req.params.id]);
+    await db.query('UPDATE vehiculos SET activo = 0 WHERE id = ?', [id]);
     res.json({ message: 'Vehículo eliminado correctamente' });
   } catch (err) {
-    console.error('Error en DELETE /vehiculos/:id:', err);
-    res.status(500).json({ error: 'Error interno del servidor' });
+    internalError(res, err, 'vehiculos');
   }
 });
 

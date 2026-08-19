@@ -9,10 +9,15 @@ const API_URL =
 const api = axios.create({
   baseURL: API_URL,
   headers: { 'Content-Type': 'application/json' },
-  timeout: 25000
+  timeout: 25000,
+  // Envía la cookie httpOnly de sesión en peticiones cross-origin
+  // (frontend en Vercel, API en Render)
+  withCredentials: true
 });
 
 // Interceptor: agregar JWT token en cada request
+// (fallback: si aún hay token en localStorage de sesiones viejas, se envía;
+//  el servidor prioriza la cookie httpOnly sobre el header)
 api.interceptors.request.use(config => {
   const token = localStorage.getItem('token');
   if (token) config.headers.Authorization = `Bearer ${token}`;
