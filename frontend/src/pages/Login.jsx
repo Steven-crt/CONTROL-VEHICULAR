@@ -272,6 +272,7 @@ export default function Login() {
                     type="text"
                     className="input-field"
                     placeholder="Nombre de usuario"
+                    autoComplete="username"
                     value={form.username}
                     onChange={e => setForm({ ...form, username: e.target.value })}
                     required
@@ -283,6 +284,7 @@ export default function Login() {
                     type={showPass ? 'text' : 'password'}
                     className="input-field"
                     placeholder="Contraseña"
+                    autoComplete="current-password"
                     value={form.password}
                     onChange={e => setForm({ ...form, password: e.target.value })}
                     required
