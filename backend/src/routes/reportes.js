@@ -134,7 +134,6 @@ router.get('/dashboard', auth(), async (req, res) => {
 
 // ==================== REPORTES DE GESTIÓN DE VEHÍCULOS ====================
 
-// GET /api/reportes/vehiculos-resumen - Resumen general de vehículos
 router.get('/vehiculos-resumen', auth(), async (req, res) => {
   try {
     const [[total], [porTipo], [porMarca], [porAnio]] = await Promise.all([
@@ -172,78 +171,81 @@ router.get('/combustible-resumen', auth(), async (req, res) => {
   const ff = filtrosFecha(req.query);
   if (ff.error) return res.status(400).json({ error: ff.error });
   const { desde, hasta } = ff;
-  const agrupar = req.query.agrupar || 'mes';
-  const formatMap = { dia: '%Y-%m-%d', semana: '%Y-%u', mes: '%Y-%m' };
-  const fmt = formatMap[agrupar] || '%Y-%m';
-  try {
-    let q = `SELECT DATE_FORMAT(fecha_solicitud,'${fmt}') as periodo,
-             SUM(costo_total) as total, COUNT(*) as cargas,
-             SUM(galones_surtidos) as litros
-             FROM solicitudes_combustible WHERE 1=1`;
-    const params = [];
-    if (desde) { q += ' AND fecha_solicitud >= ?'; params.push(desde); }
-    if (hasta) { q += ' AND fecha_solicitud <= ?'; params.push(hasta + ' 23:59:59'); }
-    q += ' GROUP BY periodo ORDER BY periodo';
+    const agrupar = req.query.agrupar || 'mes';
+    const formatMap = { dia: '%Y-%m-%d', semana: '%Y-%u', mes: '%Y-%m' };
+    const fmt = formatMap[agrupar] || '%Y-%m';
+    try {
+      let q = `SELECT DATE_FORMAT(fecha_solicitud,'${fmt}') as periodo,
+              SUM(costo_total) as total, COUNT(*) as cargas,
+              SUM(galones_surtidos) as litros
+              FROM solicitudes_combustible WHERE 1=1`;
+      const params = [];
+      if (desde) { q += ' AND fecha_solicitud >= ?'; params.push(desde); }
+      if (hasta) { q += ' AND fecha_solicitud <= ?'; params.push(hasta + ' 23:59:59'); }
+      q += ' GROUP BY periodo ORDER BY periodo';
 
-    const [rows, totalGeneral] = await Promise.all([
-      db.query(q, params),
-      db.query(
-        `SELECT COALESCE(SUM(costo_total),0) as total, COUNT(*) as cargas, COALESCE(SUM(galones_surtidos),0) as litros
-         FROM solicitudes_combustible WHERE 1=1` +
-        (desde ? ' AND fecha_solicitud >= ?' : '') +
-        (hasta ? ' AND fecha_solicitud <= ?' : ''),
-        [desde, hasta + ' 23:59:59'].filter(Boolean)
-      )
-    ]);
+      const [rows, totalGeneral] = await Promise.all([
+        db.query(q, params),
+        db.query(
+          `SELECT COALESCE(SUM(costo_total),0) as total, COUNT(*) as cargas, COALESCE(SUM(galones_surtidos),0) as litros
+          FROM solicitudes_combustible WHERE 1=1` +
+          (desde ? ' AND fecha_solicitud >= ?' : '') +
+          (hasta ? ' AND fecha_solicitud <= ?' : ''),
+          [desde, hasta + ' 23:59:59'].filter(Boolean)
+        )
+      ]);
 
-    res.json({
-      por_periodo: rows.map(d => ({ ...d, total: parseFloat(d.total), litros: parseFloat(d.litros) })),
-      total: parseFloat(totalGeneral[0].total),
-      cargas: totalGeneral[0].cargas,
-      litros: parseFloat(totalGeneral[0].litros)
-    });
-  } catch (err) {
-    internalError(res, err, 'reportes/dashboard');
-  }
-});
+      res.json({
+        por_periodo: rows.map(d => ({ ...d, total: parseFloat(d.total), litros: parseFloat(d.litros) })),
+        total: parseFloat(totalGeneral[0].total),
+        cargas: totalGeneral[0].cargas,
+        litros: parseFloat(totalGeneral[0].litros)
+      });
+    } catch (err) {
+      internalError(res, err, 'reportes/dashboard');
+    }
+  });
 
-// GET /api/reportes/mantenimiento-resumen - Resumen de gastos de mantenimiento
-router.get('/mantenimiento-resumen', auth(), async (req, res) => {
-  const ff = filtrosFecha(req.query);
-  if (ff.error) return res.status(400).json({ error: ff.error });
-  const { desde, hasta } = ff;
-  const agrupar = req.query.agrupar || 'mes';
-  const formatMap = { dia: '%Y-%m-%d', semana: '%Y-%u', mes: '%Y-%m' };
-  const fmt = formatMap[agrupar] || '%Y-%m';
-  try {
-    let q = `SELECT DATE_FORMAT(fecha_realizada,'${fmt}') as periodo,
-             SUM(costo) as total, COUNT(*) as servicios
-             FROM mantenimientos WHERE 1=1`;
-    const params = [];
-    if (desde) { q += ' AND fecha_realizada >= ?'; params.push(desde); }
-    if (hasta) { q += ' AND fecha_realizada <= ?'; params.push(hasta + ' 23:59:59'); }
-    q += ' GROUP BY periodo ORDER BY periodo';
+  // GET /api/reportes/mantenimiento-resumen - Resumen de gastos de mantenimiento
+  router.get('/mantenimiento-resumen', auth(), async (req, res) => {
+    const ff = filtrosFecha(req.query);
+    if (ff.error) return res.status(400).json({ error: ff.error });
+    const { desde, hasta } = ff;
+    const agrupar = req.query.agrupar || 'mes';
+    const formatMap = { dia: '%Y-%m-%d', semana: '%Y-%u', mes: '%Y-%m' };
+    const fmt = formatMap[agrupar] || '%Y-%m';
+    try {
+      let q = `SELECT DATE_FORMAT(fecha_realizada,'${fmt}') as periodo,
+              SUM(costo) as total, COUNT(*) as servicios
+              FROM mantenimientos WHERE 1=1`;
+      const params = [];
+      if (desde) { q += ' AND fecha_realizada >= ?'; params.push(desde); }
+      if (hasta) { q += ' AND fecha_realizada <= ?'; params.push(hasta + ' 23:59:59'); }
+      q += ' GROUP BY periodo ORDER BY periodo';
 
-    const [rows, totalGeneral, porTipo] = await Promise.all([
-      db.query(q, params),
-      db.query(
-        `SELECT COALESCE(SUM(costo),0) as total, COUNT(*) as servicios
-         FROM mantenimientos WHERE 1=1` +
-        (desde ? ' AND fecha_realizada >= ?' : '') +
-        (hasta ? ' AND fecha_realizada <= ?' : ''),
-        [desde, hasta + ' 23:59:59'].filter(Boolean)
-      ),
-      db.query(
-        `SELECT tipo_servicio as name, COUNT(*) as value, SUM(costo) as total
-         FROM mantenimientos WHERE 1=1` +
-        (desde ? ' AND fecha_realizada >= ?' : '') +
-        (hasta ? ' AND fecha_realizada <= ?' : ''),
-        [desde, hasta + ' 23:59:59'].filter(Boolean)
-      )
-    ]);
+      const [rows, totalGeneral, porTipo] = await Promise.all([
+        db.query(q, params),
+        (async () => {
+          let tq = `SELECT COALESCE(SUM(costo),0) as total, COUNT(*) as servicios
+            FROM mantenimientos WHERE 1=1`;
+          const tp = [];
+          if (desde) { tq += ' AND fecha_realizada >= ?'; tp.push(desde); }
+          if (hasta) { tq += ' AND fecha_realizada <= ?'; tp.push(hasta + ' 23:59:59'); }
+          return db.query(tq, tp);
+        })(),
+        (async () => {
+          let pq = `SELECT tipo_servicio as name, COUNT(*) as value, SUM(costo) as total
+            FROM mantenimientos WHERE 1=1`;
+          const pp = [];
+          if (desde) { pq += ' AND fecha_realizada >= ?'; pp.push(desde); }
+          if (hasta) { pq += ' AND fecha_realizada <= ?'; pp.push(hasta + ' 23:59:59'); }
+          pq += ' GROUP BY tipo_servicio';
+          return db.query(pq, pp);
+        })()
+      ]);
 
-    res.json({
-      por_periodo: rows.map(d => ({ ...d, total: parseFloat(d.total) })),
+      res.json({
+        por_periodo: rows.map(d => ({ ...d, total: parseFloat(d.total) })),
       total: parseFloat(totalGeneral[0].total),
       servicios: totalGeneral[0].servicios,
       por_tipo: porTipo.map(d => ({ ...d, total: parseFloat(d.total) }))
