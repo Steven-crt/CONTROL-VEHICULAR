@@ -52,8 +52,8 @@ function AppRoutes() {
 export default function App() {
   return (
     <ThemeProvider>
-      <ConfigProvider>
-        <AuthProvider>
+      <AuthProvider>
+        <ConfigProvider>
           <BrowserRouter>
             <Toaster
               position="top-right"
@@ -65,8 +65,8 @@ export default function App() {
             />
             <AppRoutes />
           </BrowserRouter>
-        </AuthProvider>
-      </ConfigProvider>
+        </ConfigProvider>
+      </AuthProvider>
     </ThemeProvider>
   );
 }

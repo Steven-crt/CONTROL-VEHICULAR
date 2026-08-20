@@ -24,11 +24,19 @@ api.interceptors.request.use(config => {
   return config;
 });
 
-// Interceptor: manejar errores 401 (token expirado) — sin recargar en el login
+// Interceptor: manejar errores 401 (token expirado) — sin recargar en el login.
+// /auth/me es una sonda de sesión: 401 es normal cuando no hay sesión,
+// no debe disparar cleanup ni redirect (el AuthContext se encarga).
+const SONDAS_SILENCIOSAS = ['/auth/me'];
+
 api.interceptors.response.use(
   r => r,
   err => {
-    if (err.response?.status === 401 && !err.config?.url?.includes('/auth/login')) {
+    if (
+      err.response?.status === 401 &&
+      !err.config?.url?.includes('/auth/login') &&
+      !SONDAS_SILENCIOSAS.some(s => err.config?.url?.includes(s))
+    ) {
       localStorage.removeItem('token');
       localStorage.removeItem('usuario');
       if (window.location.pathname !== '/login') {

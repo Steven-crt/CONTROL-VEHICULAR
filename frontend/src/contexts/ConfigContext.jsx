@@ -1,9 +1,11 @@
 import { createContext, useContext, useState, useEffect } from 'react';
 import api from '../api/axios';
+import { useAuth } from './AuthContext';
 
 const ConfigContext = createContext(null);
 
 export function ConfigProvider({ children }) {
+  const { usuario, loading: authLoading } = useAuth();
   const [config, setConfig] = useState({});
   const [loadingConfig, setLoadingConfig] = useState(true);
 
@@ -12,15 +14,22 @@ export function ConfigProvider({ children }) {
       const { data } = await api.get('/configuracion');
       setConfig(data);
     } catch (err) {
-      console.error('Error cargando configuración global:', err);
+      if (err.response?.status !== 401) {
+        console.error('Error cargando configuración global:', err);
+      }
     } finally {
       setLoadingConfig(false);
     }
   };
 
   useEffect(() => {
+    if (authLoading) return;
+    if (!usuario) {
+      setLoadingConfig(false);
+      return;
+    }
     fetchConfig();
-  }, []);
+  }, [usuario, authLoading]);
 
   return (
     <ConfigContext.Provider value={{ config, refreshConfig: fetchConfig, loadingConfig }}>
