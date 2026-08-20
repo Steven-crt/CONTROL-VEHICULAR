@@ -70,7 +70,7 @@ export default function Reportes() {
 
   useEffect(() => { fetch(); }, []);
 
-  const totalGastos = combustible.total + mantenimiento.total;
+  const totalGastos = (combustible.total || 0) + (mantenimiento.total || 0);
 
   return (
     <div className="space-y-6 animate-fade-in">
@@ -89,16 +89,16 @@ export default function Reportes() {
         </button>
         <div className="w-full sm:w-auto sm:ml-auto text-left sm:text-right mt-2 sm:mt-0">
           <p className="text-cv-muted text-xs">Total gastos período</p>
-          <p className="text-cv-accent text-2xl font-black">{currency}{totalGastos.toFixed(2)}</p>
+          <p className="text-cv-accent text-2xl font-black">{currency}{(totalGastos || 0).toFixed(2)}</p>
         </div>
       </div>
 
       {/* KPI Cards */}
       <div className="grid grid-cols-2 lg:grid-cols-4 gap-4">
         <StatCard icon={Car} label="Total Vehículos" value={vehiculosResumen?.total || 0} color="text-blue-400" iconBg="bg-blue-500/20" />
-        <StatCard icon={Fuel} label="Gasto Combustible" value={`${currency}${combustible.total.toFixed(2)}`} color="text-amber-400" iconBg="bg-amber-500/20" />
-        <StatCard icon={Wrench} label="Gasto Mantenimiento" value={`${currency}${mantenimiento.total.toFixed(2)}`} color="text-emerald-400" iconBg="bg-emerald-500/20" />
-        <StatCard icon={DollarSign} label="Total Gastos" value={`${currency}${totalGastos.toFixed(2)}`} color="text-red-400" iconBg="bg-red-500/20" />
+        <StatCard icon={Fuel} label="Gasto Combustible" value={`${currency}${(combustible.total || 0).toFixed(2)}`} color="text-amber-400" iconBg="bg-amber-500/20" />
+        <StatCard icon={Wrench} label="Gasto Mantenimiento" value={`${currency}${(mantenimiento.total || 0).toFixed(2)}`} color="text-emerald-400" iconBg="bg-emerald-500/20" />
+        <StatCard icon={DollarSign} label="Total Gastos" value={`${currency}${(totalGastos || 0).toFixed(2)}`} color="text-red-400" iconBg="bg-red-500/20" />
       </div>
 
       {/* Gráfico gastos consolidados */}
@@ -178,7 +178,7 @@ export default function Reportes() {
               <div key={i} className="bg-cv-border/20 rounded-xl p-3 text-center">
                 <p className="text-cv-muted text-xs uppercase font-semibold">{t.name}</p>
                 <p className="text-cv-text text-lg font-black mt-1">{t.value}</p>
-                <p className="text-cv-accent text-sm">{currency}{t.total.toFixed(2)}</p>
+                <p className="text-cv-accent text-sm">{currency}{(t.total || 0).toFixed(2)}</p>
               </div>
             ))}
           </div>
