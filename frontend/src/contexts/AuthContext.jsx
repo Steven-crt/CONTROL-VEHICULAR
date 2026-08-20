@@ -18,16 +18,25 @@ export function AuthProvider({ children }) {
   const [loading, setLoading] = useState(true);
 
   // Restauración de sesión:
-  // 1) Si hay cookie httpOnly de sesión, /auth/me la valida (preferente).
-  // 2) Fallback: sesión vieja guardada en localStorage (se valida con /auth/me).
+  // Si no hay token en localStorage ni usuario guardado, no hay sesión que
+  // restaurar: se omite la llamada a /auth/me para evitar el 401 innecesario
+  // en consola del navegador (el 401 es "correcto" pero ruidoso en DevTools).
+  // Si hay token, se valida con /auth/me (puede ser cookie httpOnly o fallback).
   useEffect(() => {
     const restaurar = async () => {
+      const token = localStorage.getItem('token');
+      if (!token) {
+        localStorage.removeItem('usuario');
+        setUsuario(null);
+        setLoading(false);
+        return;
+      }
       try {
         const { data } = await api.get('/auth/me');
         setUsuario(normalizeUsuario(data));
         localStorage.setItem('usuario', JSON.stringify(normalizeUsuario(data)));
       } catch {
-        // Sin sesión válida
+        localStorage.removeItem('token');
         localStorage.removeItem('usuario');
         setUsuario(null);
       } finally {
