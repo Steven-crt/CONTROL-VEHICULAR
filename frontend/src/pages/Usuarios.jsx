@@ -3,9 +3,9 @@ import api from '../api/axios';
 import toast from 'react-hot-toast';
 import { Plus, Pencil, Trash2, X, Save, Shield } from 'lucide-react';
 
-const ROLES = ['admin', 'operador', 'cajero'];
-const EMPTY = { nombre: '', username: '', email: '', rol: 'operador', password: '', activo: 1 };
-const ROL_COLORS = { admin: 'text-red-400 bg-red-900/30', operador: 'text-blue-400 bg-blue-900/30', cajero: 'text-green-400 bg-green-900/30' };
+const ROLES = ['admin', 'empleado'];
+const EMPTY = { nombre: '', username: '', email: '', rol: 'empleado', password: '', activo: 1 };
+const ROL_COLORS = { admin: 'text-red-400 bg-red-900/30', empleado: 'text-blue-400 bg-blue-900/30', operador: 'text-blue-400 bg-blue-900/30', cajero: 'text-green-400 bg-green-900/30' };
 
 export default function Usuarios() {
   const [usuarios, setUsuarios] = useState([]);

@@ -88,6 +88,43 @@ router.post('/logo', auth(['admin']), upload.single('logo'), (req, res) => {
   }
 });
 
+// POST /api/upload/anomalia - Foto de una anomalía (cualquier usuario autenticado)
+router.post('/anomalia', auth(), upload.single('foto'), (req, res) => {
+  try {
+    if (!req.file) {
+      return res.status(400).json({ error: 'No se subió ningún archivo' });
+    }
+
+    // El mimetype puede ser falsificado: validar el contenido real del archivo
+    const buf = fs.readFileSync(req.file.path);
+    const tipoReal = detectarTipo(buf);
+    if (!tipoReal) {
+      fs.unlink(req.file.path, () => {});
+      return res.status(400).json({ error: 'El archivo no es una imagen válida.' });
+    }
+
+    // Renombrar a la extensión real para que express.static sirva el Content-Type correcto
+    const extActual = path.extname(req.file.filename);
+    if (extActual !== tipoReal) {
+      const nuevaRuta = req.file.path.slice(0, -extActual.length) + tipoReal;
+      fs.renameSync(req.file.path, nuevaRuta);
+      req.file.filename = path.basename(nuevaRuta);
+    }
+
+    const rootUrl = req.protocol + '://' + req.get('host');
+    const imageUrl = rootUrl + '/uploads/' + req.file.filename;
+
+    res.json({
+      message: 'Foto subida exitosamente',
+      url: imageUrl
+    });
+  } catch (err) {
+    console.error('[upload/anomalia]', err);
+    if (req.file) fs.unlink(req.file.path, () => {});
+    res.status(500).json({ error: 'Error interno del servidor' });
+  }
+});
+
 // Manejar errores de multer (archivo muy grande, más de un archivo, formato)
 router.use((err, req, res, next) => {
   if (err instanceof multer.MulterError) {

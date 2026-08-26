@@ -22,7 +22,7 @@ async function seed() {
     await connection.query("DELETE FROM usuarios WHERE username != 'admin'");
     const hash = await bcrypt.hash('password123', 8);
     for(let i=1; i<=10; i++) {
-        const rol = i <= 2 ? 'admin' : (i <= 6 ? 'operador' : 'cajero');
+        const rol = i <= 2 ? 'admin' : 'empleado';
         await connection.query(
             "INSERT INTO usuarios (nombre, username, email, password, rol, activo) VALUES (?, ?, ?, ?, ?, 1)",
             [`Usuario Prueba ${i}`, `usuario${i}`, `user${i}@test.com`, hash, rol]

@@ -12,6 +12,8 @@ import Movimiento from './pages/Movimiento';
 import Reportes from './pages/Reportes';
 import Usuarios from './pages/Usuarios';
 import Configuracion from './pages/Configuracion';
+import Anomalias from './pages/Anomalias';
+import Pedidos from './pages/Pedidos';
 
 function PrivateRoute({ children }) {
   const { usuario, loading } = useAuth();
@@ -21,6 +23,14 @@ function PrivateRoute({ children }) {
     </div>
   );
   return usuario ? children : <Navigate to="/login" />;
+}
+
+// Rutas exclusivas de administrador: si un empleado intenta entrar, se
+// redirige a la consulta de vehículos (su vista principal).
+function AdminRoute({ children }) {
+  const { usuario } = useAuth();
+  if (!usuario || usuario.rol !== 'admin') return <Navigate to="/vehiculos" replace />;
+  return children;
 }
 
 function AppRoutes() {
@@ -34,17 +44,19 @@ function AppRoutes() {
   return (
     <Routes>
       <Route path="/" element={<PrivateRoute><Layout /></PrivateRoute>}>
-        <Route index element={<Navigate to="/dashboard" />} />
-        <Route path="dashboard" element={<Dashboard />} />
+        <Route index element={<Navigate to={usuario?.rol === 'admin' ? '/dashboard' : '/vehiculos'} />} />
+        <Route path="dashboard" element={<AdminRoute><Dashboard /></AdminRoute>} />
         <Route path="vehiculos" element={<Vehiculos />} />
         <Route path="vehiculos/:id" element={<VehiculoDetalle />} />
-        <Route path="movimiento" element={<Movimiento />} />
-        <Route path="reportes" element={<Reportes />} />
-        <Route path="usuarios" element={<Usuarios />} />
-        <Route path="configuracion" element={<Configuracion />} />
+        <Route path="pedidos" element={<Pedidos />} />
+        <Route path="anomalias" element={<Anomalias />} />
+        <Route path="movimiento" element={<AdminRoute><Movimiento /></AdminRoute>} />
+        <Route path="reportes" element={<AdminRoute><Reportes /></AdminRoute>} />
+        <Route path="usuarios" element={<AdminRoute><Usuarios /></AdminRoute>} />
+        <Route path="configuracion" element={<AdminRoute><Configuracion /></AdminRoute>} />
       </Route>
-      <Route path="/login" element={<Navigate to="/dashboard" />} />
-      <Route path="*" element={<Navigate to="/dashboard" />} />
+      <Route path="/login" element={<Navigate to="/vehiculos" />} />
+      <Route path="*" element={<Navigate to="/vehiculos" />} />
     </Routes>
   );
 }

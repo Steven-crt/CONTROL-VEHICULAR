@@ -35,6 +35,7 @@ function formatDate(fecha) {
   try { return new Date(fecha).toLocaleDateString('es'); } catch { return fecha; }
 }
 
+
 export default function VehiculoDetalle() {
   const { id } = useParams();
   const navigate = useNavigate();
@@ -146,12 +147,12 @@ export default function VehiculoDetalle() {
         vehiculo_id: parseInt(id),
         ...formData
       });
-      toast.success('Carga de combustible registrada');
+      toast.success(isAdmin ? 'Carga de combustible registrada' : 'Solicitud enviada. Queda pendiente de aprobación.');
       setShowCombustibleForm(false);
       setFormData({});
       loadData();
     } catch (err) {
-      toast.error(err.response?.data?.error || 'Error al registrar');
+      toast.error(err.response?.data?.error || 'Error al reguistrarse');
     }
   };
 
@@ -162,7 +163,7 @@ export default function VehiculoDetalle() {
         vehiculo_id: parseInt(id),
         ...formData
       });
-      toast.success('Mantenimiento registrado');
+      toast.success(isAdmin ? 'Mantenimiento registrado' : 'Solicitud enviada. Queda pendiente de aprobación.');
       setShowMantenimientoForm(false);
       setFormData({});
       loadData();
@@ -444,7 +445,7 @@ export default function VehiculoDetalle() {
                   </button>
                 </div>
                 <button onClick={() => setShowCombustibleForm(!showCombustibleForm)} className="btn-primary text-sm">
-                  + Nueva Carga
+                  {isAdmin ? '+ Nueva Carga' : '+ Solicitar Carga'}
                 </button>
               </div>
             </div>
@@ -452,7 +453,7 @@ export default function VehiculoDetalle() {
             {/* Combustible form */}
             {showCombustibleForm && (
               <form onSubmit={handleRegistrarCombustible} className="card border-cv-accent/30">
-                <h4 className="text-white font-semibold mb-4">Registrar Carga de Combustible</h4>
+                <h4 className="text-white font-semibold mb-4">{isAdmin ? 'Registrar Carga de Combustible' : 'Solicitar Carga de Combustible'}</h4>
                 <div className="grid grid-cols-1 sm:grid-cols-3 gap-4">
                   <div>
                     <label className="text-cv-muted text-xs font-medium mb-1 block">Litros *</label>
@@ -460,18 +461,29 @@ export default function VehiculoDetalle() {
                       placeholder="Ej: 15.5"
                       onChange={e => setFormData({...formData, litros: e.target.value})} />
                   </div>
-                  <div>
-                    <label className="text-cv-muted text-xs font-medium mb-1 block">Precio Unitario</label>
-                    <input type="number" step="0.01" className="input"
-                      placeholder="Ej: 1.05"
-                      onChange={e => setFormData({...formData, precio_unitario: e.target.value})} />
-                  </div>
-                  <div>
-                    <label className="text-cv-muted text-xs font-medium mb-1 block">Costo Total</label>
-                    <input type="number" step="0.01" className="input"
-                      placeholder="Calculado si se omite"
-                      onChange={e => setFormData({...formData, costo_total: e.target.value})} />
-                  </div>
+                  {isAdmin && (
+                    <>
+                      <div>
+                        <label className="text-cv-muted text-xs font-medium mb-1 block">Precio Unitario</label>
+                        <input type="number" step="0.01" className="input"
+                          placeholder="Ej: 1.05"
+                          onChange={e => setFormData({...formData, precio_unitario: e.target.value})} />
+                      </div>
+                      <div>
+                        <label className="text-cv-muted text-xs font-medium mb-1 block">Costo Total</label>
+                        <input type="number" step="0.01" className="input"
+                          placeholder="Calculado si se omite"
+                          onChange={e => setFormData({...formData, costo_total: e.target.value})} />
+                      </div>
+                    </>
+                  )}
+                  {!isAdmin && (
+                    <div className="sm:col-span-2 flex items-end">
+                      <p className="text-xs text-cv-muted bg-cv-border/20 rounded-lg p-3 w-full">
+                        Tu solicitud será aprobada por un administrador antes de registrarse.
+                      </p>
+                    </div>
+                  )}
                   <div>
                     <label className="text-cv-muted text-xs font-medium mb-1 block">KM Actual *</label>
                     <input type="number" required className="input"
@@ -499,7 +511,7 @@ export default function VehiculoDetalle() {
                     onChange={e => setFormData({...formData, observaciones: e.target.value})} />
                 </div>
                 <div className="flex gap-3 mt-4">
-                  <button type="submit" className="btn-primary">Guardar Carga</button>
+                  <button type="submit" className="btn-primary">{isAdmin ? 'Guardar Carga' : 'Enviar Solicitud'}</button>
                   <button type="button" onClick={() => setShowCombustibleForm(false)} className="btn-secondary">Cancelar</button>
                 </div>
               </form>
@@ -522,6 +534,7 @@ export default function VehiculoDetalle() {
                         Costo {sortArrow('costo')}
                       </th>
                       <th className="table-header text-left py-3 px-3">Tipo</th>
+                      <th className="table-header text-left py-3 px-3">Estado</th>
                       <th className="table-header text-right py-3 px-3 cursor-pointer hover:text-cv-accent" onClick={() => handleSort('rendimiento')}>
                         Rend. (Km/L) {sortArrow('rendimiento')}
                       </th>
@@ -539,6 +552,15 @@ export default function VehiculoDetalle() {
                           <span className="px-2 py-0.5 rounded-full text-xs bg-cv-primary/50 text-slate-300">
                             {c.tipo_combustible}
                           </span>
+                        </td>
+                        <td className="table-cell">
+                          {c.estado === 'Pendiente' ? (
+                            <span className="px-2 py-0.5 rounded-full text-xs font-medium text-amber-400 bg-amber-900/30">Pendiente</span>
+                          ) : c.estado === 'Rechazada' ? (
+                            <span className="px-2 py-0.5 rounded-full text-xs font-medium text-red-400 bg-red-900/30">Rechazada</span>
+                          ) : (
+                            <span className="px-2 py-0.5 rounded-full text-xs font-medium text-emerald-400 bg-emerald-900/30">Surtida</span>
+                          )}
                         </td>
                         <td className="table-cell text-right font-mono">
                           {c.rendimiento_estimado ? (
@@ -606,7 +628,7 @@ export default function VehiculoDetalle() {
                   </button>
                 </div>
                 <button onClick={() => setShowMantenimientoForm(!showMantenimientoForm)} className="btn-primary text-sm">
-                  + Nuevo Mantenimiento
+                  {isAdmin ? '+ Nuevo Mantenimiento' : '+ Solicitar Mantenimiento'}
                 </button>
               </div>
             </div>
@@ -614,7 +636,7 @@ export default function VehiculoDetalle() {
             {/* Mantenimiento form */}
             {showMantenimientoForm && (
               <form onSubmit={handleRegistrarMantenimiento} className="card border-cv-accent/30">
-                <h4 className="text-white font-semibold mb-4">Registrar Mantenimiento</h4>
+                <h4 className="text-white font-semibold mb-4">{isAdmin ? 'Registrar Mantenimiento' : 'Solicitar Mantenimiento'}</h4>
                 <div className="grid grid-cols-1 sm:grid-cols-3 gap-4">
                   <div>
                     <label className="text-cv-muted text-xs font-medium mb-1 block">Tipo Servicio</label>
@@ -628,24 +650,42 @@ export default function VehiculoDetalle() {
                     <input type="number" required className="input" placeholder="Ej: 15000"
                       onChange={e => setFormData({...formData, km_actual: e.target.value})} />
                   </div>
-                  <div>
-                    <label className="text-cv-muted text-xs font-medium mb-1 block">Costo ($)</label>
-                    <input type="number" step="0.01" className="input" placeholder="Ej: 85.00"
-                      onChange={e => setFormData({...formData, costo: e.target.value})} />
-                  </div>
-                  <div className="sm:col-span-2">
-                    <label className="text-cv-muted text-xs font-medium mb-1 block">Descripción</label>
-                    <input type="text" className="input" placeholder="Describe el servicio realizado"
+                  {isAdmin && (
+                    <>
+                      <div>
+                        <label className="text-cv-muted text-xs font-medium mb-1 block">Costo ($)</label>
+                        <input type="number" step="0.01" className="input" placeholder="Ej: 85.00"
+                          onChange={e => setFormData({...formData, costo: e.target.value})} />
+                      </div>
+                      <div className="sm:col-span-2">
+                        <label className="text-cv-muted text-xs font-medium mb-1 block">Descripción</label>
+                        <input type="text" className="input" placeholder="Describe el servicio realizado"
+                          onChange={e => setFormData({...formData, descripcion: e.target.value})} />
+                      </div>
+                      <div>
+                        <label className="text-cv-muted text-xs font-medium mb-1 block">Proveedor</label>
+                        <input type="text" className="input" placeholder="Taller o proveedor"
+                          onChange={e => setFormData({...formData, proveedor: e.target.value})} />
+                      </div>
+                    </>
+                  )}
+                  {!isAdmin && (
+                    <div className="sm:col-span-2 flex items-end">
+                      <p className="text-xs text-cv-muted bg-cv-border/20 rounded-lg p-3 w-full">
+                        Tu solicitud será aprobada por un administrador antes de ejecutarse.
+                      </p>
+                    </div>
+                  )}
+                </div>
+                {!isAdmin && (
+                  <div className="mt-3">
+                    <label className="text-cv-muted text-xs font-medium mb-1 block">¿Qué necesita el vehículo?</label>
+                    <input type="text" className="input" placeholder="Ej: cambio de aceite y filtros"
                       onChange={e => setFormData({...formData, descripcion: e.target.value})} />
                   </div>
-                  <div>
-                    <label className="text-cv-muted text-xs font-medium mb-1 block">Proveedor</label>
-                    <input type="text" className="input" placeholder="Taller o proveedor"
-                      onChange={e => setFormData({...formData, proveedor: e.target.value})} />
-                  </div>
-                </div>
+                )}
                 <div className="flex gap-3 mt-4">
-                  <button type="submit" className="btn-primary">Guardar Mantenimiento</button>
+                  <button type="submit" className="btn-primary">{isAdmin ? 'Guardar Mantenimiento' : 'Enviar Solicitud'}</button>
                   <button type="button" onClick={() => setShowMantenimientoForm(false)} className="btn-secondary">Cancelar</button>
                 </div>
               </form>

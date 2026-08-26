@@ -4,7 +4,7 @@ import {
   BarChart, Bar, XAxis, YAxis, Tooltip, ResponsiveContainer, CartesianGrid,
   PieChart, Pie, Cell, Legend, AreaChart, Area
 } from 'recharts';
-import { TrendingUp, Calendar, Car, Fuel, Wrench, DollarSign } from 'lucide-react';
+import { TrendingUp, Calendar, Car, Fuel, Wrench, DollarSign, AlertTriangle } from 'lucide-react';
 import { useConfig } from '../contexts/ConfigContext';
 
 const COLORS = ['#3b82f6', '#8b5cf6', '#f59e0b', '#10b981', '#ef4444', '#06b6d4'];
@@ -48,22 +48,25 @@ export default function Reportes() {
   const [mantenimiento, setMantenimiento] = useState({ por_periodo: [], total: 0, servicios: 0, por_tipo: [] });
   const [gastosConsolidado, setGastosConsolidado] = useState([]);
   const [vehiculosRecientes, setVehiculosRecientes] = useState([]);
+  const [anomalias, setAnomalias] = useState(null);
 
   const fetch = async () => {
     setLoading(true);
     try {
-      const [vr, co, ma, gc, rec] = await Promise.all([
+      const [vr, co, ma, gc, rec, an] = await Promise.all([
         api.get('/reportes/vehiculos-resumen'),
         api.get(`/reportes/combustible-resumen?desde=${desde}&hasta=${hasta}&agrupar=mes`),
         api.get(`/reportes/mantenimiento-resumen?desde=${desde}&hasta=${hasta}&agrupar=mes`),
         api.get(`/reportes/gastos-consolidado?desde=${desde}&hasta=${hasta}&agrupar=mes`),
         api.get('/reportes/vehiculos-recientes'),
+        api.get(`/reportes/anomalias-resumen?desde=${desde}&hasta=${hasta}`),
       ]);
       setVehiculosResumen(vr.data);
       setCombustible(co.data);
       setMantenimiento(ma.data);
       setGastosConsolidado(gc.data);
       setVehiculosRecientes(rec.data);
+      setAnomalias(an.data);
     } catch (e) { console.error(e); }
     finally { setLoading(false); }
   };
@@ -181,6 +184,85 @@ export default function Reportes() {
                 <p className="text-cv-accent text-sm">{currency}{(t.total || 0).toFixed(2)}</p>
               </div>
             ))}
+          </div>
+        </div>
+      )}
+
+      {/* Anomalías reportadas */}
+      {anomalias && (
+        <div className="card">
+          <h3 className="text-cv-text font-semibold mb-4 flex items-center gap-2">
+            <AlertTriangle className="w-4 h-4 text-amber-500" /> Anomalías Reportadas
+          </h3>
+          <div className="grid grid-cols-3 gap-3 mb-5">
+            <div className="bg-cv-border/20 rounded-xl p-3 text-center">
+              <p className="text-cv-muted text-xs uppercase font-semibold">Abiertas</p>
+              <p className="text-amber-400 text-2xl font-black mt-1">{anomalias.abiertas || 0}</p>
+            </div>
+            <div className="bg-cv-border/20 rounded-xl p-3 text-center">
+              <p className="text-cv-muted text-xs uppercase font-semibold">Críticas abiertas</p>
+              <p className="text-red-400 text-2xl font-black mt-1">{anomalias.criticas_abiertas || 0}</p>
+            </div>
+            <div className="bg-cv-border/20 rounded-xl p-3 text-center">
+              <p className="text-cv-muted text-xs uppercase font-semibold">Cerradas</p>
+              <p className="text-emerald-400 text-2xl font-black mt-1">{anomalias.cerradas || 0}</p>
+            </div>
+          </div>
+
+          <div className="grid grid-cols-1 lg:grid-cols-2 gap-5">
+            <div>
+              <p className="text-cv-muted text-xs font-bold uppercase tracking-wider mb-2">Por severidad</p>
+              {anomalias.por_severidad?.length > 0 ? (
+                <ResponsiveContainer width="100%" height={170}>
+                  <BarChart data={anomalias.por_severidad}>
+                    <CartesianGrid strokeDasharray="3 3" stroke="#1e3a5f" vertical={false} />
+                    <XAxis dataKey="name" tick={{ fill: '#94a3b8', fontSize: 11 }} axisLine={false} tickLine={false} />
+                    <YAxis tick={{ fill: '#94a3b8', fontSize: 10 }} axisLine={false} tickLine={false} allowDecimals={false} />
+                    <Tooltip cursor={{ fill: 'rgba(255,255,255,0.04)' }} />
+                    <Bar dataKey="value" name="Reportes" radius={[4, 4, 0, 0]}>
+                      {anomalias.por_severidad.map((s, i) => (
+                        <Cell key={i} fill={s.name === 'alta' ? '#ef4444' : s.name === 'media' ? '#f59e0b' : '#3b82f6'} />
+                      ))}
+                    </Bar>
+                  </BarChart>
+                </ResponsiveContainer>
+              ) : (
+                <div className="h-32 flex items-center justify-center text-cv-muted text-sm">Sin anomalías en el período</div>
+              )}
+              <div className="flex flex-wrap gap-2 mt-3">
+                {(anomalias.por_tipo || []).map((t, i) => (
+                  <span key={i} className={`px-2.5 py-1 rounded-lg text-xs font-semibold ${t.pendientes > 0 ? 'bg-amber-500/15 text-amber-300' : 'bg-cv-border/40 text-cv-muted'}`}>
+                    {t.name}: {t.value}{t.pendientes > 0 ? ` (${t.pendientes} pend.)` : ''}
+                  </span>
+                ))}
+              </div>
+            </div>
+
+            <div>
+              <p className="text-cv-muted text-xs font-bold uppercase tracking-wider mb-2">Más recientes</p>
+              <div className="space-y-2 max-h-56 overflow-y-auto pr-1">
+                {(anomalias.recientes || []).map(a => {
+                  const sevCls = a.severidad === 'alta' ? 'bg-red-500/20 text-red-400' : a.severidad === 'media' ? 'bg-amber-500/20 text-amber-400' : 'bg-blue-500/20 text-blue-400';
+                  const estCls = a.estado === 'Pendiente' ? 'bg-yellow-500/20 text-yellow-300' : a.estado === 'Resuelta' ? 'bg-emerald-500/20 text-emerald-400' : 'bg-slate-500/20 text-slate-300';
+                  return (
+                    <div key={a.id} className="bg-cv-border/20 rounded-lg p-2.5 flex items-start justify-between gap-2">
+                      <div className="min-w-0">
+                        <p className="text-cv-text text-sm font-bold truncate">
+                          {a.tipo} <span className="text-cv-muted font-normal">· {a.placa || '-'}</span>
+                        </p>
+                        <p className="text-cv-muted text-xs truncate">{a.descripcion}</p>
+                        <p className="text-cv-muted text-[11px] mt-0.5">{a.reportado_por || '-'} · {new Date(a.created_at).toLocaleDateString('es-EC')}</p>
+                      </div>
+                      <div className="flex flex-col items-end gap-1 shrink-0">
+                        <span className={`px-2 py-0.5 rounded-md text-[11px] font-bold capitalize ${sevCls}`}>{a.severidad}</span>
+                        <span className={`px-2 py-0.5 rounded-md text-[11px] font-bold ${estCls}`}>{a.estado}</span>
+                      </div>
+                    </div>
+                  );
+                })}
+                {!anomalias.recientes?.length && <p className="text-center text-cv-muted py-6 text-sm">Sin anomalías registradas</p>}
+              </div>
+            </div>
           </div>
         </div>
       )}

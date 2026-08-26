@@ -28,10 +28,14 @@ async function rolValueToStore(rol) {
   if (!col.name) return null;
   const r = String(rol ?? '').trim().toLowerCase();
   if (col.isInt) {
-    const map = { admin: 1, operador: 2, cajero: 3 };
-    if (r === '1' || r === '2' || r === '3') return Number(r);
+    // admin=1, empleado=2. Legacy (operador/cajero, ids 2/3) también resuelve a empleado.
+    const map = { admin: 1, empleado: 2 };
+    if (r === '1') return 1;
+    if (['2', '3', '4'].includes(r)) return 2;
     return map[r] ?? null;
   }
+  // Columna de texto: aceptar legacy y devolver siempre el rol unificado
+  if (r === 'operador' || r === 'cajero' || r === '2' || r === '3') return 'empleado';
   return r;
 }
 

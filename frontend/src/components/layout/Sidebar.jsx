@@ -1,23 +1,30 @@
 import { NavLink, useNavigate } from 'react-router-dom';
 import { useAuth } from '../../contexts/AuthContext';
 import {
-  LayoutDashboard, LogOut, Users, Settings, BarChart3, Car, Activity
+  LayoutDashboard, LogOut, Users, Settings, BarChart3, Car, Activity,
+  ClipboardList, AlertTriangle
 } from 'lucide-react';
 import { useConfig } from '../../contexts/ConfigContext';
 
+// roles: lista de roles que ven el ítem. Sin 'roles' => visible para todos.
 const navItems = [
-  { to: '/dashboard', icon: LayoutDashboard, label: 'Dashboard' },
+  { to: '/dashboard', icon: LayoutDashboard, label: 'Dashboard', roles: ['admin'] },
   { to: '/vehiculos', icon: Car,             label: 'Consulta Vehículos' },
-  { to: '/movimiento',icon: Activity,        label: 'Movimiento y Gasto' },
-  { to: '/reportes',  icon: BarChart3,       label: 'Reportes' },
-  { to: '/usuarios',  icon: Users,           label: 'Usuarios' },
-  { to: '/configuracion', icon: Settings,    label: 'Configuración' },
+  { to: '/pedidos',   icon: ClipboardList,   label: 'Pedidos', labelEmpleado: 'Mis Pedidos' },
+  { to: '/anomalias', icon: AlertTriangle,   label: 'Anomalías' },
+  { to: '/movimiento',icon: Activity,        label: 'Movimiento y Gasto', roles: ['admin'] },
+  { to: '/reportes',  icon: BarChart3,       label: 'Reportes', roles: ['admin'] },
+  { to: '/usuarios',  icon: Users,           label: 'Usuarios', roles: ['admin'] },
+  { to: '/configuracion', icon: Settings,    label: 'Configuración', roles: ['admin'] },
 ];
 
 export default function Sidebar({ isOpen, setIsOpen }) {
   const { usuario, logout } = useAuth();
   const { config } = useConfig();
   const navigate = useNavigate();
+  const esAdmin = usuario?.rol === 'admin';
+
+  const itemsVisibles = navItems.filter(item => !item.roles || item.roles.includes(usuario?.rol));
 
   const handleLogout = () => {
     logout();
@@ -63,7 +70,7 @@ export default function Sidebar({ isOpen, setIsOpen }) {
 
       {/* Nav */}
       <nav className="flex-1 overflow-y-auto py-3 px-2">
-        {navItems.map(({ to, icon: Icon, label }) => (
+        {itemsVisibles.map(({ to, icon: Icon, label, labelEmpleado }) => (
           <NavLink
             key={to}
             to={to}
@@ -77,7 +84,7 @@ export default function Sidebar({ isOpen, setIsOpen }) {
             }
           >
             <Icon className="w-4 h-4 shrink-0" />
-            <span className="truncate">{label}</span>
+            <span className="truncate">{!esAdmin && labelEmpleado ? labelEmpleado : label}</span>
           </NavLink>
         ))}
       </nav>

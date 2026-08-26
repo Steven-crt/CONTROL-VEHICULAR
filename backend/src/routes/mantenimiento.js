@@ -4,6 +4,7 @@ const db = require('../db');
 const auth = require('../middleware/auth');
 const { internalError } = require('../utils/httpErrors');
 const { str, num, date, intId, body } = require('../utils/validate');
+const { EVENTOS, logEvento } = require('../utils/audit');
 
 const LIMIT_MAX = 200;
 
@@ -25,7 +26,7 @@ const MANT_SELECT = `
     m.fecha_programada,
     m.fecha_realizada AS fecha,
     m.costo, m.proveedor, m.factura, m.estado, m.observaciones,
-    m.created_at, m.updated_at
+    m.solicitante_id, m.created_at, m.updated_at
   FROM mantenimientos m
   JOIN vehiculos v ON m.vehiculo_id = v.id
 `;
@@ -51,6 +52,8 @@ async function actualizarKmVehiculo(vehiculo_id, km) {
 }
 
 // GET /api/mantenimiento - Listar mantenimientos con filtros
+// ?estado=Pendiente|Completado|Rechazado  filtra por estado
+// ?solo_mios=1                            solo lo solicitado por el usuario actual
 router.get('/', auth(), async (req, res) => {
   const { vehiculo_id, tipo_servicio, costo_min, costo_max, desde, hasta } = req.query;
   const limit = parseLimit(req.query.limit);
@@ -62,6 +65,14 @@ router.get('/', auth(), async (req, res) => {
     if (tipo_servicio && TIPOS_SERVICIO_VALIDOS.includes(String(tipo_servicio))) {
       q += ' AND m.tipo_servicio = ?';
       params.push(tipo_servicio);
+    }
+    if (req.query.estado && ['Pendiente', 'Completado', 'Rechazado'].includes(String(req.query.estado))) {
+      q += ' AND m.estado = ?';
+      params.push(String(req.query.estado));
+    }
+    if (String(req.query.solo_mios || '') === '1') {
+      q += ' AND m.solicitante_id = ?';
+      params.push(req.user.id);
     }
     const min = num(costo_min, { min: 0, max: 1000000000, label: 'costo_min' }).value;
     if (min !== null) { q += ' AND m.costo >= ?'; params.push(min); }
@@ -120,7 +131,10 @@ router.get('/historial/:vehiculo_id', auth(), async (req, res) => {
   }
 });
 
-// POST /api/mantenimiento - Registrar nuevo mantenimiento
+// POST /api/mantenimiento - Registrar mantenimiento
+// - admin: registra directamente como 'Completado'
+// - empleado: crea una SOLICITUD 'Pendiente' que el admin aprueba después.
+//   Costo/proveedor enviados por un empleado se ignoran (solo el admin los fija).
 router.post('/', auth(), async (req, res) => {
   const validado = body({
     vehiculo_id: [intId, { label: 'vehiculo_id' }],
@@ -137,28 +151,104 @@ router.post('/', auth(), async (req, res) => {
   const { vehiculo_id, fecha, tipo_servicio, descripcion, km_actual, costo, proveedor, observaciones } = validado.values;
 
   try {
+    const esAdmin = req.user?.rol === 'admin';
+    const esPendiente = !esAdmin;
     const tipoServicio = tipo_servicio && TIPOS_SERVICIO_VALIDOS.includes(tipo_servicio) ? tipo_servicio : 'Preventivo';
     const tipoId = await tipoMantenimientoId(tipoServicio);
+
+    // Para solicitudes pendientes la fecha real aún no existe: se guarda la
+    // fecha de solicitud en fecha_realizada para ordenar el listado.
+    const fechaRegistro = esPendiente ? new Date().toISOString().slice(0, 10) : (fecha || new Date().toISOString().slice(0, 10));
+
     const [result] = await db.query(
       `INSERT INTO mantenimientos
-        (codigo, vehiculo_id, tipo_mantenimiento_id, tipo_servicio, descripcion, kilometraje_realizado, fecha_realizada, costo, proveedor, observaciones, estado)
-       VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, 'Completado')`,
+        (codigo, vehiculo_id, solicitante_id, tipo_mantenimiento_id, tipo_servicio, descripcion, kilometraje_realizado, fecha_realizada, costo, proveedor, observaciones, estado)
+       VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)`,
       [
         genCodigo('MT'),
         vehiculo_id,
+        req.user?.id || null,
         tipoId,
         tipoServicio,
         descripcion || '',
         km_actual,
-        fecha || new Date().toISOString().slice(0, 10),
-        costo || 0,
-        proveedor || null,
-        observaciones || ''
+        fechaRegistro,
+        esPendiente ? 0 : (costo || 0),
+        esPendiente ? null : (proveedor || null),
+        observaciones || '',
+        esPendiente ? 'Pendiente' : 'Completado'
       ]
     );
 
-    await actualizarKmVehiculo(vehiculo_id, km_actual);
-    res.status(201).json({ id: result.insertId, message: 'Mantenimiento registrado' });
+    // El kilometraje del vehículo solo se actualiza al completar el servicio.
+    if (!esPendiente) {
+      await actualizarKmVehiculo(vehiculo_id, km_actual);
+      res.status(201).json({ id: result.insertId, message: 'Mantenimiento registrado', estado: 'Completado' });
+    } else {
+      res.status(201).json({
+        id: result.insertId,
+        message: 'Solicitud de mantenimiento creada. Queda pendiente de aprobación.',
+        estado: 'Pendiente'
+      });
+    }
+  } catch (err) {
+    internalError(res, err, 'mantenimiento');
+  }
+});
+
+// PUT /api/mantenimiento/:id/atender - Completar una solicitud pendiente (admin)
+// Opcionalmente acepta costo / proveedor / fecha para ajustar al momento de aprobar.
+router.put('/:id/atender', auth(['admin']), async (req, res) => {
+  const id = intId(req.params.id, { label: 'id' }).value;
+  const costo = num(req.body?.costo, { min: 0, max: 1000000000, label: 'costo' });
+  const proveedor = str(req.body?.proveedor, { max: 100, label: 'proveedor' });
+  const fecha = date(req.body?.fecha, { label: 'fecha' });
+  if (costo.ok === false) return res.status(400).json({ error: costo.error });
+  if (proveedor.ok === false) return res.status(400).json({ error: proveedor.error });
+  if (fecha.ok === false) return res.status(400).json({ error: fecha.error });
+
+  try {
+    const [rows] = await db.query(
+      "SELECT * FROM mantenimientos WHERE id = ? AND estado = 'Pendiente'",
+      [id]
+    );
+    if (rows.length === 0)
+      return res.status(404).json({ error: 'Solicitud no encontrada o ya atendida' });
+
+    const sol = rows[0];
+    await db.query(
+      `UPDATE mantenimientos
+       SET estado = 'Completado', costo = ?, proveedor = ?, fecha_realizada = ?
+       WHERE id = ?`,
+      [
+        costo.value ?? sol.costo ?? 0,
+        proveedor.value ?? sol.proveedor ?? null,
+        fecha.value ?? new Date().toISOString().slice(0, 10),
+        id
+      ]
+    );
+
+    await actualizarKmVehiculo(sol.vehiculo_id, sol.kilometraje_realizado);
+    logEvento(EVENTOS.ACCION_ADMIN, req, `aprobó solicitud mantenimiento id=${id}`);
+    res.json({ message: 'Mantenimiento completado', estado: 'Completado' });
+  } catch (err) {
+    internalError(res, err, 'mantenimiento');
+  }
+});
+
+// PUT /api/mantenimiento/:id/rechazar - Rechazar una solicitud pendiente (admin)
+router.put('/:id/rechazar', auth(['admin']), async (req, res) => {
+  const id = intId(req.params.id, { label: 'id' }).value;
+  try {
+    const [result] = await db.query(
+      "UPDATE mantenimientos SET estado = 'Rechazado' WHERE id = ? AND estado = 'Pendiente'",
+      [id]
+    );
+    if (result.affectedRows === 0)
+      return res.status(404).json({ error: 'Solicitud no encontrada o ya atendida' });
+
+    logEvento(EVENTOS.ACCION_ADMIN, req, `rechazó solicitud mantenimiento id=${id}`);
+    res.json({ message: 'Solicitud rechazada', estado: 'Rechazado' });
   } catch (err) {
     internalError(res, err, 'mantenimiento');
   }

@@ -5,8 +5,8 @@ const auth = require('../middleware/auth');
 const { internalError } = require('../utils/httpErrors');
 const { intId, date, body } = require('../utils/validate');
 
-// POST /api/movimiento/calcular - Calcular consumo en un período
-router.post('/calcular', auth(), async (req, res) => {
+
+router.post('/calcular', auth(['admin']), async (req, res) => {
   const validado = body({
     vehiculo_id: [intId, { label: 'vehiculo_id' }],
     fecha_inicio: [date, { required: true, label: 'fecha_inicio' }],

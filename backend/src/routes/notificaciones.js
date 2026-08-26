@@ -6,9 +6,16 @@ const { internalError } = require('../utils/httpErrors');
 
 const INICIO_MES = "DATE_FORMAT(CURDATE(), '%Y-%m-01')";
 
+// Clave de mes actual (YYYY-MM) para agrupar alertas recurrentes: una alerta
+// marcada como vista no vuelve a aparecer hasta el siguiente mes (si sigue
+// siendo relevante). Sin esto, el usuario la descartaría para siempre.
+const MES = new Date().toISOString().slice(0, 7);
+
 router.get('/', auth(), async (req, res) => {
   try {
     const notificaciones = [];
+    const push = (clave, tipo, icono, titulo, mensaje, link) =>
+      notificaciones.push({ clave, tipo, icono, titulo, mensaje, link });
 
     // 1. Vehículos con bajo rendimiento de combustible (< 8 km/l)
     // km anterior con LAG() en una sola pasada (sin subquery correlacionada por fila);
@@ -36,13 +43,8 @@ router.get('/', auth(), async (req, res) => {
       LIMIT 5
     `);
     bajoRendimiento.forEach(v => {
-      notificaciones.push({
-        tipo: 'warning',
-        icono: 'fuel',
-        titulo: 'Rendimiento bajo',
-        mensaje: `${v.placa} (${v.marca} ${v.modelo}) — ${v.rendimiento} km/l`,
-        link: `/vehiculos/${v.vehiculo_id}`
-      });
+      push(`rb:${v.vehiculo_id}:${MES}`, 'warning', 'fuel', 'Rendimiento bajo',
+        `${v.placa} (${v.marca} ${v.modelo}) — ${v.rendimiento} km/l`, `/vehiculos/${v.vehiculo_id}`);
     });
 
     // 2. Vehículos sin carga de combustible en los últimos 30 días
@@ -58,13 +60,8 @@ router.get('/', auth(), async (req, res) => {
       LIMIT 5
     `);
     sinCarga.forEach(v => {
-      notificaciones.push({
-        tipo: 'info',
-        icono: 'alert',
-        titulo: 'Sin carga de combustible',
-        mensaje: `${v.placa} (${v.marca} ${v.modelo}) — ${v.dias} días`,
-        link: `/vehiculos/${v.id}`
-      });
+      push(`sc:${v.id}:${MES}`, 'info', 'alert', 'Sin carga de combustible',
+        `${v.placa} (${v.marca} ${v.modelo}) — ${v.dias} días`, `/vehiculos/${v.id}`);
     });
 
     // 3. Mantenimientos preventivos próximos (km cercano al intervalo)
@@ -88,13 +85,8 @@ router.get('/', auth(), async (req, res) => {
     `, [intervaloKm]);
     mantenciones.forEach(v => {
       const kmRestante = intervaloKm - (v.km_actual - v.ultimo_km_mant);
-      notificaciones.push({
-        tipo: 'warning',
-        icono: 'wrench',
-        titulo: 'Mantenimiento próximo',
-        mensaje: `${v.placa} — faltan ${kmRestante > 0 ? kmRestante : 0} km para el servicio`,
-        link: `/vehiculos/${v.id}`
-      });
+      push(`mp:${v.id}:${MES}`, 'warning', 'wrench', 'Mantenimiento próximo',
+        `${v.placa} — faltan ${kmRestante > 0 ? kmRestante : 0} km para el servicio`, `/vehiculos/${v.id}`);
     });
 
     // 4. SOAT: vencidos, por vencer y sin datos registrados
@@ -108,21 +100,11 @@ router.get('/', auth(), async (req, res) => {
     `);
     soatVehiculos.forEach(v => {
       if (v.dias_restantes < 0) {
-        notificaciones.push({
-          tipo: 'warning',
-          icono: 'alert',
-          titulo: 'SOAT vencido',
-          mensaje: `${v.placa} — venció el ${String(v.soat_fecha_vencimiento).slice(0, 10)}`,
-          link: `/vehiculos/${v.id}`
-        });
+        push(`soat_v:${v.id}:${new Date().getFullYear()}`, 'warning', 'alert', 'SOAT vencido',
+          `${v.placa} — venció el ${String(v.soat_fecha_vencimiento).slice(0, 10)}`, `/vehiculos/${v.id}`);
       } else if (v.dias_restantes <= 30) {
-        notificaciones.push({
-          tipo: 'warning',
-          icono: 'alert',
-          titulo: 'SOAT por vencer',
-          mensaje: `${v.placa} — vence en ${v.dias_restantes} día${v.dias_restantes !== 1 ? 's' : ''}`,
-          link: `/vehiculos/${v.id}`
-        });
+        push(`soat_p:${v.id}:${MES}`, 'warning', 'alert', 'SOAT por vencer',
+          `${v.placa} — vence en ${v.dias_restantes} día${v.dias_restantes !== 1 ? 's' : ''}`, `/vehiculos/${v.id}`);
       }
     });
 
@@ -134,46 +116,54 @@ router.get('/', auth(), async (req, res) => {
       LIMIT 5
     `);
     sinSoat.forEach(v => {
-      notificaciones.push({
-        tipo: 'warning',
-        icono: 'alert',
-        titulo: 'Sin datos de SOAT',
-        mensaje: `${v.placa} — registre los datos del SOAT`,
-        link: `/vehiculos/${v.id}`
-      });
+      push(`ss:${v.id}:${MES}`, 'warning', 'alert', 'Sin datos de SOAT',
+        `${v.placa} — registre los datos del SOAT`, `/vehiculos/${v.id}`);
     });
 
-    // 5. Total vehículos en flota
-    const [totalVeh] = await db.query('SELECT COUNT(*) as total FROM vehiculos WHERE activo = 1');
-    notificaciones.push({
-      tipo: 'info',
-      icono: 'car',
-      titulo: 'Flota total',
-      mensaje: `${totalVeh[0].total} vehículos registrados`,
-      link: '/vehiculos'
-    });
+    // 5. Solicitudes pendientes de aprobación (solo admins): combustible,
+    //    mantenimiento y anomalías abiertas creadas por empleados.
+    if (req.user?.rol === 'admin') {
+      const [pendientes] = await db.query(`
+        SELECT
+          (SELECT COUNT(*) FROM solicitudes_combustible WHERE estado = 'Pendiente') as comb,
+          (SELECT COUNT(*) FROM mantenimientos WHERE estado = 'Pendiente') as mant
+      `);
+      const { comb, mant } = pendientes[0];
+      const totalPend = Number(comb) + Number(mant);
+      if (totalPend > 0) {
+        push(`pend:${MES}`, 'warning', 'dollar', 'Solicitudes por atender',
+          `${comb} carga${comb !== 1 ? 's' : ''} de combustible y ${mant} mantenimiento${mant !== 1 ? 's' : ''} esperan aprobación`,
+          '/pedidos');
+      }
+    }
 
-    // 6. Gastos del mes
-    const [gastoCombustible] = await db.query(
-      `SELECT COALESCE(SUM(costo_total),0) as total FROM solicitudes_combustible
-       WHERE fecha_solicitud >= ${INICIO_MES} AND fecha_solicitud < DATE_ADD(${INICIO_MES}, INTERVAL 1 MONTH)`
+    // Filtrar las que este usuario ya marcó como vistas
+    const [vistas] = await db.query(
+      'SELECT clave FROM notificaciones_vistas WHERE usuario_id = ?',
+      [req.user?.id || 0]
     );
-    const [gastoMant] = await db.query(
-      `SELECT COALESCE(SUM(costo),0) as total FROM mantenimientos
-       WHERE fecha_realizada >= ${INICIO_MES} AND fecha_realizada < DATE_ADD(${INICIO_MES}, INTERVAL 1 MONTH)`
-    );
-    const totalMes = parseFloat(gastoCombustible[0].total) + parseFloat(gastoMant[0].total);
-    notificaciones.push({
-      tipo: 'info',
-      icono: 'dollar',
-      titulo: 'Gastos del mes',
-      mensaje: `$${totalMes.toFixed(2)} en combustible y mantenimiento`,
-      link: '/reportes'
-    });
+    const vistasSet = new Set(vistas.map(v => v.clave));
+    const visibles = notificaciones.filter(n => !vistasSet.has(n.clave));
 
-    res.json(notificaciones);
+    res.json(visibles);
   } catch (err) {
     internalError(res, err, 'notificaciones');
+  }
+});
+
+// POST /api/notificaciones/vista  { claves: ['rb:1:2026-08', ...] }
+// Marca alertas como vistas para el usuario actual (dejan de aparecer).
+router.post('/vista', auth(), async (req, res) => {
+  try {
+    const claves = Array.isArray(req.body?.claves) ? req.body.claves.filter(c => typeof c === 'string').slice(0, 100) : [];
+    if (!claves.length) return res.json({ ok: true, marcadas: 0 });
+    const values = claves.map(c => [req.user.id, c.slice(0, 120)]);
+    await db.query('INSERT IGNORE INTO notificaciones_vistas (usuario_id, clave) VALUES ?', [values]);
+    // Limpieza oportunista: las marcas viejas (>90 días) ya no sirven
+    await db.query('DELETE FROM notificaciones_vistas WHERE created_at < NOW() - INTERVAL 90 DAY');
+    res.json({ ok: true, marcadas: values.length });
+  } catch (err) {
+    internalError(res, err, 'notificaciones/vista');
   }
 });
 

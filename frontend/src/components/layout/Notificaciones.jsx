@@ -1,4 +1,4 @@
-import { useState, useEffect, useRef } from 'react';
+  import { useState, useEffect, useRef } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { Bell, X, Fuel, AlertTriangle, Wrench, Car, DollarSign } from 'lucide-react';
 import styled, { keyframes } from 'styled-components';
@@ -220,9 +220,22 @@ export default function Notificaciones() {
     return () => document.removeEventListener('mousedown', handleClick);
   }, []);
 
+  const marcarVistas = async (claves) => {
+    if (!claves.length) return;
+    setNotifs(prev => prev.filter(n => !claves.includes(n.clave)));
+    try {
+      await api.post('/notificaciones/vista', { claves });
+    } catch { /* si falla, la próxima recarga las vuelve a traer */ }
+  };
+
   const handleClick = (n) => {
     setOpen(false);
+    marcarVistas([n.clave]);
     if (n.link) navigate(n.link);
+  };
+
+  const handleMarcarTodas = () => {
+    marcarVistas(notifs.map(n => n.clave));
   };
 
   const warnCount = notifs.filter(n => n.tipo === 'warning').length;
@@ -242,6 +255,14 @@ export default function Notificaciones() {
         <Dropdown>
           <Header>
             <HeaderTitle>Notificaciones</HeaderTitle>
+            {notifs.length > 0 && (
+              <button
+                onClick={handleMarcarTodas}
+                className="text-xs text-amber-400 hover:text-amber-300 font-semibold"
+              >
+                Marcar todas
+              </button>
+            )}
             <CloseBtn onClick={() => setOpen(false)}>
               <X size={16} />
             </CloseBtn>
@@ -250,10 +271,10 @@ export default function Notificaciones() {
           {notifs.length === 0 ? (
             <EmptyState>Sin novedades</EmptyState>
           ) : (
-            notifs.map((n, i) => {
+            notifs.map((n) => {
               const Icon = iconMap[n.icono] || AlertTriangle;
               return (
-                <NotifItem key={i} onClick={() => handleClick(n)}>
+                <NotifItem key={n.clave} onClick={() => handleClick(n)}>
                   <NotifIcon $tipo={n.tipo}>
                     <Icon size={16} />
                   </NotifIcon>

@@ -168,8 +168,10 @@ router.get('/me', async (req, res) => {
   if (!token) return res.status(401).json({ error: 'No autorizado' });
   try {
     const decoded = jwt.verify(token, getJwtSecret());
+    // rol_id es obligatorio en el SELECT: getRol lo prioriza. Si la fila no
+    // lo tuviera, se cae al rol firmado en el token (decoded.rol).
     const [rows] = await db.query(
-      'SELECT id, nombre, username, email FROM usuarios WHERE id = ? AND activo = 1',
+      'SELECT id, nombre, username, email, rol_id FROM usuarios WHERE id = ? AND activo = 1',
       [decoded.id]
     );
     if (rows.length === 0) return res.status(404).json({ error: 'Usuario no encontrado' });
@@ -179,7 +181,7 @@ router.get('/me', async (req, res) => {
       nombre: u.nombre,
       username: u.username,
       email: u.email,
-      rol: getRol(u)
+      rol: getRol({ rol_id: u.rol_id, rol: decoded.rol })
     });
   } catch {
     res.status(401).json({ error: 'Token inválido' });

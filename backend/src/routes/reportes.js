@@ -5,10 +5,7 @@ const auth = require('../middleware/auth');
 const { internalError } = require('../utils/httpErrors');
 const { date } = require('../utils/validate');
 
-// Los reportes son datos privados (requieren auth) y pesados de calcular
-// (GROUP BY + SUM sobre toda la tabla). Cachear 30s en el navegador evita
-// recalcular 4-8 queries por usuario cuando se mueve entre pestañas.
-// private = los proxies/CDN compartidos NO pueden cachearlo (solo el cliente).
+
 router.use((req, res, next) => {
   if (req.method === 'GET') res.setHeader('Cache-Control', 'private, max-age=30');
   next();
@@ -49,9 +46,7 @@ function filtrosFecha(query) {
 
 // GET /api/reportes/dashboard - stats para el dashboard (gestión vehicular).
 // El dashboard muestra la flota completa: es idéntico para todos los usuarios
-// autenticados, así que la caché es GLOBAL (1 cálculo real cada TTL para todo
-// el sistema, sea cual sea el número de usuarios).
-router.get('/dashboard', auth(), async (req, res) => {
+router.get('/dashboard', auth(['admin']), async (req, res) => {
   const cacheKey = 'dashboard:global';
   const cached = cacheGet(cacheKey);
   if (cached) return res.json(cached);
@@ -69,6 +64,8 @@ router.get('/dashboard', auth(), async (req, res) => {
       [combustible6m],
       [mantenimiento6m],
       [mantPorTipo]
+    
+      
     ] = await Promise.all([
       db.query('SELECT COUNT(*) as total FROM vehiculos WHERE activo = 1'),
       db.query(
@@ -134,7 +131,7 @@ router.get('/dashboard', auth(), async (req, res) => {
 
 // ==================== REPORTES DE GESTIÓN DE VEHÍCULOS ====================
 
-router.get('/vehiculos-resumen', auth(), async (req, res) => {
+router.get('/vehiculos-resumen', auth(['admin']), async (req, res) => {
   try {
     const [[total], [porTipo], [porMarca], [porAnio]] = await Promise.all([
       db.query('SELECT COUNT(*) as total FROM vehiculos WHERE activo = 1'),
@@ -167,7 +164,7 @@ router.get('/vehiculos-resumen', auth(), async (req, res) => {
 });
 
 // GET /api/reportes/combustible-resumen - Resumen de gastos de combustible
-router.get('/combustible-resumen', auth(), async (req, res) => {
+router.get('/combustible-resumen', auth(['admin']), async (req, res) => {
   const ff = filtrosFecha(req.query);
   if (ff.error) return res.status(400).json({ error: ff.error });
   const { desde, hasta } = ff;
@@ -184,7 +181,7 @@ router.get('/combustible-resumen', auth(), async (req, res) => {
       if (hasta) { q += ' AND fecha_solicitud <= ?'; params.push(hasta + ' 23:59:59'); }
       q += ' GROUP BY periodo ORDER BY periodo';
 
-      const [rows, totalGeneral] = await Promise.all([
+      const [[rows], [totalGeneral]] = await Promise.all([
         db.query(q, params),
         db.query(
           `SELECT COALESCE(SUM(costo_total),0) as total, COUNT(*) as cargas, COALESCE(SUM(galones_surtidos),0) as litros
@@ -207,7 +204,7 @@ router.get('/combustible-resumen', auth(), async (req, res) => {
   });
 
   // GET /api/reportes/mantenimiento-resumen - Resumen de gastos de mantenimiento
-  router.get('/mantenimiento-resumen', auth(), async (req, res) => {
+  router.get('/mantenimiento-resumen', auth(['admin']), async (req, res) => {
     const ff = filtrosFecha(req.query);
     if (ff.error) return res.status(400).json({ error: ff.error });
     const { desde, hasta } = ff;
@@ -223,7 +220,7 @@ router.get('/combustible-resumen', auth(), async (req, res) => {
       if (hasta) { q += ' AND fecha_realizada <= ?'; params.push(hasta + ' 23:59:59'); }
       q += ' GROUP BY periodo ORDER BY periodo';
 
-      const [rows, totalGeneral, porTipo] = await Promise.all([
+      const [[rows], [totalGeneral], [porTipo]] = await Promise.all([
         db.query(q, params),
         (async () => {
           let tq = `SELECT COALESCE(SUM(costo),0) as total, COUNT(*) as servicios
@@ -256,7 +253,7 @@ router.get('/combustible-resumen', auth(), async (req, res) => {
 });
 
 // GET /api/reportes/gastos-consolidado - Gastos consolidados (combustible + mantenimiento)
-router.get('/gastos-consolidado', auth(), async (req, res) => {
+router.get('/gastos-consolidado', auth(['admin']), async (req, res) => {
   const ff = filtrosFecha(req.query);
   if (ff.error) return res.status(400).json({ error: ff.error });
   const { desde, hasta } = ff;
@@ -298,7 +295,7 @@ router.get('/gastos-consolidado', auth(), async (req, res) => {
 });
 
 // GET /api/reportes/vehiculos-recientes - Últimos vehículos registrados
-router.get('/vehiculos-recientes', auth(), async (req, res) => {
+router.get('/vehiculos-recientes', auth(['admin']), async (req, res) => {
   try {
     const [rows] = await db.query(`
       SELECT v.id, v.placa, LOWER(COALESCE(tv.nombre, 'camioneta')) as tipo, v.marca, v.modelo, v.color, v.created_at
@@ -310,6 +307,64 @@ router.get('/vehiculos-recientes', auth(), async (req, res) => {
     res.json(rows);
   } catch (err) {
     internalError(res, err, 'reportes/dashboard');
+  }
+});
+
+// GET /api/reportes/anomalias-resumen - Resumen de anomalías en el período
+router.get('/anomalias-resumen', auth(['admin']), async (req, res) => {
+  const ff = filtrosFecha(req.query);
+  if (ff.error) return res.status(400).json({ error: ff.error });
+  const { desde, hasta } = ff;
+  try {
+    let w = 'WHERE 1=1';
+    const params = [];
+    if (desde) { w += ' AND a.created_at >= ?'; params.push(desde); }
+    if (hasta) { w += ' AND a.created_at <= ?'; params.push(hasta + ' 23:59:59'); }
+
+    const [[[totales]], [porSeveridad], [porTipo], [recientes]] = await Promise.all([
+      db.query(
+        `SELECT COUNT(*) as total,
+                SUM(a.estado = 'Pendiente') as abiertas,
+                SUM(a.estado IN ('Resuelta','Descartada')) as cerradas,
+                SUM(a.severidad = 'alta' AND a.estado = 'Pendiente') as criticas_abiertas
+         FROM anomalias a ${w}`,
+        params
+      ),
+      db.query(
+        `SELECT a.severidad as name, COUNT(*) as value FROM anomalias a ${w}
+         GROUP BY a.severidad`,
+        params
+      ),
+      db.query(
+        `SELECT a.tipo as name, COUNT(*) as value,
+                SUM(a.estado = 'Pendiente') as pendientes
+         FROM anomalias a ${w}
+         GROUP BY a.tipo ORDER BY value DESC LIMIT 8`,
+        params
+      ),
+      db.query(
+        `SELECT a.id, a.codigo, a.tipo, a.severidad, a.descripcion, a.estado, a.created_at,
+                v.placa, u.nombre as reportado_por
+         FROM anomalias a
+         LEFT JOIN vehiculos v ON v.id = a.vehiculo_id
+         LEFT JOIN usuarios u ON u.id = a.usuario_id
+         ${w}
+         ORDER BY a.created_at DESC LIMIT 6`,
+        params
+      )
+    ]);
+
+    res.json({
+      total: totales.total || 0,
+      abiertas: totales.abiertas || 0,
+      cerradas: totales.cerradas || 0,
+      criticas_abiertas: totales.criticas_abiertas || 0,
+      por_severidad: porSeveridad,
+      por_tipo: porTipo.map(t => ({ ...t, pendientes: t.pendientes || 0 })),
+      recientes: recientes
+    });
+  } catch (err) {
+    internalError(res, err, 'reportes/anomalias');
   }
 });
 
