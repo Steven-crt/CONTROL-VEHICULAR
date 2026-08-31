@@ -8,11 +8,15 @@ const useSSL = process.env.DB_SSL !== 'false';
 const cfg = {
   ...buildDbConfig(),
   ssl: useSSL ? { rejectUnauthorized: false } : undefined,
-  multipleStatements: true,
+  multipleStatements: true, // requerido para bloques CREATE TABLE del migrador
 };
 
-// Contraseña por defecto del admin: admin123
-const ADMIN_PASSWORD_HASH = bcrypt.hashSync('admin123', 10);
+// Hash del admin: usa ADMIN_INITIAL_PASSWORD env o fallback solo para primer arranque (cambiar luego)
+const ADMIN_INITIAL_PASSWORD = process.env.ADMIN_INITIAL_PASSWORD || 'Admin-CV-2026!Cambiar';
+if (!process.env.ADMIN_INITIAL_PASSWORD) {
+  console.warn('⚠️  ADMIN_INITIAL_PASSWORD no definido — usando temporal. Cámbialo tras el primer login con reset_admin.js');
+}
+const ADMIN_PASSWORD_HASH = bcrypt.hashSync(ADMIN_INITIAL_PASSWORD, 12);
 
 async function tableExists(conn, table) {
   const [rows] = await conn.query(
@@ -271,10 +275,50 @@ async function addColumn(conn, table, column, definition, after) {
         `INSERT INTO usuarios (nombre, username, apellido, password, email, rol_id, activo) VALUES (?, ?, ?, ?, ?, ?, 1)`,
         ['Administrador', 'admin', 'Sistema', ADMIN_PASSWORD_HASH, 'admin@controlvehicular.com', rolEsNumerico ? 1 : 'admin']
       );
-      console.log('+ usuario admin creado (contraseña: admin123)');
+      console.log('+ usuario admin creado (cambia la contraseña con reset_admin.js)');
     }
 
-    // ---- 7) Semillas de configuración --------------------------------------
+    // ---- 7) Tablas faltantes que las rutas requieren -----------------------
+    // notificaciones_vistas: rastrea qué notificaciones ha visto cada usuario
+    if (!(await tableExists(conn, 'notificaciones_vistas'))) {
+      await conn.query(`
+        CREATE TABLE notificaciones_vistas (
+          id INT AUTO_INCREMENT PRIMARY KEY,
+          usuario_id INT NOT NULL,
+          clave VARCHAR(120) NOT NULL,
+          created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
+          UNIQUE KEY uq_notif_vista (usuario_id, clave)
+        ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4
+      `);
+      console.log('+ notificaciones_vistas creada');
+    } else {
+      console.log('= notificaciones_vistas ya existe');
+    }
+
+    // solicitante_id en mantenimientos: quién solicitó el mantenimiento
+    await addColumn(conn, 'mantenimientos', 'solicitante_id', 'INT NULL', 'observaciones');
+
+    // audit_log: registro de eventos de auditoría (login, CRUD, admin actions)
+    if (!(await tableExists(conn, 'audit_log'))) {
+      await conn.query(`
+        CREATE TABLE audit_log (
+          id INT AUTO_INCREMENT PRIMARY KEY,
+          evento VARCHAR(100) NOT NULL,
+          usuario_id INT NULL,
+          ip VARCHAR(45) NULL,
+          detalle JSON NULL,
+          created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
+          INDEX idx_al_evento (evento),
+          INDEX idx_al_usuario (usuario_id),
+          INDEX idx_al_fecha (created_at)
+        ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4
+      `);
+      console.log('+ audit_log creada');
+    } else {
+      console.log('= audit_log ya existe');
+    }
+
+    // ---- 8) Semillas de configuración --------------------------------------
     const SEED = [
       ['nombre_negocio', 'Control Vehicular'],
       ['ruc', ''],
@@ -300,7 +344,7 @@ async function addColumn(conn, table, column, definition, after) {
     }
     console.log(`+ ${SEED.length} claves de configuración sembradas (sin pisar valores existentes)`);
 
-    console.log('MIGRACIÓN COMPLETA OK');
+    console.log('MIGRACIÓN COMPLETA OK (tablas + columnas + seeds)');
   } finally {
     await conn.end();
   }

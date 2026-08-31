@@ -1,5 +1,6 @@
 node_modules/
 .env
+backend/.env
 *.log
 .DS_Store
 Thumbs.db
@@ -7,3 +8,9 @@ dist/
 .vercel/
 
 backend/loadtest-report*.json
+.aider*
+
+# Archivos temporales / con credenciales hardcodeadas
+cookies*.txt
+backend/scripts/seed_data.js
+backend/scripts/seed_local.js

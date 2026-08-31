@@ -76,6 +76,42 @@ async function columnExists(conn, table, column) {
     }
     console.log(`+ ${SEED.length} claves de configuracion sembradas`);
 
+    // notificaciones_vistas: rastrea qué notificaciones ha visto cada usuario
+    await conn.query(`
+      CREATE TABLE IF NOT EXISTS notificaciones_vistas (
+        id INT AUTO_INCREMENT PRIMARY KEY,
+        usuario_id INT NOT NULL,
+        clave VARCHAR(120) NOT NULL,
+        created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
+        UNIQUE KEY uq_notif_vista (usuario_id, clave)
+      ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4
+    `);
+    console.log('+ notificaciones_vistas garantizada');
+
+    // solicitante_id en mantenimientos
+    if (!(await columnExists(conn, 'mantenimientos', 'solicitante_id'))) {
+      await conn.query('ALTER TABLE mantenimientos ADD COLUMN solicitante_id INT NULL AFTER observaciones');
+      console.log('+ mantenimientos.solicitante_id agregado');
+    } else {
+      console.log('= mantenimientos.solicitante_id ya existe');
+    }
+
+    // audit_log
+    await conn.query(`
+      CREATE TABLE IF NOT EXISTS audit_log (
+        id INT AUTO_INCREMENT PRIMARY KEY,
+        evento VARCHAR(100) NOT NULL,
+        usuario_id INT NULL,
+        ip VARCHAR(45) NULL,
+        detalle JSON NULL,
+        created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
+        INDEX idx_al_evento (evento),
+        INDEX idx_al_usuario (usuario_id),
+        INDEX idx_al_fecha (created_at)
+      ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4
+    `);
+    console.log('+ audit_log garantizada');
+
     const [n] = await conn.query('SELECT COUNT(*) AS n FROM configuracion');
     console.log('Total claves configuracion:', n[0].n);
     console.log('MIGRACION OK');
