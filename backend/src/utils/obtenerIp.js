@@ -7,12 +7,9 @@
  */
 
 function obtenerIp(req) {
-  return (
-    req.ip ||
-    req.socket?.remoteAddress ||
-    req.headers['x-forwarded-for']?.split(',')[0]?.trim() ||
-    'unknown'
-  );
+  // Con trust proxy activo req.ip es fiable; fallback solo a socket.
+  // No usar x-forwarded-for crudo (falsificable por cliente).
+  return req.ip || req.socket?.remoteAddress || 'unknown';
 }
 
 module.exports = { obtenerIp };

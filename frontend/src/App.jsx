@@ -55,8 +55,8 @@ function AppRoutes() {
         <Route path="usuarios" element={<AdminRoute><Usuarios /></AdminRoute>} />
         <Route path="configuracion" element={<AdminRoute><Configuracion /></AdminRoute>} />
       </Route>
-      <Route path="/login" element={<Navigate to="/vehiculos" />} />
-      <Route path="*" element={<Navigate to="/vehiculos" />} />
+      <Route path="/login" element={<Navigate to={usuario?.rol === 'admin' ? '/dashboard' : '/vehiculos'} />} />
+      <Route path="*" element={<Navigate to={usuario?.rol === 'admin' ? '/dashboard' : '/vehiculos'} />} />
     </Routes>
   );
 }
@@ -64,9 +64,9 @@ function AppRoutes() {
 export default function App() {
   return (
     <ThemeProvider>
-      <AuthProvider>
-        <ConfigProvider>
-          <BrowserRouter>
+      <BrowserRouter>
+        <AuthProvider>
+          <ConfigProvider>
             <Toaster
               position="top-right"
               toastOptions={{
@@ -76,9 +76,9 @@ export default function App() {
               }}
             />
             <AppRoutes />
-          </BrowserRouter>
-        </ConfigProvider>
-      </AuthProvider>
+          </ConfigProvider>
+        </AuthProvider>
+      </BrowserRouter>
     </ThemeProvider>
   );
 }

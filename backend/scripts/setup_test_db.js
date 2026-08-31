@@ -65,6 +65,15 @@ const SKIP_SYSTEM = ['information_schema', 'mysql', 'performance_schema', 'sys']
   }
   console.log('paso: tablas listas, copiando datos');
 
+  // 3b) Garantizar roles base ANTES de copiar datos de usuarios
+  // (si Aiven tiene role vacío, la FK usuarios.rol_id→role.id falla al insertar usuarios)
+  await local.query(`
+    INSERT IGNORE INTO \`role\` (id, nombre) VALUES
+      (1, 'admin'),
+      (2, 'empleado')
+  `);
+  console.log('paso: roles base garantizados (1=admin, 2=empleado)');
+
   // 4) Copiar datos
   for (const t of tables) {
     // detectar columnas JSON (Aiven puede tener strings vacíos inválidos)

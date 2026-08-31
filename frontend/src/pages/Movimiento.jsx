@@ -1,5 +1,5 @@
 
-import { useState, useEffect, useCallback, useRef } from 'react';
+import { useState, useEffect } from 'react';
 import api from '../api/axios';
 import {
   BarChart, Bar, XAxis, YAxis, Tooltip, ResponsiveContainer, CartesianGrid,
@@ -36,7 +36,7 @@ export default function Movimiento() {
     try {
       const { data } = await api.get('/vehiculos');
       setVehiculos(data);
-    } catch (err) {
+    } catch {
       toast.error('Error al cargar vehiculos');
     } finally {
       setLoadingVehiculos(false);
@@ -65,12 +65,6 @@ export default function Movimiento() {
     } finally {
       setLoading(false);
     }
-  };
-
-  const formatDate = (dateStr) => {
-    return new Date(dateStr).toLocaleDateString('es', {
-      day: '2-digit', month: 'short', year: 'numeric'
-    });
   };
 
   const chartData = resultado?.consumo_por_carga?.map(c => ({
@@ -177,6 +171,7 @@ export default function Movimiento() {
             <KPICard
               icon={DollarSign}
               label="Gasto Total en Combustible"
+
               value={`$${resultado.combustible.gasto_total.toFixed(2)}`}
               sub={`Precio prom. $${resultado.combustible.precio_promedio.toFixed(2)}/L`}
               color="text-amber-400"
@@ -508,7 +503,8 @@ export default function Movimiento() {
   );
 }
 
-function KPICard({ icon: Icon, label, value, sub, color, bgColor, borderColor }) {
+function KPICard({ icon, label, value, sub, color, bgColor, borderColor }) {
+  const Icon = icon;
   return (
     <div className={`card p-5 relative overflow-hidden group border-t-2 ${borderColor}`}>
       <div className={`absolute top-0 right-0 w-32 h-32 ${bgColor} rounded-full blur-3xl -mr-10 -mt-10 opacity-30 group-hover:opacity-50 transition-opacity`} />

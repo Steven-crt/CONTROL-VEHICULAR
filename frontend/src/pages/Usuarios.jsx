@@ -15,7 +15,7 @@ export default function Usuarios() {
   const [loading, setLoading] = useState(false);
 
   const fetch = async () => {
-    try { const r = await api.get('/usuarios'); setUsuarios(r.data.data || []); } catch {}
+    try { const r = await api.get('/usuarios'); setUsuarios(r.data.data || []); } catch (e) { console.error(e); }
   };
   useEffect(() => { fetch(); }, []);
 

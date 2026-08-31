@@ -27,7 +27,7 @@ router.get('/', auth(['admin']), async (req, res) => {
     const rolSelect = col.name ? `${col.name} AS rol` : 'NULL AS rol';
     const [rows] = await db.query(
       `SELECT id, nombre, username, email, ${rolSelect}, activo, created_at
-       FROM usuarios ORDER BY nombre LIMIT ? OFFSET ?`,
+       FROM usuarios ORDER BY nombre, id LIMIT ? OFFSET ?`,
       [limit, offset]
     );
     rows.forEach(u => {
@@ -43,19 +43,21 @@ router.get('/', auth(['admin']), async (req, res) => {
 
 // GET /api/usuarios/:id
 router.get('/:id', auth(['admin']), async (req, res) => {
+  const idNum = parseInt(req.params.id, 10);
+  if (!Number.isFinite(idNum) || idNum < 1) return res.status(400).json({ error: 'ID inválido' });
   try {
     const col = await getRolColumn();
     const rolSelect = col.name ? `${col.name} AS rol` : 'NULL AS rol';
     const [rows] = await db.query(
       `SELECT id, nombre, username, email, ${rolSelect}, activo FROM usuarios WHERE id = ?`,
-      [req.params.id]
+      [idNum]
     );
     if (!rows.length) return res.status(404).json({ error: 'Usuario no encontrado' });
     rows[0].rol = getRol(rows[0]);
     if (rows[0].email) rows[0].email = decrypt(rows[0].email);
     res.json(rows[0]);
   } catch (err) {
-    internalError(res, err, 'usuarios');
+    internalError(res, err, 'usuarios   ');
   }
 });
 
@@ -88,8 +90,10 @@ router.post('/', auth(['admin']), async (req, res) => {
   }
 });
 
-// PUT /api/usuarios/:id — con validación y sin manipulación de campos extra
+// PUT /api/usuarios/:id — solo actualiza campos enviados (evita sobrescribir con NULL)
 router.put('/:id', auth(['admin']), async (req, res) => {
+  const idNum = parseInt(req.params.id, 10);
+  if (!Number.isFinite(idNum) || idNum < 1) return res.status(400).json({ error: 'ID inválido' });
   const validado = body({
     nombre: [str, { max: 100, label: 'nombre' }],
     email: [email, { max: 100, label: 'email' }],
@@ -99,24 +103,30 @@ router.put('/:id', auth(['admin']), async (req, res) => {
   }, req.body);
   if (!validado.ok) return res.status(400).json({ error: validado.error });
 
-  const { nombre, email: emailVal, rol, activo, password } = validado.values;
   try {
     const col = await getRolColumn();
-    const rolValue = await rolValueToStore(rol);
-    const rolSet = `${col.name}=?`;
-    if (password) {
-      const hash = await bcrypt.hash(password, 10);
-      await db.query(
-        `UPDATE usuarios SET nombre=?, email=?, ${rolSet}, activo=?, password=? WHERE id=?`,
-        [nombre, emailVal ? encrypt(emailVal) : null, rolValue, activo, hash, req.params.id]
-      );
-    } else {
-      await db.query(
-        `UPDATE usuarios SET nombre=?, email=?, ${rolSet}, activo=? WHERE id=?`,
-        [nombre, emailVal ? encrypt(emailVal) : null, rolValue, activo, req.params.id]
-      );
+    const sets = [];
+    const vals = [];
+    if (validado.values.nombre !== null) { sets.push('nombre=?'); vals.push(validado.values.nombre); }
+    if (validado.values.email !== null) { sets.push('email=?'); vals.push(encrypt(validado.values.email)); }
+    else if (req.body.email === null) { sets.push('email=?'); vals.push(null); }
+    if (validado.values.rol !== null) {
+      const rolValue = await rolValueToStore(validado.values.rol);
+      sets.push(`${col.name}=?`); vals.push(rolValue);
     }
-    logEvento(EVENTOS.ACCION_ADMIN, req, `actualizó usuario id=${req.params.id}`);
+    if (validado.values.activo !== null) {
+      const activoVal = validado.values.activo ? 1 : 0;
+      sets.push('activo=?'); vals.push(activoVal);
+    }
+    if (validado.values.password !== null) {
+      const hash = await bcrypt.hash(validado.values.password, 10);
+      sets.push('password=?'); vals.push(hash);
+    }
+    if (!sets.length) return res.status(400).json({ error: 'No hay campos para actualizar' });
+    vals.push(idNum);
+    const [result] = await db.query(`UPDATE usuarios SET ${sets.join(', ')} WHERE id=?`, vals);
+    if (result.affectedRows === 0) return res.status(404).json({ error: 'Usuario no encontrado' });
+    logEvento(EVENTOS.ACCION_ADMIN, req, `actualizó usuario id=${idNum}`);
     res.json({ message: 'Usuario actualizado' });
   } catch (err) {
     internalError(res, err, 'usuarios');
@@ -125,12 +135,15 @@ router.put('/:id', auth(['admin']), async (req, res) => {
 
 // DELETE /api/usuarios/:id
 router.delete('/:id', auth(['admin']), async (req, res) => {
+  const idNum2 = parseInt(req.params.id, 10);
+  if (!Number.isFinite(idNum2) || idNum2 < 1) return res.status(400).json({ error: 'ID inválido' });
   try {
-    if (parseInt(req.params.id, 10) === req.user?.id) {
+    if (idNum2 === req.user?.id) {
       return res.status(400).json({ error: 'No puedes desactivar tu propio usuario' });
     }
-    await db.query('UPDATE usuarios SET activo=0 WHERE id=?', [req.params.id]);
-    logEvento(EVENTOS.ACCION_ADMIN, req, `desactivó usuario id=${req.params.id}`);
+    const [r2] = await db.query('UPDATE usuarios SET activo=0 WHERE id=?', [idNum2]);
+    if (r2.affectedRows === 0) return res.status(404).json({ error: 'Usuario no encontrado' });
+    logEvento(EVENTOS.ACCION_ADMIN, req, `desactivó usuario id=${idNum2}`);
     res.json({ message: 'Usuario desactivado' });
   } catch (err) {
     internalError(res, err, 'usuarios');

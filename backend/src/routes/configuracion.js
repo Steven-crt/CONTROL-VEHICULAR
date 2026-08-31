@@ -5,12 +5,10 @@ const auth = require('../middleware/auth');
 const { internalError } = require('../utils/httpErrors');
 const { str } = require('../utils/validate');
 
-// Claves que NUNCA deben exponerse al cliente aunque estén en la tabla
+
 const CLAVES_PRIVADAS = ['jwt_secret', 'db_password', 'api_key', 'webhook_secret'];
 
-// Claves permitidas al escribir (evita crear claves arbitrarias que el cliente
-// podría usar para sobreescribir configuración de otros módulos).
-// Incluye TODAS las claves que usa el frontend (pages/Configuracion.jsx).
+
 const CLAVES_PERMITIDAS = new Set([
   // Flota
   'total_vehiculos', 'formato_placa', 'tipos_vehiculo',
@@ -19,12 +17,18 @@ const CLAVES_PERMITIDAS = new Set([
   // Seguridad / GPS
   'monitoreo_gps', 'alertas_vencimiento',
   // Negocio
-  'nombre_negocio', 'direccion', 'logo_url', 'telefono', 'email_contacto'
+  'nombre_negocio', 'direccion', 'logo_url', 'telefono', 'email_contacto',
+  'ruc', 'moneda'
 ]);
 
-// GET /api/configuracion — requiere autenticación válida.
-// Cacheable 60s en el navegador: la configuración cambia poco y este endpoint
-// se llama al cargar cada página (private = no cacheable por proxies compartidos).
+function esUrlSegura(v) {
+  if (!v) return true;
+  try {
+    const u = new URL(v);
+    return u.protocol === 'https:' || u.protocol === 'http:';
+  } catch { return false; }
+}
+
 router.get('/', auth(), async (req, res) => {
   res.setHeader('Cache-Control', 'private, max-age=60');
   try {
@@ -47,12 +51,15 @@ router.put('/', auth(['admin']), async (req, res) => {
   const entries = Object.entries(req.body);
   if (!entries.length) return res.status(400).json({ error: 'No hay datos para actualizar' });
 
-  // Sanitizar: solo claves permitidas, valores string/number, límite de longitud
+  // Sanitizar: solo claves permitidas, valores string/number, límite de longitud + URL segura para logo_url
   const entradaValida = entries.filter(([clave, valor]) => {
     if (!CLAVES_PERMITIDAS.has(clave)) return false;
     if (typeof clave !== 'string' || clave.length > 100) return false;
     if (typeof valor !== 'string' && typeof valor !== 'number') return false;
-    if (typeof valor === 'string' && valor.length > 255) return false;
+    if (typeof valor === 'string' && valor.length > 500) return false;
+    if (clave === 'logo_url' && typeof valor === 'string' && valor && !esUrlSegura(valor)) return false;
+    if (clave === 'logo_url' && typeof valor === 'string' && /^\s*javascript:/i.test(valor)) return false;
+    if (clave === 'logo_url' && typeof valor === 'string' && /^\s*data:/i.test(valor) && !/^data:image\//i.test(valor)) return false;
     return true;
   });
 

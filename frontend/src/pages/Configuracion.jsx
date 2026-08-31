@@ -61,7 +61,8 @@ function CampoForm({ campo, config, setConfig, children }) {
   );
 }
 
-function Seccion({ icon: Icon, titulo, subtitulo, campos, config, setConfig, loading, handleFileUpload }) {
+function Seccion({ icon, titulo, subtitulo, campos, config, setConfig, loading, handleFileUpload }) {
+  const Icon = icon;
   return (
     <div className="border-t border-cv-border pt-4">
       <div className="flex items-center gap-2 pb-4">
@@ -107,7 +108,9 @@ export default function Configuracion() {
   const handleFileUpload = async (e) => {
     const file = e.target.files[0];
     if (!file) return;
-    
+    const validTypes = ['image/jpeg','image/png','image/webp','image/gif'];
+    if (!validTypes.includes(file.type)) { toast.error('Formato no admitido. Usa JPG, PNG, WebP o GIF.'); e.target.value=''; return; }
+    if (file.size > 5 * 1024 * 1024) { toast.error('El archivo supera el máximo de 5 MB.'); e.target.value=''; return; }
     const formData = new FormData();
     formData.append('logo', file);
     
@@ -132,7 +135,7 @@ export default function Configuracion() {
       await api.put('/configuracion', config);
       await refreshConfig();
       toast.success('Configuración guardada correctamente');
-    } catch (err) {
+    } catch {
       toast.error('Error al guardar configuración');
     } finally {
       setLoading(false);

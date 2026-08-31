@@ -1,4 +1,4 @@
-import { useState, useEffect, useCallback } from 'react';
+import { useState, useEffect, useCallback, useRef } from 'react';
 import api from '../api/axios';
 import {
   BarChart, Bar, XAxis, YAxis, Tooltip, ResponsiveContainer, CartesianGrid,
@@ -11,7 +11,8 @@ const PIE_FALLBACK = ['#3b82f6', '#8b5cf6', '#f59e0b', '#10b981', '#ef4444'];
 
 import { useConfig } from '../contexts/ConfigContext';
 
-function StatCard({ icon: Icon, label, value, sub, color, iconBg, cardBg }) {
+function StatCard({ icon, label, value, sub, color, iconBg, cardBg }) {
+  const Icon = icon;
   return (
     <div className={`card p-5 flex items-center gap-4 hover:-translate-y-1 transition-transform duration-300 relative overflow-hidden group ${cardBg} border-t-2`}>
       <div className={`absolute top-0 right-0 w-32 h-32 ${iconBg} rounded-full blur-3xl -mr-10 -mt-10 opacity-30 group-hover:opacity-50 transition-opacity`} />
@@ -45,13 +46,22 @@ export default function Dashboard() {
   const { config } = useConfig();
   const [data, setData] = useState(null);
   const [loading, setLoading] = useState(true);
+  const [error, setError] = useState(null);
+  const hasDataRef = useRef(false);
 
   const fetchData = useCallback(async () => {
     try {
       const res = await api.get('/reportes/dashboard');
       setData(res.data);
+      setError(null);
+      hasDataRef.current = true;
     } catch (e) {
       console.error(e);
+      // Solo mostrar error si aún no hay datos cargados
+      if (!hasDataRef.current) {
+        const msg = e.response?.data?.error || e.message || 'Error al conectar con el servidor';
+        setError(msg);
+      }
     } finally {
       setLoading(false);
     }
@@ -66,6 +76,21 @@ export default function Dashboard() {
   if (loading) return (
     <div className="flex items-center justify-center h-64">
       <div className="text-cv-accent animate-pulse font-medium tracking-wide">Cargando datos...</div>
+    </div>
+  );
+
+  if (error) return (
+    <div className="flex flex-col items-center justify-center h-64 gap-4">
+      <div className="text-red-400 font-semibold text-center max-w-md">
+        No se pudieron cargar los datos del dashboard
+      </div>
+      <div className="text-cv-muted text-sm text-center max-w-md">{error}</div>
+      <button
+        onClick={() => { setError(null); setLoading(true); fetchData(); }}
+        className="px-4 py-2 bg-cv-accent text-cv-dark text-sm font-bold rounded-lg hover:opacity-90 transition"
+      >
+        Reintentar
+      </button>
     </div>
   );
 

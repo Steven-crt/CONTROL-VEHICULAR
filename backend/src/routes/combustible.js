@@ -34,10 +34,14 @@ const CARGA_SELECT = `
     c.tipo_combustible, c.estado,
     c.fecha_solicitud AS fecha_carga,
     c.fecha_atencion, c.solicitante_id, c.atendido_por_id, c.observaciones,
+    sol.nombre AS solicitante_nombre,
+    atendido.nombre AS atendido_por_nombre,
     hk.km_anterior
   FROM solicitudes_combustible c
   JOIN vehiculos v ON c.vehiculo_id = v.id
   LEFT JOIN historial_km hk ON hk.id = c.id
+  LEFT JOIN usuarios sol ON sol.id = c.solicitante_id
+  LEFT JOIN usuarios atendido ON atendido.id = c.atendido_por_id
 `;
 
 function genCodigo(prefix) {
@@ -61,7 +65,7 @@ router.get('/', auth(), async (req, res) => {
   try {
     let q = `${CARGA_SELECT} WHERE 1=1`;
     const params = [];
-    const idVehiculo = intId(vehiculo_id, { label: 'vehiculo_id' }).value;
+    const idVehiculo = num(vehiculo_id, { min: 1, max: 2147483647, label: 'vehiculo_id' }).value;
     if (idVehiculo !== null) { q += ' AND c.vehiculo_id = ?'; params.push(idVehiculo); }
     if (tipo_combustible && typeof tipo_combustible === 'string' && tipo_combustible.length <= 30) {
       q += ' AND c.tipo_combustible = ?';
@@ -85,7 +89,6 @@ router.get('/', auth(), async (req, res) => {
     params.push(limit);
 
     const [rows] = await db.query(q, params);
-    console.log('[DEBUG-COMB]', JSON.stringify({ estadoQ: req.query.estado || null, soloMios: req.query.solo_mios || null, n: rows.length, paramsLen: params.length }));
 
     const enriched = rows.map((r, i) => {
       const kmAnterior = r.km_anterior || 0;

@@ -1,7 +1,11 @@
 {
   "name": "sistema-control-vehicular",
   "private": true,
+  "engines": {
+    "node": ">=18.0.0"
+  },
   "scripts": {
-    "build": "cd frontend && npm install && npm run build"
+    "build": "cd frontend && npm install && npm run build",
+    "audit": "npm audit --prefix backend && npm audit --prefix frontend"
   }
 }

@@ -87,9 +87,9 @@ router.get('/', auth(), async (req, res) => {
       params.push(parseInt(year));
     }
     if (search) {
-      // Limitar longitud del término de búsqueda
-      const termino = String(search).slice(0, 100);
-      q += ' AND (v.placa LIKE ? OR v.marca LIKE ? OR v.modelo LIKE ? OR v.color LIKE ?)';
+      // Escapar wildcards % y _ para evitar scan abusivo + limitar longitud
+      const termino = String(search).slice(0, 100).replace(/[%_\\]/g, '\\$&');
+      q += ' AND (v.placa LIKE ? ESCAPE \'\\\' OR v.marca LIKE ? ESCAPE \'\\\' OR v.modelo LIKE ? ESCAPE \'\\\' OR v.color LIKE ? ESCAPE \'\\\' )';
       params.push(`%${termino}%`, `%${termino}%`, `%${termino}%`, `%${termino}%`);
     }
     q += ' ORDER BY v.placa ASC LIMIT ?';
@@ -138,7 +138,7 @@ router.post('/', auth(['admin']), async (req, res) => {
       `INSERT INTO vehiculos (placa, tipo_vehiculo_id, color, marca, modelo, ano, soat_numero, soat_empresa, soat_fecha_inicio, soat_fecha_vencimiento)
        VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?)`,
       [
-        placa.toUpperCase(),
+        placa.trim().toUpperCase(),
         tipoId,
         color || null,
         marca || 'Sin especificar',
@@ -273,10 +273,11 @@ router.post('/:id/kilometraje', auth(), async (req, res) => {
     return res.status(400).json({ error: 'KM actual fuera de rango válido (0 - 9,999,999)' });
 
   try {
-    await db.query(
+    const [result] = await db.query(
       'UPDATE vehiculos SET kilometraje_actual = ? WHERE id = ?',
       [km, id]
     );
+    if (result.affectedRows === 0) return res.status(404).json({ error: 'Vehículo no encontrado' });
     res.status(201).json({ message: 'Kilometraje registrado exitosamente' });
   } catch (err) {
     internalError(res, err, 'vehiculos');
@@ -316,7 +317,13 @@ router.put('/:id', auth(['admin']), async (req, res) => {
   if (!validado.ok) return res.status(400).json({ error: validado.error });
   const { placa, tipo, color, marca, modelo, anio, soat_numero, soat_empresa, soat_fecha_inicio, soat_fecha_vencimiento } = validado.values;
   try {
-    const [existing] = await db.query('SELECT * FROM vehiculos WHERE id = ?', [id]);
+    const [existing] = await db.query(
+      `SELECT v.*, LOWER(COALESCE(tv.nombre, 'Camioneta')) AS tipo
+       FROM vehiculos v
+       LEFT JOIN tipos_vehiculo tv ON tv.id = v.tipo_vehiculo_id
+       WHERE v.id = ?`,
+      [id]
+    );
     if (!existing.length)
       return res.status(404).json({ error: 'Vehículo no encontrado' });
 
@@ -326,7 +333,7 @@ router.put('/:id', auth(['admin']), async (req, res) => {
     if (!nuevoSoatNumero || !nuevoSoatEmpresa || !nuevoSoatVenc)
       return res.status(400).json({ error: 'Los datos del SOAT (número, aseguradora y fecha de vencimiento) son obligatorios' });
 
-    const tipoId = await tipoVehiculoId(tipo !== undefined ? tipo : existing[0].tipo_vehiculo_id);
+    const tipoId = await tipoVehiculoId(tipo !== undefined ? tipo : existing[0].tipo);
     const anioValue = anio !== undefined && anio !== null ? anio : existing[0].ano;
 
     await db.query(
@@ -334,7 +341,7 @@ router.put('/:id', auth(['admin']), async (req, res) => {
         soat_numero = ?, soat_empresa = ?, soat_fecha_inicio = ?, soat_fecha_vencimiento = ?
        WHERE id = ?`,
       [
-        placa ? placa.toUpperCase() : existing[0].placa,
+        placa ? placa.trim().toUpperCase() : existing[0].placa,
         tipoId,
         color !== undefined ? color : existing[0].color,
         marca !== undefined ? marca : existing[0].marca,
