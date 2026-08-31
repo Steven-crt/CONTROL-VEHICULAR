@@ -53,6 +53,11 @@ export function AuthProvider({ children }) {
 
   const login = async (username, password) => {
     const { data } = await api.post('/auth/login', { username, password });
+    // Si el usuario tiene 2FA activo, el backend responde requiere2FA y no emite
+    // sesión todavía. El frontend debe pedir el código OTP antes de continuar.
+    if (data?.requiere2FA) {
+      return { requiere2FA: true, firma2FA: data.firma2FA, usuario: normalizeUsuario(data.usuario) };
+    }
     const usuarioNorm = normalizeUsuario(data.usuario);
     // Token en cookie httpOnly — no se persiste en localStorage (XSS).
     try { localStorage.setItem('usuario', JSON.stringify(usuarioNorm)); } catch {}
@@ -60,6 +65,16 @@ export function AuthProvider({ children }) {
     // Activar período de gracia: las llamadas API que se disparen
     // inmediatamente (configuración, notificaciones, etc.) no deben
     // provocar redirect a /login si fallan 401 transitoriamente.
+    activarGraciaPostLogin();
+    return data;
+  };
+
+  // Completar el login con el código 2FA (solo cuando requiere2FA === true)
+  const verify2FA = async (firma2FA, codigo) => {
+    const { data } = await api.post('/auth/2fa/verify', { firma2FA, codigo });
+    const usuarioNorm = normalizeUsuario(data.usuario);
+    try { localStorage.setItem('usuario', JSON.stringify(usuarioNorm)); } catch {}
+    setUsuario(usuarioNorm);
     activarGraciaPostLogin();
     return data;
   };
@@ -76,7 +91,7 @@ export function AuthProvider({ children }) {
   };
 
   return (
-    <AuthContext.Provider value={{ usuario, login, logout, loading }}>
+    <AuthContext.Provider value={{ usuario, login, logout, verify2FA, loading }}>
       {children}
     </AuthContext.Provider>
   );

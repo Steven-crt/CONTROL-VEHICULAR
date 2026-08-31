@@ -9,6 +9,8 @@ const { internalError } = require('../utils/httpErrors');
 const { str, num, email, bool, body } = require('../utils/validate');
 const { encrypt, decrypt } = require('../utils/crypto');
 const { EVENTOS, logEvento } = require('../utils/audit');
+const speakeasy = require('speakeasy');
+const { verificarTOTP } = require('../utils/twoFA');
 
 const LIMIT_MAX = 200;
 
@@ -147,6 +149,105 @@ router.delete('/:id', auth(['admin']), async (req, res) => {
     res.json({ message: 'Usuario desactivado' });
   } catch (err) {
     internalError(res, err, 'usuarios');
+  }
+});
+
+// ────────────────────────────────────────────────────────────
+// 2FA (TOTP) — gestión del segundo factor de autenticación
+// ────────────────────────────────────────────────────────────
+
+// GET /api/usuarios/:id/2fa — devuelve un secreto nuevo + QR (solo el propio
+// usuario autenticado, o admin). No persiste nada hasta el "activate".
+router.get('/:id/2fa', auth(), async (req, res) => {
+  const idNum = parseInt(req.params.id, 10);
+  const esAdmin = req.user?.rol === 'admin';
+  const esMismo = req.user?.id === idNum;
+  if (!esAdmin && !esMismo) return res.status(403).json({ error: 'No autorizado' });
+  if (idNum < 1) return res.status(400).json({ error: 'ID inválido' });
+
+  try {
+    const [rows] = await db.query('SELECT twofa_activo, username FROM usuarios WHERE id=?', [idNum]);
+    if (!rows.length) return res.status(404).json({ error: 'Usuario no encontrado' });
+    // Por seguridad, si ya está activo no re-generamos (evita que un atacante
+    // con sesión secuestrada cambie el secreto y deje fuera al dueño real).
+    if (rows[0].twofa_activo === 1) {
+      return res.status(400).json({ error: 'El 2FA ya está activo. Desactívalo antes de volver a configurarlo.' });
+    }
+    const secret = speakeasy.generateSecret({ name: `GestionVehicular:${rows[0].username}` });
+    res.json({
+      otpauth_url: secret.otpauth_url,
+      base32: secret.base32,
+      // URL del QR: el frontend la convierte a imagen con un servicio de QR
+      qr_url: `https://api.qrserver.com/v1/create-qr-code/?size=200x200&data=${encodeURIComponent(secret.otpauth_url)}`
+    });
+  } catch (err) {
+    internalError(res, err, '2fa');
+  }
+});
+
+// POST /api/usuarios/:id/2fa/activate — verifica el código y activa el 2FA
+router.post('/:id/2fa/activate', auth(), async (req, res) => {
+  const idNum = parseInt(req.params.id, 10);
+  const esAdmin = req.user?.rol === 'admin';
+  const esMismo = req.user?.id === idNum;
+  if (!esAdmin && !esMismo) return res.status(403).json({ error: 'No autorizado' });
+  if (idNum < 1) return res.status(400).json({ error: 'ID inválido' });
+
+  const validado = body({
+    secreto: [str, { min: 16, max: 200, required: true, label: 'secreto' }],
+    codigo: [str, { min: 6, max: 6, required: true, label: 'código' }]
+  }, req.body);
+  if (!validado.ok) return res.status(400).json({ error: validado.error });
+
+  const { secreto, codigo } = validado.values;
+  if (!verificarTOTP(secreto, codigo)) {
+    return res.status(400).json({ error: 'El código de verificación no es válido' });
+  }
+
+  try {
+    const [rows] = await db.query('SELECT twofa_activo FROM usuarios WHERE id=?', [idNum]);
+    if (!rows.length) return res.status(404).json({ error: 'Usuario no encontrado' });
+    if (rows[0].twofa_activo === 1) {
+      return res.status(400).json({ error: 'El 2FA ya está activo' });
+    }
+    // Guardar el secreto CIFRADO en BD + marcador de activo
+    await db.query('UPDATE usuarios SET twofa_secreto=?, twofa_activo=1 WHERE id=?', [
+      encrypt(secreto), idNum
+    ]);
+    logEvento(EVENTOS.ACCION_ADMIN, req, `activó 2FA usuario id=${idNum}`);
+    res.json({ message: '2FA activado correctamente' });
+  } catch (err) {
+    internalError(res, err, '2fa');
+  }
+});
+
+// POST /api/usuarios/:id/2fa/disable — desactiva el 2FA (requiere código actual)
+router.post('/:id/2fa/disable', auth(['admin']), async (req, res) => {
+  const idNum = parseInt(req.params.id, 10);
+  if (idNum < 1) return res.status(400).json({ error: 'ID inválido' });
+
+  const validado = body({
+    codigo: [str, { min: 6, max: 6, required: true, label: 'código' }]
+  }, req.body);
+  if (!validado.ok) return res.status(400).json({ error: validado.error });
+
+  try {
+    const [rows] = await db.query(
+      'SELECT twofa_secreto, twofa_activo FROM usuarios WHERE id=?', [idNum]
+    );
+    if (!rows.length) return res.status(404).json({ error: 'Usuario no encontrado' });
+    if (rows[0].twofa_activo !== 1 || !rows[0].twofa_secreto) {
+      return res.status(400).json({ error: 'El 2FA no está activo para este usuario' });
+    }
+    const secreto = decrypt(rows[0].twofa_secreto);
+    if (!verificarTOTP(secreto, validado.values.codigo)) {
+      return res.status(400).json({ error: 'El código de verificación no es válido' });
+    }
+    await db.query('UPDATE usuarios SET twofa_secreto=NULL, twofa_activo=0 WHERE id=?', [idNum]);
+    logEvento(EVENTOS.ACCION_ADMIN, req, `desactivó 2FA usuario id=${idNum}`);
+    res.json({ message: '2FA desactivado' });
+  } catch (err) {
+    internalError(res, err, '2fa');
   }
 });
 

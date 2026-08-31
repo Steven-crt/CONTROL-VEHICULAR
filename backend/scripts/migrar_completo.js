@@ -298,6 +298,10 @@ async function addColumn(conn, table, column, definition, after) {
     // solicitante_id en mantenimientos: quién solicitó el mantenimiento
     await addColumn(conn, 'mantenimientos', 'solicitante_id', 'INT NULL', 'observaciones');
 
+    // ---- 2FA: twofa_activo + twofa_secreto (autenticación de doble factor) --
+    await addColumn(conn, 'usuarios', 'twofa_activo', 'TINYINT(1) NOT NULL DEFAULT 0', 'activo');
+    await addColumn(conn, 'usuarios', 'twofa_secreto', 'TEXT NULL', 'twofa_activo');
+
     // audit_log: registro de eventos de auditoría (login, CRUD, admin actions)
     if (!(await tableExists(conn, 'audit_log'))) {
       await conn.query(`

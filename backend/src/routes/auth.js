@@ -3,11 +3,14 @@ const router = express.Router();
 const db = require('../db');
 const bcrypt = require('bcryptjs');
 const jwt = require('jsonwebtoken');
+const crypto = require('crypto');
 const { getRol } = require('../utils/roles');
 const { getJwtSecret } = require('../utils/jwtSecret');
 const { obtenerIp } = require('../utils/obtenerIp');
 const { EVENTOS, logEvento } = require('../utils/audit');
 const { COOKIE_SESION } = require('../middleware/auth');
+const { crearPedido2FA, consumirPedido2FA, verificarTOTP } = require('../utils/twoFA');
+const { encrypt, decrypt } = require('../utils/crypto');
 require('dotenv').config();
 
 
@@ -106,6 +109,29 @@ router.post('/login', async (req, res) => {
       return res.status(401).json({ error: 'Credenciales inválidas' });
     }
 
+    // Login exitoso hasta este punto — si el usuario tiene 2FA activo,
+    // NO emitimos JWT todavía: pedimos el código OTP.
+    logEvento(EVENTOS.LOGIN_OK, req, `usuario=${usuario.username}`);
+
+    // Si no existe la columna, asumir sin 2FA (compatibilidad con BD que no migró)
+    const tiene2FA = (usuario.twofa_activo === 1 || usuario.twofa_activo === '1') && usuario.twofa_secreto;
+
+    if (tiene2FA) {
+      const firma2FA = crearPedido2FA(usuario.id);
+      // Limpiar intentos fallidos solo tras completar el 2FA (evita saltarse
+      // el 2FA reintentando el login y obtenerlo ilimitado)
+      return res.json({
+        requiere2FA: true,
+        firma2FA,
+        usuario: {
+          id: usuario.id,
+          nombre: usuario.nombre,
+          username: usuario.username,
+          rol: getRol(usuario)
+        }
+      });
+    }
+
     // Login exitoso — limpiar intentos fallidos
     limpiarIntentosExitoso(ip);
 
@@ -114,7 +140,7 @@ router.post('/login', async (req, res) => {
     const token = jwt.sign(
       { id: usuario.id, username: usuario.username, nombre: usuario.nombre, rol },
       getJwtSecret(),
-      { expiresIn: process.env.JWT_EXPIRES_IN || '8h' }
+      { expiresIn: process.env.JWT_EXPIRES_IN || '8h', jwtid: crypto.randomUUID() }
     );
 
 
@@ -164,6 +190,89 @@ router.post('/login', async (req, res) => {
   } catch (err) {
     // NUNCA exponer el mensaje interno al cliente
     console.error('❌ Error en POST /api/auth/login:', err);
+    res.status(500).json({ error: 'Error interno del servidor' });
+  }
+});
+
+// POST /api/auth/2fa/verify — completa el login con 2FA
+// body: { firma2FA, codigo }
+router.post('/2fa/verify', async (req, res) => {
+  const ip = obtenerIp(req);
+
+  // Backoff de reintentos por IP reutilizando el mismo mecanismo del login
+  const limiteEstado = checkRateLimit(ip);
+  if (limiteEstado.bloqueado) {
+    return res.status(429).json({ error: 'Demasiados intentos. Espera unos segundos.' });
+  }
+
+  const { firma2FA, codigo } = req.body;
+  if (!firma2FA || !codigo) {
+    return res.status(400).json({ error: 'Firma y código requeridos' });
+  }
+
+  try {
+    const usuarioId = consumirPedido2FA(String(firma2FA));
+    if (!usuarioId) {
+      // Pedido inválido/expirado/single-use ya consumido
+      return res.status(401).json({ error: 'Sesión de verificación expirada' });
+    }
+
+    const [rows] = await db.query(
+      'SELECT id, username, nombre, email, rol_id, rol, twofa_secreto, twofa_activo FROM usuarios WHERE id = ? AND activo = 1',
+      [usuarioId]
+    );
+    if (rows.length === 0) return res.status(401).json({ error: 'Usuario no encontrado' });
+
+    const usuario = rows[0];
+    if (usuario.twofa_activo !== 1 || !usuario.twofa_secreto) {
+      return res.status(400).json({ error: '2FA no está activo para este usuario' });
+    }
+
+    const secreto = decrypt(usuario.twofa_secreto);
+    const valido = verificarTOTP(secreto, codigo);
+    if (!valido) {
+      registrarFallo(ip);
+      logEvento(EVENTOS.LOGIN_BLOQUEADO, req, `2FA inválido usuario=${usuario.username}`);
+      return res.status(401).json({ error: 'Código de verificación incorrecto' });
+    }
+
+    // 2FA correcto → emitir JWT real
+    limpiarIntentosExitoso(ip);
+
+    const rol = getRol({ rol_id: usuario.rol_id, rol: usuario.rol });
+    const token = jwt.sign(
+      { id: usuario.id, username: usuario.username, nombre: usuario.nombre, rol },
+      getJwtSecret(),
+      { expiresIn: process.env.JWT_EXPIRES_IN || '8h', jwtid: crypto.randomUUID() }
+    );
+
+    const cookieSecure = process.env.COOKIE_SECURE === 'true' || process.env.NODE_ENV === 'production';
+    const cookieSameSite = (() => {
+      const v = (process.env.COOKIE_SAMESITE || '').toLowerCase();
+      if (v === 'none' || v === 'lax' || v === 'strict') return v;
+      return cookieSecure ? 'none' : 'lax';
+    })();
+    const expiresIn = process.env.JWT_EXPIRES_IN || '8h';
+    let maxAgeMs = 8 * 60 * 60 * 1000;
+    try {
+      const m = expiresIn.match(/^(\d+)([smhd])$/);
+      if (m) { const mult = { s: 1000, m: 60000, h: 3600000, d: 86400000 }; maxAgeMs = parseInt(m[1], 10) * mult[m[2]]; }
+      else if (!isNaN(Number(expiresIn))) { maxAgeMs = Number(expiresIn) * 1000; }
+    } catch {}
+
+    res.cookie(COOKIE_SESION, token, {
+      httpOnly: true, secure: cookieSecure, sameSite: cookieSameSite, maxAge: maxAgeMs, path: '/'
+    });
+
+    logEvento(EVENTOS.LOGIN_OK, req, `2FA OK usuario=${usuario.username}`);
+    res.json({
+      usuario: {
+        id: usuario.id, nombre: usuario.nombre, username: usuario.username,
+        email: usuario.email, rol
+      }
+    });
+  } catch (err) {
+    console.error('❌ Error en POST /api/auth/2fa/verify:', err);
     res.status(500).json({ error: 'Error interno del servidor' });
   }
 });
