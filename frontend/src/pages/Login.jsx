@@ -23,7 +23,11 @@ export default function Login() {
   const [form, setForm] = useState({ username: '', password: '', website: '' });
   const [showPass, setShowPass] = useState(false);
   const [loading, setLoading] = useState(false);
-  const { login } = useAuth();
+  // Estado del flujo 2FA
+  const [paso2FA, setPaso2FA] = useState(null); // { firma2FA, usuario }
+  const [codigo2FA, setCodigo2FA] = useState('');
+  const [cargando2FA, setCargando2FA] = useState(false);
+  const { login, verify2FA } = useAuth();
   const navigate = useNavigate();
   const canvasRef = useRef(null);
 
@@ -233,6 +237,11 @@ export default function Login() {
     setLoading(true);
     try {
       const data = await login(form.username, form.password);
+      // Si requiere 2FA, cambiar a la vista de código sin navegar todavía
+      if (data?.requiere2FA) {
+        setPaso2FA({ firma2FA: data.firma2FA, usuario: data.usuario });
+        return;
+      }
       toast.success('¡Listo! Bienvenido.');
       // Navegar a la vista principal según el rol para evitar redirecciones extra
       const rolNav = data?.usuario?.rol;
@@ -249,6 +258,31 @@ export default function Login() {
     }
   };
 
+  // Enviar el código 2FA para completar el login
+  const handleVerify2FA = async (e) => {
+    e.preventDefault();
+    if (!paso2FA?.firma2FA || !codigo2FA.trim()) return;
+    setCargando2FA(true);
+    try {
+      const data = await verify2FA(paso2FA.firma2FA, codigo2FA);
+      toast.success('¡Listo! Bienvenido.');
+      const rolNav = data?.usuario?.rol;
+      const destino = (rolNav === 'admin' || rolNav === '1') ? '/dashboard' : '/vehiculos';
+      navigate(destino);
+    } catch (err) {
+      toast.error(err.response?.data?.error || 'Código de verificación incorrecto');
+      setCodigo2FA('');
+    } finally {
+      setCargando2FA(false);
+    }
+  };
+
+  // Volver al login si el usuario se equivocó de cuenta
+  const volverAlLogin = () => {
+    setPaso2FA(null);
+    setCodigo2FA('');
+  };
+
   return (
     <StyledWrapper>
       <canvas ref={canvasRef} className="ribbon-canvas" />
@@ -259,6 +293,53 @@ export default function Login() {
           <div className="dark-overlay" />
           <div className="view-container">
             <div className="form-view">
+              {paso2FA ? (
+                <>
+                  <div className="header">
+                    <div className="logo-container">
+                      {config?.logo_url && isSafeImageUrl(config.logo_url) ? (
+                        <img src={config.logo_url} alt="Logo" className="logo-img" onError={(e) => { e.target.style.display = 'none'; }} />
+                      ) : (
+                        <Car className="logo-icon" />
+                      )}
+                    </div>
+                    <div className="title">Verificación en dos pasos</div>
+                    <p className="subtitle">
+                      {paso2FA.usuario?.nombre || paso2FA.usuario?.username || 'Bienvenido'} — ingresa el código de 6 dígitos de tu app de autenticación.
+                    </p>
+                  </div>
+                  <form onSubmit={handleVerify2FA}>
+                    <div className="input-group">
+                      <input
+                        type="text"
+                        className="input-field otp-input"
+                        placeholder="Código de 6 dígitos"
+                        inputMode="numeric"
+                        autoComplete="one-time-code"
+                        maxLength={6}
+                        value={codigo2FA}
+                        onChange={e => setCodigo2FA(e.target.value.replace(/[^0-9]/g, ''))}
+                        required
+                        autoFocus
+                      />
+                    </div>
+                    {cargando2FA ? (
+                      <div className="loader-container">
+                        <Loader />
+                        <span className="loader-text">Verificando código...</span>
+                      </div>
+                    ) : (
+                      <button type="submit" className="btn-submit" disabled={codigo2FA.length !== 6}>
+                        Verificar
+                      </button>
+                    )}
+                    <button type="button" className="btn-back" onClick={volverAlLogin} disabled={cargando2FA}>
+                      ← Volver al inicio de sesión
+                    </button>
+                  </form>
+                </>
+              ) : (
+              <>
               <div className="header">
                 <div className="logo-container">
                   {config?.logo_url && isSafeImageUrl(config.logo_url) ? (
@@ -328,6 +409,8 @@ export default function Login() {
               <p className="footer-text">
                 © {new Date().getFullYear()} {config?.nombre_negocio || 'Control Vehicular'}. Todos los derechos reservados.
               </p>
+              </>
+              )}
             </div>
           </div>
         </div>
@@ -607,6 +690,36 @@ const StyledWrapper = styled.div`
 
   .btn-submit:active {
     transform: translateY(0);
+  }
+
+  .otp-input {
+    text-align: center;
+    font-size: 22px;
+    letter-spacing: 8px;
+    font-weight: 600;
+  }
+
+  .btn-back {
+    width: 100%;
+    margin-top: 12px;
+    padding: 0.8em;
+    background: transparent;
+    color: rgba(255, 255, 255, 0.5);
+    border: none;
+    border-radius: 12px;
+    font-size: 12.5px;
+    font-family: inherit;
+    cursor: pointer;
+    transition: color 0.2s;
+  }
+
+  .btn-back:hover:not(:disabled) {
+    color: rgba(255, 255, 255, 0.9);
+  }
+
+  .btn-back:disabled {
+    opacity: 0.4;
+    cursor: not-allowed;
   }
 
   .loader-container {

@@ -96,6 +96,20 @@ async function columnExists(conn, table, column) {
       console.log('= mantenimientos.solicitante_id ya existe');
     }
 
+    // ---- 2FA: twofa_activo + twofa_secreto --------------------------------
+    if (!(await columnExists(conn, 'usuarios', 'twofa_activo'))) {
+      await conn.query('ALTER TABLE usuarios ADD COLUMN twofa_activo TINYINT(1) NOT NULL DEFAULT 0 AFTER activo');
+      console.log('+ usuarios.twofa_activo agregado');
+    } else {
+      console.log('= usuarios.twofa_activo ya existe');
+    }
+    if (!(await columnExists(conn, 'usuarios', 'twofa_secreto'))) {
+      await conn.query('ALTER TABLE usuarios ADD COLUMN twofa_secreto TEXT NULL AFTER twofa_activo');
+      console.log('+ usuarios.twofa_secreto agregado');
+    } else {
+      console.log('= usuarios.twofa_secreto ya existe');
+    }
+
     // audit_log
     await conn.query(`
       CREATE TABLE IF NOT EXISTS audit_log (
