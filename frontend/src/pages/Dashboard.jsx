@@ -128,7 +128,7 @@ export default function Dashboard() {
           icon={Fuel}
           label="Gasto Combustible"
           value={`${moneda}${(data?.gastos_combustible_mes || 0).toFixed(2)}`}
-          sub="Este mes"
+          sub="Últimos 6 meses"
           color="text-amber-400"
           iconBg="bg-amber-500/20"
           cardBg="bg-gradient-to-b from-amber-500/5 to-transparent border-t-amber-500"
@@ -137,7 +137,7 @@ export default function Dashboard() {
           icon={Wrench}
           label="Gasto Mantenimiento"
           value={`${moneda}${(data?.gastos_mantenimiento_mes || 0).toFixed(2)}`}
-          sub="Este mes"
+          sub="Últimos 6 meses"
           color="text-emerald-400"
           iconBg="bg-emerald-500/20"
           cardBg="bg-gradient-to-b from-emerald-500/5 to-transparent border-t-emerald-500"

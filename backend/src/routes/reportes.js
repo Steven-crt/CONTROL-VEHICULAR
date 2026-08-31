@@ -11,8 +11,6 @@ router.use((req, res, next) => {
   next();
 });
 
-const INICIO_MES = "DATE_FORMAT(CURDATE(), '%Y-%m-01')";
-
 // Caché en servidor para reportes pesados (dashboard): datos agregados que
 // cambian poco. Con 100 usuarios abriendo el dashboard, la BD solo recibe
 // 1 cálculo real cada CACHE_TTL_MS en vez de 100. TTL corto por defecto (10s).
@@ -54,6 +52,9 @@ router.get('/dashboard', auth(['admin']), async (req, res) => {
     // Todas las queries en PARALELO (Promise.all): cada una viaja por red hasta
     // la BD (~150-250ms de latencia a Aiven). En serie serían 8 latencias;
     // en paralelo, una sola. Reducción típica: 2.5s → 0.4s por petición.
+    // Ventana de gastos del dashboard: últimos 6 meses (los mantenimientos/combustible
+    // suelen ser de meses anteriores, filtrar solo por el mes actual daba $0.00).
+    const VENTANA = "DATE_SUB(CURDATE(), INTERVAL 6 MONTH)";
     const [
       [totalVehiculos],
       [gastosCombustible],
@@ -70,11 +71,11 @@ router.get('/dashboard', auth(['admin']), async (req, res) => {
       db.query('SELECT COUNT(*) as total FROM vehiculos WHERE activo = 1'),
       db.query(
         `SELECT COALESCE(SUM(costo_total),0) as total FROM solicitudes_combustible
-         WHERE fecha_solicitud >= ${INICIO_MES} AND fecha_solicitud < DATE_ADD(${INICIO_MES}, INTERVAL 1 MONTH)`
+         WHERE fecha_solicitud >= ${VENTANA}`
       ),
       db.query(
         `SELECT COALESCE(SUM(costo),0) as total FROM mantenimientos
-         WHERE fecha_realizada >= ${INICIO_MES} AND fecha_realizada < DATE_ADD(${INICIO_MES}, INTERVAL 1 MONTH)`
+         WHERE fecha_realizada >= ${VENTANA}`
       ),
       db.query(
         `SELECT LOWER(COALESCE(tv.nombre, 'Otro')) as name, COUNT(*) as value
@@ -107,7 +108,10 @@ router.get('/dashboard', auth(['admin']), async (req, res) => {
          GROUP BY periodo ORDER BY periodo`
       ),
       db.query(
-        'SELECT tipo_servicio as name, COUNT(*) as value FROM mantenimientos GROUP BY tipo_servicio'
+        `SELECT COALESCE(NULLIF(tipo_servicio,''),'General') as name, COUNT(*) as value
+         FROM mantenimientos
+         WHERE fecha_realizada >= ${VENTANA}
+         GROUP BY name ORDER BY value DESC`
       )
     ]);
 
