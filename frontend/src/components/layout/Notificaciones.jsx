@@ -3,6 +3,7 @@ import { useNavigate } from 'react-router-dom';
 import { Bell, X, Fuel, AlertTriangle, Wrench, Car, DollarSign } from 'lucide-react';
 import styled, { keyframes } from 'styled-components';
 import api from '../../api/axios';
+import { useAuth } from '../../contexts/AuthContext';
 
 const ring = keyframes`
   0% { transform: rotate(0deg); }
@@ -187,6 +188,7 @@ const NotifMsg = styled.p`
 `;
 
 export default function Notificaciones() {
+  const { usuario } = useAuth();
   const [notifs, setNotifs] = useState([]);
   const [open, setOpen] = useState(false);
   const [ringing, setRinging] = useState(false);
@@ -207,10 +209,34 @@ export default function Notificaciones() {
   };
 
   useEffect(() => {
-    fetchNotifs();
-    const interval = setInterval(fetchNotifs, 30000);
-    return () => clearInterval(interval);
-  }, []);
+    // No hacer polling sin sesión: cada 401 disparaba el interceptor y
+    // alimentaba el bucle que saturaba el rate-limit.
+    if (!usuario) return;
+
+    let mounted = true;
+    const controller = new AbortController();
+    const safeFetch = async () => {
+      if (!mounted) return;
+      try {
+        const { data } = await api.get('/notificaciones', { signal: controller.signal });
+        if (!mounted) return;
+        setNotifs(data);
+        if (data.length > prevCount.current) {
+          setRinging(true);
+          setTimeout(() => setRinging(false), 600);
+        }
+        prevCount.current = data.length;
+      } catch (err) {
+        // Si la sesión expiró (401), detener el polling para no agravar el bucle
+        if (err?.response?.status === 401 && mounted) {
+          controller.abort();
+        }
+      }
+    };
+    safeFetch();
+    const interval = setInterval(safeFetch, 30000);
+    return () => { mounted = false; controller.abort(); clearInterval(interval); };
+  }, [usuario]);
 
   useEffect(() => {
     const handleClick = (e) => {

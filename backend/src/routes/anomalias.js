@@ -1,17 +1,9 @@
-/**
- * Módulo de anomalías: reportes de daños/fallas por vehículo.
- *
- * Permisos:
- * - Cualquier usuario autenticado puede REPORTAR anomalías (POST /).
- * - Un empleado solo ve SUS reportes; el admin ve todos (GET /).
- * - Cambiar estado (atender/resolver) y eliminar es exclusivo del admin.
- */
 const express = require('express');
 const router = express.Router();
 const db = require('../db');
 const auth = require('../middleware/auth');
 const { internalError } = require('../utils/httpErrors');
-const { str, intId, body } = require('../utils/validate');
+const { str, num, intId, body } = require('../utils/validate');
 const { EVENTOS, logEvento } = require('../utils/audit');
 
 const LIMIT_MAX = 200;
@@ -56,9 +48,9 @@ router.get('/', auth(), async (req, res) => {
       q += ' AND a.severidad = ?';
       params.push(String(req.query.severidad));
     }
-    const idVehiculo = intId(req.query.vehiculo_id, { label: 'vehiculo_id' }).value;
+    const idVehiculo = num(req.query.vehiculo_id, { min: 1, max: 2147483647, label: 'vehiculo_id' }).value;
     if (idVehiculo !== null) { q += ' AND a.vehiculo_id = ?'; params.push(idVehiculo); }
-    // Empleados solo ven sus propios reportes; el admin ve todo.
+    // Empleados solo ven sus propios reportes; el admin ve todo.11
     if (req.user?.rol !== 'admin') {
       q += ' AND a.usuario_id = ?';
       params.push(req.user.id);
@@ -76,6 +68,7 @@ router.get('/', auth(), async (req, res) => {
   }
 });
 
+//
 // POST /api/anomalias - Reportar una anomalía (cualquier usuario autenticado)
 router.post('/', auth(), async (req, res) => {
   const validado = body({

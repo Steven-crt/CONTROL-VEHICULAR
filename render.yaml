@@ -21,14 +21,14 @@ services:
       - key: DB_SSL
         value: "true"
       - key: JWT_SECRET
-        generateValue: true
+        sync: false
       - key: JWT_EXPIRES_IN
         value: "8h"
       - key: CORS_ORIGIN
         value: "https://control-vehicular.vercel.app,https://control-vehicular-iota.vercel.app"
       - key: DATA_ENCRYPTION_KEY
-        generateValue: true
+        sync: false
       - key: RATE_LIMIT_WINDOW_MS
-        value: "60000"
+        value: "900000"
       - key: RATE_LIMIT_MAX
-        value: "180"
+        value: "100"

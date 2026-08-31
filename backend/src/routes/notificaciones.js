@@ -6,20 +6,16 @@ const { internalError } = require('../utils/httpErrors');
 
 const INICIO_MES = "DATE_FORMAT(CURDATE(), '%Y-%m-01')";
 
-// Clave de mes actual (YYYY-MM) para agrupar alertas recurrentes: una alerta
-// marcada como vista no vuelve a aparecer hasta el siguiente mes (si sigue
-// siendo relevante). Sin esto, el usuario la descartaría para siempre.
-const MES = new Date().toISOString().slice(0, 7);
+function mesActual() { return new Date().toISOString().slice(0, 7); }
 
 router.get('/', auth(), async (req, res) => {
+  const MES = mesActual();
   try {
     const notificaciones = [];
     const push = (clave, tipo, icono, titulo, mensaje, link) =>
       notificaciones.push({ clave, tipo, icono, titulo, mensaje, link });
 
-    // 1. Vehículos con bajo rendimiento de combustible (< 8 km/l)
-    // km anterior con LAG() en una sola pasada (sin subquery correlacionada por fila);
-    // se ignora la primera carga porque no hay km previo para comparar
+    
     const [bajoRendimiento] = await db.query(`
       WITH historial_km AS (
         SELECT id, vehiculo_id, fecha_solicitud, kilometraje_actual, galones_surtidos,
@@ -47,7 +43,7 @@ router.get('/', auth(), async (req, res) => {
         `${v.placa} (${v.marca} ${v.modelo}) — ${v.rendimiento} km/l`, `/vehiculos/${v.vehiculo_id}`);
     });
 
-    // 2. Vehículos sin carga de combustible en los últimos 30 días
+    // 2. Vehículos sin carga de combustible en los últimos 30 dias 
     const [sinCarga] = await db.query(`
       SELECT v.id, v.placa, v.marca, v.modelo,
         DATEDIFF(NOW(), COALESCE(MAX(c.fecha_solicitud), v.created_at)) as dias

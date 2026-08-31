@@ -7,6 +7,17 @@ import { Car, Eye, EyeOff } from 'lucide-react';
 import styled from 'styled-components';
 import Loader from '../components/Loader';
 
+function isSafeImageUrl(url) {
+  if (!url || typeof url !== 'string') return false;
+  const v = url.trim();
+  if (/^\s*javascript:/i.test(v) || /^\s*data:text\/html/i.test(v)) return false;
+  if (v.startsWith('data:image/')) return true;
+  try {
+    const u = new URL(v, window.location.origin);
+    return u.protocol === 'https:' || u.protocol === 'http:' || u.protocol === 'data:';
+  } catch { return false; }
+}
+
 export default function Login() {
   const { config } = useConfig();
   const [form, setForm] = useState({ username: '', password: '', website: '' });
@@ -109,9 +120,10 @@ export default function Login() {
 
     let time = 0;
     let running = true;
+    let rafId = null;
 
     function draw() {
-      if (!running) { requestAnimationFrame(draw); return; }
+      if (!running) return;
       time += 0.012;
       mouse.x += (mouse.targetX - mouse.x) * 0.08;
       mouse.y += (mouse.targetY - mouse.y) * 0.08;
@@ -197,17 +209,18 @@ export default function Login() {
         }
       }
       ctx.globalAlpha = 1;
-      requestAnimationFrame(draw);
+      rafId = requestAnimationFrame(draw);
     }
 
     drawBackground();
-    requestAnimationFrame(draw);
+    rafId = requestAnimationFrame(draw);
 
-    const onVisChange = () => { running = !document.hidden; };
+    const onVisChange = () => { running = !document.hidden; if (running && !rafId) rafId = requestAnimationFrame(draw); };
     document.addEventListener('visibilitychange', onVisChange);
 
     return () => {
       running = false;
+      if (rafId) cancelAnimationFrame(rafId);
       document.removeEventListener('visibilitychange', onVisChange);
       window.removeEventListener('resize', resize);
     };
@@ -219,9 +232,12 @@ export default function Login() {
     if (form.website) return;
     setLoading(true);
     try {
-      await login(form.username, form.password);
+      const data = await login(form.username, form.password);
       toast.success('¡Listo! Bienvenido.');
-      navigate('/dashboard');
+      // Navegar a la vista principal según el rol para evitar redirecciones extra
+      const rolNav = data?.usuario?.rol;
+      const destino = (rolNav === 'admin' || rolNav === '1') ? '/dashboard' : '/vehiculos';
+      navigate(destino);
     } catch (err) {
       if (!err.response) {
         toast.error('No se pudo conectar con el servidor. Verifica que esté activo.');
@@ -245,8 +261,8 @@ export default function Login() {
             <div className="form-view">
               <div className="header">
                 <div className="logo-container">
-                  {config?.logo_url ? (
-                    <img src={config.logo_url} alt="Logo" className="logo-img" />
+                  {config?.logo_url && isSafeImageUrl(config.logo_url) ? (
+                    <img src={config.logo_url} alt="Logo" className="logo-img" onError={(e) => { e.target.style.display = 'none'; }} />
                   ) : (
                     <Car className="logo-icon" />
                   )}

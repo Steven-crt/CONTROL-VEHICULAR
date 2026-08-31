@@ -8,11 +8,7 @@ require('dotenv').config();
 // Nombre de la cookie de sesión httpOnly
 const COOKIE_SESION = 'cv_session';
 
-// Caché en memoria de la verificación de usuario (id -> {activo, rol, ttl}).
-// Cada petición autenticada consulta la BD para validar el usuario; con muchos
-// usuarios eso duplica las queries. El rol/activo cambia raramente, así que se
-// cachea 10 segundos: se corta ~90% de las queries de auth sin riesgo real
-// (un usuario desactivado tarda 10s máx. en perder acceso).
+
 const CACHE_TTL_MS = 10000;
 const userCache = new Map();
 
@@ -21,7 +17,7 @@ async function verificarUsuario(id) {
   const hit = userCache.get(id);
   if (hit && ahora - hit.ts < CACHE_TTL_MS) return hit.usuario;
   const [rows] = await db.query(
-    'SELECT * FROM usuarios WHERE id = ? AND activo = 1',
+    'SELECT id, username, nombre, rol_id, activo, email FROM usuarios WHERE id = ? AND activo = 1',
     [id]
   );
   const usuario = rows.length > 0 ? rows[0] : null;
@@ -37,7 +33,7 @@ async function verificarUsuario(id) {
 function tokenDeRequest(req) {
   // 1) Cookie httpOnly (mecanismo principal y más seguro)
   const cookieToken = req.cookies?.[COOKIE_SESION];
-  if (cookieToken && typeof cookieToken === 'string' && cookieToken.length > 20) {
+  if (cookieToken && typeof cookieToken === 'string' && /^[A-Za-z0-9-_]+=*\.[A-Za-z0-9-_]+=*\.[A-Za-z0-9-_]+=*$/.test(cookieToken)) {
     return cookieToken;
   }
   // 2) Header Authorization (compatibilidad con clientes que envían Bearer)
@@ -55,8 +51,16 @@ const authMiddleware = (roles = []) => {
       return res.status(401).json({ error: 'Token no proporcionado' });
     }
 
+    let decoded;
     try {
-      const decoded = jwt.verify(token, getJwtSecret());
+      decoded = jwt.verify(token, getJwtSecret(), { algorithms: ['HS256'] });
+    } catch (jwtErr) {
+      // Error de JWT (token expirado, firma inválida, etc.): registrar y rechazar.
+      logEvento(EVENTOS.TOKEN_INVALIDO, req, jwtErr.message);
+      return res.status(401).json({ error: 'Token inválido o expirado' });
+    }
+
+    try {
       const usuario = await verificarUsuario(decoded.id);
       if (!usuario) {
         return res.status(401).json({ error: 'Usuario no encontrado o inactivo' });
@@ -71,14 +75,11 @@ const authMiddleware = (roles = []) => {
       }
       next();
     } catch (err) {
-      // Error de base de datos (pool saturado, timeout, desconexión): NO es un
-      // token inválido. Responder 503 para que el cliente reintente, y NO
-      // registrar TOKEN_INVALIDO (evita llenar audit_log de falsos positivos).
       if (err && (err.code === 'POOL_ENQUEUELIMIT' || err.code === 'POOL_BUSY' || err.code === 'ECONNREFUSED' || err.code === 'PROTOCOL_CONNECTION_LOST' || err.code === 'ETIMEDOUT' || String(err.message || '').includes('Queue limit reached'))) {
         return res.status(503).json({ error: 'Servicio saturado, intenta de nuevo en unos segundos' });
       }
-      logEvento(EVENTOS.TOKEN_INVALIDO, req);
-      return res.status(401).json({ error: 'Token inválido o expirado' });
+      console.error('[auth] Error inesperado verificando usuario:', err);
+      return res.status(500).json({ error: 'Error interno del servidor' });
     }
   };
 };

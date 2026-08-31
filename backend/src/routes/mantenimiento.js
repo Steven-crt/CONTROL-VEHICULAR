@@ -26,9 +26,11 @@ const MANT_SELECT = `
     m.fecha_programada,
     m.fecha_realizada AS fecha,
     m.costo, m.proveedor, m.factura, m.estado, m.observaciones,
-    m.solicitante_id, m.created_at, m.updated_at
+    m.solicitante_id, m.created_at, m.updated_at,
+    sol.nombre AS solicitante_nombre
   FROM mantenimientos m
   JOIN vehiculos v ON m.vehiculo_id = v.id
+  LEFT JOIN usuarios sol ON sol.id = m.solicitante_id
 `;
 
 function genCodigo(prefix) {
@@ -60,7 +62,7 @@ router.get('/', auth(), async (req, res) => {
   try {
     let q = `${MANT_SELECT} WHERE 1=1`;
     const params = [];
-    const idVehiculo = intId(vehiculo_id, { label: 'vehiculo_id' }).value;
+    const idVehiculo = num(vehiculo_id, { min: 1, max: 2147483647, label: 'vehiculo_id' }).value;
     if (idVehiculo !== null) { q += ' AND m.vehiculo_id = ?'; params.push(idVehiculo); }
     if (tipo_servicio && TIPOS_SERVICIO_VALIDOS.includes(String(tipo_servicio))) {
       q += ' AND m.tipo_servicio = ?';

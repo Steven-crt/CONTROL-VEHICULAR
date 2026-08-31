@@ -1,4 +1,4 @@
-import { useState, useEffect } from 'react';
+import { useState, useEffect, useCallback } from 'react';
 import api from '../api/axios';
 import toast from 'react-hot-toast';
 import { Plus, X, AlertTriangle, Trash2 } from 'lucide-react';
@@ -13,7 +13,7 @@ const SEV_COLORS = {
   alta: 'text-red-400 bg-red-900/30'
 };
 const ESTADO_COLORS = {
-  Pendiente: 'text-amber-400 bg-amber-900/30',
+  Pendiente: 'text-amber-400 bg-amber-900/30',   
   'En revisión': 'text-blue-400 bg-blue-900/30',
   Resuelta: 'text-emerald-400 bg-emerald-900/30',
   Descartada: 'text-cv-muted bg-cv-border/30'
@@ -113,12 +113,12 @@ export default function Anomalias() {
           <button onClick={openAdd} className="btn-primary"><Plus className="w-4 h-4" /> Reportar</button>
         </div>
       </div>
-
+      
       <div className="card overflow-x-auto">
         <table className="w-full">
           <thead>
             <tr className="border-b border-cv-border">
-              {['Código', 'Vehículo', 'Tipo', 'Severidad', 'Descripción', 'Estado', esAdmin ? 'Acciones' : ''].map(h => (
+              {['Código', 'Vehículo', 'Reportado por', 'Tipo', 'Severidad', 'Descripción', 'Estado', esAdmin ? 'Acciones' : ''].map(h => (
                 <th key={h} className="table-header text-left pb-3 px-2">{h}</th>
               ))}
             </tr>
@@ -131,13 +131,14 @@ export default function Anomalias() {
                   {a.placa}
                   <span className="block text-xs text-cv-muted">{a.marca} {a.modelo}</span>
                 </td>
+                <td className="table-cell px-2 text-cv-muted text-sm">{a.reportado_por || '—'}</td>
                 <td className="table-cell px-2">{a.tipo}</td>
                 <td className="table-cell px-2">
                   <span className={`px-2 py-0.5 rounded-full text-xs font-medium capitalize ${SEV_COLORS[a.severidad]}`}>{a.severidad}</span>
                 </td>
                 <td className="table-cell px-2 max-w-[260px]">
                   <span className="line-clamp-2 text-cv-muted block">{a.descripcion}</span>
-                  {a.foto_url && <a href={a.foto_url} target="_blank" rel="noreferrer" className="text-cv-accent text-xs hover:underline">Ver foto</a>}
+                  {a.foto_url && /^https?:\/\//.test(a.foto_url) && <a href={a.foto_url} target="_blank" rel="noreferrer" className="text-cv-accent text-xs hover:underline">Ver foto</a>}
                 </td>
                 <td className="table-cell px-2">
                   <span className={`px-2 py-0.5 rounded-full text-xs font-medium ${ESTADO_COLORS[a.estado] || ''}`}>{a.estado}</span>
@@ -201,8 +202,13 @@ export default function Anomalias() {
               </div>
               <div>
                 <label className="block text-cv-muted text-sm mb-1">Foto (opcional)</label>
-                <input type="file" accept="image/*" className="input"
-                  onChange={e => setForm({ ...form, foto: e.target.files[0] || null })} />
+                <input type="file" accept="image/jpeg,image/png,image/webp,image/gif" className="input"
+                  onChange={e => {
+                    const f = e.target.files[0] || null;
+                    if (f && f.size > 5 * 1024 * 1024) { toast.error('Máximo 5 MB'); e.target.value=''; return; }
+                    if (f && !['image/jpeg','image/png','image/webp','image/gif'].includes(f.type)) { toast.error('Formato no admitido'); e.target.value=''; return; }
+                    setForm({ ...form, foto: f });
+                  }} />
               </div>
               <div className="flex gap-3 pt-2">
                 <button type="button" onClick={() => setModal(false)} className="btn-secondary flex-1 justify-center">Cancelar</button>

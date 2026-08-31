@@ -5,11 +5,6 @@ require('dotenv').config();
 
 const useSSL = process.env.DB_SSL !== 'false'; // SSL activo por defecto en producción (Aiven lo exige)
 
-// Soporte opcional de CA para validación estricta del certificado del servidor.
-// - Si se define DB_CA_CERT (ruta a un .pem/ca.pem de Aiven) o DB_CA_PEM (contenido
-//   inline del certificado), se activa rejectUnauthorized: true (MITM protegido).
-// - Si NO se configura, se mantiene el comportamiento actual (rejectUnauthorized:
-//   false) para NO romper la conexión existente con Aiven.
 function buildSsl() {
   if (!useSSL) return undefined;
   const caPath = process.env.DB_CA_CERT;
@@ -27,34 +22,26 @@ function buildSsl() {
     console.log('🔒 SSL: CA cargada desde DB_CA_PEM — validación estricta de certificado activada');
   }
   if (ca) return { ca, rejectUnauthorized: true };
-  return { rejectUnauthorized: false }; // comportamiento actual (compatibilidad Aiven)
+  if (process.env.NODE_ENV === 'production') {
+    console.warn('⚠️  DB_CA_CERT/DB_CA_PEM no configurado en producción — TLS sin validación (MITM posible). Configura el CA de Aiven.');
+  }
+  return { rejectUnauthorized: false }; // compatibilidad Aiven sin CA
 }
 
 const poolConfig = {
   ...buildDbConfig(),
   waitForConnections: true,
-  // Pool dimensionable por entorno SIN tocar el código ni la conexión existente:
-  // - DB_POOL_SIZE: máx. conexiones simultáneas (default 15, seguro para Aiven free).
-  //   En el pasado se fijó 25; por defecto se baja a 15 para no superar los límites
-  //   de conexiones del plan free de Aiven. Si tienes plan superior, súbelo por env.
   connectionLimit: parseInt(process.env.DB_POOL_SIZE, 10) || 15,
-  // Cola FINITA: si se supera, mysql2 lanza POOL_ENQUEUELIMIT -> respondemos 503
-  // en vez de acumular peticiones en memoria hasta quedarnos sin RAM (DoS propio).
   queueLimit: parseInt(process.env.DB_QUEUE_LIMIT, 10) || 50,
-  idleTimeout: 60000, // Cerrar conexiones inactivas después de 60s
-  connectTimeout: 10000, // 10s máximo para conectar
-  // NOTA: sin acquireTimeout — en mysql2 3.9.x esa opción solo es válida en Pool
-  // y al adquirir conexiones manualmente (pool.getConnection) emite un warning
-  // "Ignoring invalid configuration option passed to Connection". La saturación
-  // se cubre con queueLimit (colas finitas → 503 vía POOL_ENQUEUELIMIT).
+  idleTimeout: 60000, 
+  connectTimeout: 10000, 
   timezone: '+00:00',
   ssl: buildSsl()
 };
 
 const pool = mysql.createPool(poolConfig);
 
-// Monitorización de consultas: loguea queries lentas (>500ms) para detectar
-// problemas de rendimiento o abuso. Los parámetros NO se loguean (no filtran datos).
+
 const QUERY_SLOW_MS = parseInt(process.env.DB_SLOW_QUERY_MS, 10) || 500;
 const origQuery = pool.query.bind(pool);
 pool.query = async function monitoredQuery(sql, params) {
@@ -62,11 +49,6 @@ pool.query = async function monitoredQuery(sql, params) {
   try {
     return await origQuery(sql, params);
   } catch (err) {
-    // Cola del pool llena (queueLimit alcanzado) o timeout esperando conexión:
-    // devolvemos un error con statusCode 503 para que internalError responda
-    // "Servicio saturado" en vez de 500 genérico. El cliente puede reintentar.
-    // mysql2 3.9.x lanza "Queue limit reached" SIN err.code (el código
-    // POOL_ENQUEUELIMIT solo existe en versiones nuevas) — se detecta por ambos.
     const poolSaturado = (err && (
       err.code === 'POOL_ENQUEUELIMIT' ||
       err.code === 'POOL_BUSY' ||
@@ -89,7 +71,7 @@ pool.query = async function monitoredQuery(sql, params) {
   }
 };
 
-// Contador de conexiones activas para monitoreo
+
 let activeConnections = 0;
 const trackConnection = {
   getConnection: pool.getConnection.bind(pool),
@@ -135,8 +117,7 @@ pool.getConnection()
     console.error('   SSL:', useSSL);
     console.error('   💡 Revisa las variables en Render (DB_HOST, DB_PORT, DB_USER, DB_PASSWORD, DB_NAME)');
     console.error('      o usa DATABASE_URL con la URI completa que Aiven te da en "Connection info".');
-    // No se lanza el error para que el servidor arranque igual
-    // (Render puede reintentar después)
+
   });
 
 module.exports = pool;

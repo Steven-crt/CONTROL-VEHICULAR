@@ -22,7 +22,8 @@ const customTooltip = ({ active, payload, label }, currency) => {
   return null;
 };
 
-function StatCard({ icon: Icon, label, value, color, iconBg }) {
+function StatCard({ icon, label, value, color, iconBg }) {
+  const Icon = icon;
   return (
     <div className="card p-4 flex items-center gap-3">
       <div className={`w-12 h-12 ${iconBg} rounded-xl flex items-center justify-center shrink-0`}>
@@ -36,9 +37,14 @@ function StatCard({ icon: Icon, label, value, color, iconBg }) {
   );
 }
 
+function sanitizeCurrency(c) {
+  if (!c || typeof c !== 'string') return '$';
+  const v = c.trim().slice(0, 5);
+  return /^[A-Za-z$€£¥S\/\.]{1,5}$/.test(v) ? v : '$';
+}
 export default function Reportes() {
   const { config } = useConfig();
-  const currency = config?.moneda || '$';
+  const currency = sanitizeCurrency(config?.moneda);
   const [desde, setDesde] = useState(new Date(Date.now() - 90 * 86400000).toISOString().slice(0, 10));
   const [hasta, setHasta] = useState(new Date().toISOString().slice(0, 10));
   const [loading, setLoading] = useState(false);

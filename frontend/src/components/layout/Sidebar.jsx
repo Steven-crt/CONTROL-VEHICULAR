@@ -70,23 +70,26 @@ export default function Sidebar({ isOpen, setIsOpen }) {
 
       {/* Nav */}
       <nav className="flex-1 overflow-y-auto py-3 px-2">
-        {itemsVisibles.map(({ to, icon: Icon, label, labelEmpleado }) => (
-          <NavLink
-            key={to}
-            to={to}
-            onClick={() => setIsOpen(false)}
-            className={({ isActive }) =>
-              `flex items-center gap-3 px-3 py-2.5 rounded-lg mb-0.5 text-sm font-medium transition-all duration-200 group
-              ${isActive
-                ? 'bg-cv-accent text-cv-dark shadow-lg shadow-amber-500/20'
-                : 'text-cv-muted hover:text-cv-text hover:bg-cv-border/30'
-              }`
-            }
-          >
-            <Icon className="w-4 h-4 shrink-0" />
-            <span className="truncate">{!esAdmin && labelEmpleado ? labelEmpleado : label}</span>
-          </NavLink>
-        ))}
+        {itemsVisibles.map((item) => {
+          const { to, icon: Icon, label, labelEmpleado } = item;
+          return (
+            <NavLink
+              key={to}
+              to={to}
+              onClick={() => setIsOpen(false)}
+              className={({ isActive }) =>
+                `flex items-center gap-3 px-3 py-2.5 rounded-lg mb-0.5 text-sm font-medium transition-all duration-200 group
+                ${isActive
+                  ? 'bg-cv-accent text-cv-dark shadow-lg shadow-amber-500/20'
+                  : 'text-cv-muted hover:text-cv-text hover:bg-cv-border/30'
+                }`
+              }
+            >
+              <Icon className="w-4 h-4 shrink-0" />
+              <span className="truncate">{!esAdmin && labelEmpleado ? labelEmpleado : label}</span>
+            </NavLink>
+          );
+        })}
       </nav>
 
       {/* Logout */}

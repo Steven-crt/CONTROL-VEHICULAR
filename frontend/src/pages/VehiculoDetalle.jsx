@@ -73,7 +73,7 @@ export default function VehiculoDetalle() {
       setVehiculo(vehRes.data);
       setCombustibleData(combRes.data);
       setMantenimientoData(mantRes.data);
-    } catch (err) {
+    } catch {
       toast.error('Error al cargar datos del vehículo');
       navigate('/vehiculos');
     } finally {
@@ -135,7 +135,7 @@ export default function VehiculoDetalle() {
       toast.success(`Exportando ${tipo} a PDF...`);
       // En un entorno real usaríamos jsPDF o html2pdf
       toast.success(`Historial de ${tipo} exportado correctamente`);
-    } catch (err) {
+    } catch {
       toast.error('Error al exportar');
     }
   };
@@ -143,10 +143,21 @@ export default function VehiculoDetalle() {
   const handleRegistrarCombustible = async (e) => {
     e.preventDefault();
     try {
-      await api.post('/combustible', {
+      const payload = {
         vehiculo_id: parseInt(id),
-        ...formData
-      });
+        tipo_combustible: formData.tipo_combustible,
+        galones_surtidos: formData.galones_surtidos != null ? parseFloat(formData.galones_surtidos) : undefined,
+        kilometraje_actual: formData.kilometraje_actual != null ? parseFloat(formData.kilometraje_actual) : undefined,
+        costo_total: formData.costo_total != null ? parseFloat(formData.costo_total) : undefined,
+        fecha_solicitud: formData.fecha_solicitud,
+        ubicacion_gps: formData.ubicacion_gps,
+      };
+      // GPS como objeto {latitud, longitud} si viene "lat,lng"
+      if (typeof payload.ubicacion_gps === 'string' && payload.ubicacion_gps.includes(',')) {
+        const [lat, lng] = payload.ubicacion_gps.split(',').map(s => parseFloat(s.trim()));
+        if (!isNaN(lat) && !isNaN(lng)) payload.ubicacion_gps = { latitud: lat, longitud: lng };
+      }
+      await api.post('/combustible', payload);
       toast.success(isAdmin ? 'Carga de combustible registrada' : 'Solicitud enviada. Queda pendiente de aprobación.');
       setShowCombustibleForm(false);
       setFormData({});
@@ -542,7 +553,7 @@ export default function VehiculoDetalle() {
                     </tr>
                   </thead>
                   <tbody>
-                    {getSortedHistorial(filtrarCombustible(historialCombustible)).map((c, i) => (
+                    {getSortedHistorial(filtrarCombustible(historialCombustible)).map((c) => (
                       <tr key={c.id} className="hover:bg-cv-border/20 transition-colors">
                         <td className="table-cell">{new Date(c.fecha_carga).toLocaleDateString('es')}</td>
                         <td className="table-cell font-mono font-medium">{c.km_actual?.toLocaleString()}</td>
@@ -836,7 +847,8 @@ export default function VehiculoDetalle() {
   );
 }
 
-function InfoItem({ icon: Icon, label, value, color = 'text-white', capitalize = false }) {
+function InfoItem({ icon, label, value, color = 'text-white', capitalize = false }) {
+  const Icon = icon;
   return (
     <div className="flex items-center gap-2">
       <Icon className="w-4 h-4 text-cv-muted shrink-0" />
@@ -848,7 +860,8 @@ function InfoItem({ icon: Icon, label, value, color = 'text-white', capitalize =
   );
 }
 
-function SummaryCard({ label, value, icon: Icon, color = 'text-white' }) {
+function SummaryCard({ label, value, icon, color = 'text-white' }) {
+  const Icon = icon;
   return (
     <div className="card p-4 flex items-center gap-3">
       <div className={`w-10 h-10 rounded-xl bg-cv-primary flex items-center justify-center`}>

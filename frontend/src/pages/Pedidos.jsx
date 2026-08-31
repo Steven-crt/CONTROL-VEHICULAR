@@ -139,7 +139,7 @@ export default function Pedidos() {
           <table className="w-full">
             <thead>
               <tr className="border-b border-cv-border">
-                {['Código', 'Vehículo', 'Galones', 'KM', 'Tipo', 'Estado', 'Fecha', esAdmin ? 'Acciones' : ''].map(h => (
+                {['Código', 'Vehículo', 'Solicitante', 'Galones', 'KM', 'Tipo', 'Estado', 'Fecha', esAdmin ? 'Acciones' : ''].map(h => (
                   h ? <th key={h} className="table-header text-left pb-3 px-2">{h}</th> : null
                 ))}
               </tr>
@@ -149,6 +149,7 @@ export default function Pedidos() {
                 <tr key={p.id} className="hover:bg-cv-border/10 transition-colors">
                   <td className="table-cell px-2 font-mono text-xs text-cv-muted">{p.codigo}</td>
                   <td className="table-cell px-2 font-medium">{p.placa}<span className="block text-xs text-cv-muted">{p.marca} {p.modelo}</span></td>
+                  <td className="table-cell px-2 text-cv-muted text-sm">{p.solicitante_nombre || '—'}</td>
                   <td className="table-cell px-2">{p.litros_solicitados ?? p.litros ?? '—'}</td>
                   <td className="table-cell px-2">{p.km_actual != null ? Number(p.km_actual).toLocaleString() : '—'}</td>
                   <td className="table-cell px-2">{p.tipo_combustible}</td>
@@ -174,7 +175,7 @@ export default function Pedidos() {
           <table className="w-full">
             <thead>
               <tr className="border-b border-cv-border">
-                {['Código', 'Vehículo', 'Servicio', 'Descripción', 'KM', 'Estado', 'Fecha', esAdmin ? 'Acciones' : ''].map(h => (
+                {['Código', 'Vehículo', 'Solicitante', 'Servicio', 'Descripción', 'KM', 'Estado', 'Fecha', esAdmin ? 'Acciones' : ''].map(h => (
                   h ? <th key={h} className="table-header text-left pb-3 px-2">{h}</th> : null
                 ))}
               </tr>
@@ -184,6 +185,7 @@ export default function Pedidos() {
                 <tr key={p.id} className="hover:bg-cv-border/10 transition-colors">
                   <td className="table-cell px-2 font-mono text-xs text-cv-muted">{p.codigo}</td>
                   <td className="table-cell px-2 font-medium">{p.placa}<span className="block text-xs text-cv-muted">{p.marca} {p.modelo}</span></td>
+                  <td className="table-cell px-2 text-cv-muted text-sm">{p.solicitante_nombre || '—'}</td>
                   <td className="table-cell px-2">{p.tipo_servicio}</td>
                   <td className="table-cell px-2 max-w-[220px]"><span className="line-clamp-2 text-cv-muted block">{p.descripcion || '—'}</span></td>
                   <td className="table-cell px-2">{p.km_actual != null ? Number(p.km_actual).toLocaleString() : '—'}</td>

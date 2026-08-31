@@ -1,123 +1,88 @@
+/**
+ * seed.js — Poblado de datos de PRUEBA para CONTROL-VEHICULAR.
+ * ATENCIÓN: solo para desarrollo. Bloqueado en producción sin SEED_ALLOW_PROD=1.
+ * No hardcodea password débil en repo: usa SEED_PASSWORD o genera aleatoria.
+ */
 const mysql = require('mysql2/promise');
 const bcrypt = require('bcryptjs');
+const crypto = require('crypto');
 const path = require('path');
 require('dotenv').config({ path: path.join(__dirname, '../.env') });
-
-const TIPOS = ['auto', 'moto', 'VIP', 'discapacitado'];
 
 async function seed() {
   const connection = await mysql.createConnection({
     host: process.env.DB_HOST || 'localhost',
     user: process.env.DB_USER || 'root',
     password: process.env.DB_PASSWORD || '',
-    database: process.env.DB_NAME || 'parqueo_db',
+    database: process.env.DB_NAME || 'control_vehicular',
     port: process.env.DB_PORT || 3306,
+    ssl: process.env.DB_SSL !== 'false' ? { rejectUnauthorized: false } : undefined,
   });
 
   try {
-    console.log('🌱 Iniciando poblado de datos de prueba...');
-    
-    // 1. USUARIOS (10 registros)
-    console.log('Trunking/Insertando Usuarios...');
-    await connection.query("DELETE FROM usuarios WHERE username != 'admin'");
-    const hash = await bcrypt.hash('password123', 8);
-    for(let i=1; i<=10; i++) {
-        const rol = i <= 2 ? 'admin' : 'empleado';
+    if (process.env.NODE_ENV === 'production' && process.env.SEED_ALLOW_PROD !== '1') {
+      console.error('❌ seed.js bloqueado en producción. Usa SEED_ALLOW_PROD=1 para forzar.');
+      await connection.end();
+      process.exit(1);
+    }
+    console.log('🌱 Iniciando poblado de datos de prueba (control-vehicular)...');
+
+    // 1. Usuarios de prueba — no borrar admin real, solo usuarios de test
+    console.log('→ Usuarios de prueba...');
+    await connection.query("DELETE FROM usuarios WHERE username LIKE 'usuario_test_%'");
+    const seedPwd = process.env.SEED_PASSWORD || `Test-${crypto.randomBytes(6).toString('hex')}!`;
+    if (!process.env.SEED_PASSWORD) {
+      console.log(`   (SEED_PASSWORD no definido, generada aleatoria: ${seedPwd} — guárdala si necesitas login)`);
+    }
+    const hash = await bcrypt.hash(seedPwd, 12);
+    for (let i = 1; i <= 5; i++) {
+      const rolVal = i <= 1 ? 'admin' : 'empleado';
+      await connection.query(
+        "INSERT INTO usuarios (nombre, username, email, password, rol_id, activo) VALUES (?, ?, ?, ?, ?, 1) ON DUPLICATE KEY UPDATE nombre=VALUES(nombre)",
+        [`Usuario Test ${i}`, `usuario_test_${i}`, `test${i}@control.local`, hash, rolVal]
+      );
+    }
+
+    // 2. Tipos de vehículo (idempotente)
+    console.log('→ Tipos de vehículo...');
+    await connection.query(
+      "INSERT IGNORE INTO tipos_vehiculo (nombre) VALUES ('Camioneta'), ('Camion'), ('Minivan')"
+    );
+
+    // 3. Vehículos de demo (solo si hay pocos)
+    console.log('→ Vehículos demo...');
+    const [cntV] = await connection.query('SELECT COUNT(*) AS n FROM vehiculos WHERE activo=1');
+    if (cntV[0].n < 3) {
+      const [tipos] = await connection.query('SELECT id, nombre FROM tipos_vehiculo LIMIT 3');
+      const tipoId = tipos[0]?.id || 1;
+      const demoPlacas = ['ABC-1234', 'XYZ-5678', 'DEM-0001'];
+      for (const placa of demoPlacas) {
         await connection.query(
-            "INSERT INTO usuarios (nombre, username, email, password, rol, activo) VALUES (?, ?, ?, ?, ?, 1)",
-            [`Usuario Prueba ${i}`, `usuario${i}`, `user${i}@test.com`, hash, rol]
+          `INSERT IGNORE INTO vehiculos (placa, tipo_vehiculo_id, marca, modelo, color, ano, kilometraje_actual, activo, soat_numero, soat_empresa, soat_fecha_vencimiento)
+           VALUES (?, ?, 'Toyota', 'Hilux', 'Blanco', 2024, 10000, 1, ?, 'Seguros Demo', DATE_ADD(CURDATE(), INTERVAL 90 DAY))`,
+          [placa, tipoId, `SOAT-${placa}`]
         );
+      }
     }
 
-    // 2. TARIFAS (Agregar hasta tener 10)
-    console.log('Insertando Tarifas...');
-    await connection.query("DELETE FROM tarifas WHERE id > 4"); // 1-4 are defaults
-    const mods = ['mensual', 'dia', 'fraccion'];
-    for(let i=5; i<=10; i++) {
-        await connection.query(
-            "INSERT INTO tarifas (tipo_vehiculo, modalidad, precio, tiempo_gracia, descripcion, activo) VALUES (?, ?, ?, 10, 'Tarifa extra', 1)",
-            [TIPOS[i%4], mods[i%3], (Math.random()*10 + 1).toFixed(2)] // 1.00 - 11.00
-        );
+    // 4. Configuración base (no pisar valores existentes)
+    console.log('→ Configuración base...');
+    const SEED_CFG = [
+      ['nombre_negocio', 'Control Vehicular'],
+      ['moneda', '$'],
+      ['intervalo_mant_km', '5000'],
+    ];
+    for (const [k, v] of SEED_CFG) {
+      await connection.query('INSERT IGNORE INTO configuracion (clave, valor) VALUES (?, ?)', [k, v]);
     }
 
-    // 3. TICKETS & PAGOS (Data Histórica y Actual)
-    console.log('Limpiando tickets y pagos...');
-    await connection.query("DELETE FROM pagos");
-    await connection.query("DELETE FROM cierres_caja");
-    await connection.query("DELETE FROM tickets");
-    await connection.query("UPDATE espacios SET estado = 'libre'");
-    
-    console.log('Generando tickets históricos y activos...');
-    let ticketId = 1;
-    // Data para los ultimos 7 días
-    for(let i=7; i>=0; i--) {
-        const date = new Date();
-        date.setDate(date.getDate() - i);
-        
-        let esHoy = i === 0;
-        let entradasDelDia = esHoy ? 10 : Math.floor(Math.random() * 15) + 5; // 5 a 20 entradas por dia pasado, 10 hoy
-        
-        for(let j=1; j<=entradasDelDia; j++) {
-            // Hora aleatoria durante el dia (entre 8 AM y 8 PM)
-            const horaEntrada = new Date(date);
-            horaEntrada.setHours(8 + Math.floor(Math.random() * 10), Math.floor(Math.random() * 60), 0);
-            
-            const tipo = TIPOS[Math.floor(Math.random() * TIPOS.length)];
-            const placa = `${String.fromCharCode(65+j,66+j,67+j)}-0${i}${j}`;
-            // Buscar espacio libre de ese tipo
-            const [esp] = await connection.query("SELECT id FROM espacios WHERE tipo = ? AND estado = 'libre' LIMIT 1", [tipo]);
-            let espacio_id = esp.length ? esp[0].id : null;
-            if(!espacio_id) continue;
-            
-            // Si es hoy y los ultimos 6 registros, los dejamos como "activos"
-            if (esHoy && j > 4) {
-                await connection.query(
-                    "INSERT INTO tickets (id, codigo, placa, tipo_vehiculo, espacio_id, hora_entrada, estado) VALUES (?, ?, ?, ?, ?, ?, 'activo')",
-                    [ticketId, `T-${ticketId.toString().padStart(5,'0')}`, placa, tipo, espacio_id, horaEntrada]
-                );
-                // Ocupar el espacio
-                await connection.query("UPDATE espacios SET estado = 'ocupado' WHERE id = ?", [espacio_id]);
-                ticketId++;
-            } else {
-                // Fueron completados (Pagados)
-                const horaSalida = new Date(horaEntrada);
-                horaSalida.setHours(horaEntrada.getHours() + Math.floor(Math.random() * 3) + 1); // 1 a 3 hr
-                
-                await connection.query(
-                    "INSERT INTO tickets (id, codigo, placa, tipo_vehiculo, espacio_id, hora_entrada, hora_salida, estado) VALUES (?, ?, ?, ?, ?, ?, ?, 'cerrado')",
-                    [ticketId, `T-${ticketId.toString().padStart(5,'0')}`, placa, tipo, espacio_id, horaEntrada, horaSalida]
-                );
-                
-                // Generar pago
-                const monto = ((Math.random() * 3) + 1).toFixed(2);
-                const metodo = ['efectivo', 'tarjeta', 'qr'][Math.floor(Math.random()*3)];
-                await connection.query(
-                    "INSERT INTO pagos (ticket_id, metodo_pago, monto, fecha_pago, usuario_id) VALUES (?, ?, ?, ?, 1)",
-                    [ticketId, metodo, monto, horaSalida]
-                );
-                ticketId++;
-            }
-        }
-    }
-    
-    // 4. CIERRES DE CAJA (1 por día de los últimos 7 días)
-    for(let i=7; i>0; i--) {
-        const date = new Date();
-        date.setDate(date.getDate() - i);
-        date.setHours(23, 59, 59);
-        await connection.query(
-            "INSERT INTO cierres_caja (usuario_id, fecha_inicio, fecha_cierre, total_efectivo, total_tarjeta, total_qr, total_general, total_vehiculos) VALUES (?, ?, ?, ?, ?, ?, ?, ?)",
-            [1, date, date, (Math.random()*20).toFixed(2), (Math.random()*20).toFixed(2), (Math.random()*10).toFixed(2), (Math.random()*50 + 20).toFixed(2), Math.floor(Math.random()*15+5)]
-        );
-    }
-
-    console.log('✅ Poblado exitoso. 10 registros por módulo insertados, data histórica para últimos 7 días generada.');
-
+    console.log('✅ Seed completado. Usuarios de prueba: usuario_test_1..5');
+    if (!process.env.SEED_PASSWORD) console.log('   Contraseña generada arriba — no se guarda en disco.');
   } catch (err) {
-    console.error('❌ Error poblado datos:', err);
+    console.error('❌ Error en seed:', err.message);
+    process.exitCode = 1;
   } finally {
     await connection.end();
-    process.exit();
   }
 }
 seed();

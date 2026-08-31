@@ -10,10 +10,7 @@ const { EVENTOS, logEvento } = require('../utils/audit');
 const { COOKIE_SESION } = require('../middleware/auth');
 require('dotenv').config();
 
-// Rate limiting en memoria para prevenir brute force en login.
-// NOTA: en un despliegue multi-instancia esto debería ser Redis; para una sola
-// instancia es suficiente y evita la dependencia extra.
-// Estructura: { ip_usuario: { intentos, primeraFalla, bloqueadoHasta } }
+
 const intentosFallidos = new Map();
 const MAX_INTENTOS = 5;
 const VENTANA_MS = 15 * 60 * 1000; // 15 minutos
@@ -28,9 +25,6 @@ setInterval(() => {
   }
 }, 10 * 60 * 1000).unref();
 
-// La IP se resuelve con req.ip (Express + trust proxy). NO se lee
-// x-forwarded-for crudo: el cliente puede falsificarlo y saltarse el bloqueo.
-// (obtenerIp importado de ../utils/obtenerIp)
 
 function checkRateLimit(ip) {
   const ahora = Date.now();
@@ -123,22 +117,42 @@ router.post('/login', async (req, res) => {
       { expiresIn: process.env.JWT_EXPIRES_IN || '8h' }
     );
 
-    // Cookie de sesión httpOnly: no accesible desde JS (protege contra XSS).
-    // SameSite=None + Secure porque frontend (Vercel) y API (Render) están en
-    // dominios distintos. HttpOnly impide lectura por scripts maliciosos.
-    const cookieSecure = process.env.NODE_ENV === 'production';
+
+    const cookieSecure = process.env.COOKIE_SECURE === 'true' || process.env.NODE_ENV === 'production';
+    const cookieSameSite = (() => {
+      const v = (process.env.COOKIE_SAMESITE || '').toLowerCase();
+      if (v === 'none' || v === 'lax' || v === 'strict') return v;
+      // default seguro según entorno: none en prod cross-origin, lax en dev
+      return cookieSecure ? 'none' : 'lax';
+    })();
+    if (cookieSameSite === 'none' && !cookieSecure) {
+      return res.status(500).json({ error: 'Configuración de cookie inválida: SameSite=None requiere Secure' });
+    }
+    // maxAge sincronizado con JWT_EXPIRES_IN (evita cookie viva con token expirado)
+    const expiresIn = process.env.JWT_EXPIRES_IN || '8h';
+    let maxAgeMs = 8 * 60 * 60 * 1000;
+    try {
+      const m = expiresIn.match(/^(\d+)([smhd])$/);
+      if (m) {
+        const mult = { s: 1000, m: 60000, h: 3600000, d: 86400000 };
+        maxAgeMs = parseInt(m[1], 10) * mult[m[2]];
+      } else if (!isNaN(Number(expiresIn))) {
+        maxAgeMs = Number(expiresIn) * 1000;
+      }
+    } catch {}
     res.cookie(COOKIE_SESION, token, {
       httpOnly: true,
       secure: cookieSecure,
-      sameSite: cookieSecure ? 'none' : 'lax',
-      maxAge: 8 * 60 * 60 * 1000, // 8h, igual que el JWT
+      sameSite: cookieSameSite,
+      maxAge: maxAgeMs,
       path: '/'
     });
 
     logEvento(EVENTOS.LOGIN_OK, req, `usuario=${usuario.username}`);
 
+    // No exponer token en JSON cuando la sesión es httpOnly (evita robo vía XSS/localStorage)
+    // Solo se devuelve usuario; el token viaja en cookie.
     res.json({
-      token,
       usuario: {
         id: usuario.id,
         nombre: usuario.nombre,
@@ -155,8 +169,20 @@ router.post('/login', async (req, res) => {
 });
 
 // POST /api/auth/logout — limpia la cookie de sesión
+// Debe usar los mismos atributos que el login para que el navegador la borre
 router.post('/logout', (req, res) => {
-  res.clearCookie(COOKIE_SESION, { path: '/', httpOnly: true, sameSite: process.env.NODE_ENV === 'production' ? 'none' : 'lax', secure: process.env.NODE_ENV === 'production' });
+  const cookieSecure = process.env.COOKIE_SECURE === 'true' || process.env.NODE_ENV === 'production';
+  const cookieSameSite = (() => {
+    const v = (process.env.COOKIE_SAMESITE || '').toLowerCase();
+    if (v === 'none' || v === 'lax' || v === 'strict') return v;
+    return cookieSecure ? 'none' : 'lax';
+  })();
+  res.clearCookie(COOKIE_SESION, {
+    path: '/',
+    httpOnly: true,
+    secure: cookieSecure,
+    sameSite: cookieSameSite
+  });
   res.json({ message: 'Sesión cerrada' });
 });
 
@@ -167,7 +193,7 @@ router.get('/me', async (req, res) => {
   const token = cookieToken || (authHeader ? authHeader.split(' ')[1] : null);
   if (!token) return res.status(401).json({ error: 'No autorizado' });
   try {
-    const decoded = jwt.verify(token, getJwtSecret());
+    const decoded = jwt.verify(token, getJwtSecret(), { algorithms: ['HS256'] });
     // rol_id es obligatorio en el SELECT: getRol lo prioriza. Si la fila no
     // lo tuviera, se cae al rol firmado en el token (decoded.rol).
     const [rows] = await db.query(

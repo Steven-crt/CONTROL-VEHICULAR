@@ -1,20 +1,22 @@
-/* Semilla de datos DEMO para la BD LOCAL de pruebas (control_vehicular_test @3309).
+/* Semilla de datos DEMO para la BD de PRODUCCION (Aiven - defaultdb).
  * Genera ~6 meses de historial realista: combustible, mantenimientos,
  * anomalías, asignaciones, ubicaciones GPS, notificaciones y proveedores.
- * También normaliza mantenimientos.estado al ENUM que usa la app
- * ('Pendiente','Completado','Rechazado').
  *
- * Uso:  node scripts/seed_demo_test.js
+ * Adapta seed_demo_test.js para los 3 vehículos activos (ids 1-3)
+ * y 2 usuarios existentes (admin=1, empleado=2).
+ *
+ * Uso:  node scripts/seed_production.js
  */
 require('dotenv').config();
 const mysql = require('mysql2/promise');
 
-const TEST = {
-  host: process.env.TEST_DB_HOST || '127.0.0.1',
-  port: Number(process.env.TEST_DB_PORT || 3309),
-  user: process.env.TEST_DB_USER || 'root',
-  password: process.env.TEST_DB_PASSWORD || '160507',
-  database: process.env.TEST_DB_NAME || 'control_vehicular_test'
+const PROD = {
+  host: process.env.DB_HOST,
+  port: Number(process.env.DB_PORT),
+  user: process.env.DB_USER,
+  password: process.env.DB_PASSWORD,
+  database: process.env.DB_NAME,
+  ssl: { rejectUnauthorized: false }
 };
 
 // PRNG determinista (mulberry32) para datos reproducibles
@@ -79,13 +81,13 @@ const DESC_ANOMALIAS = {
 };
 
 async function main() {
-  const conn = await mysql.createConnection(TEST);
+  const conn = await mysql.createConnection(PROD);
   await conn.beginTransaction();
   try {
-    // 0) Normalizar ENUM de estados de mantenimientos al vocabulario de la app
+    // 0) Normalizar ENUM de estados de mantenimientos
     await conn.query(
       "ALTER TABLE mantenimientos MODIFY COLUMN estado ENUM('Pendiente','Completado','Rechazado') NOT NULL DEFAULT 'Pendiente'"
-    );
+    ).catch(() => {});
 
     // 1) Limpiar tablas transaccionales (orden FK-safe)
     await conn.query('SET FOREIGN_KEY_CHECKS = 0');
@@ -103,36 +105,39 @@ async function main() {
       );
     }
 
-    // 3) Parámetros por vehículo (ids 1-4 ya existen clonados de producción)
-    const [vehs] = await conn.query('SELECT id FROM vehiculos ORDER BY id LIMIT 4');
-    const VEH_IDS = vehs.map(v => v.id);
-    if (VEH_IDS.length < 2) throw new Error('Se requieren al menos 2 vehículos en la BD test');
+    // 3) Vehículos activos (solo ids 1, 2, 3)
+    const VEH_IDS = [1, 2, 3];
 
     const KM_ACTUAL = { };
-    const RATE = { };   // km por día
+    const RATE = { };
     for (const id of VEH_IDS) { KM_ACTUAL[id] = rint(42000, 230000); RATE[id] = 55 + rnd() * 55; }
-    const kmEn = (vid, diasAtras) => Math.max(1000, Math.round(KM_ACTUAL[vid] - diasAtras * RATE[vid]));
+    const kmEn = (vid, dias) => Math.max(1000, Math.round(KM_ACTUAL[vid] - dias * RATE[vid]));
+
+    // Actualizar kilometraje_actual de cada vehículo al valor más alto que le tocaría
+    for (const vid of VEH_IDS) {
+      await conn.query('UPDATE vehiculos SET kilometraje_actual = ? WHERE id = ?', [KM_ACTUAL[vid], vid]);
+    }
 
     // 4) Combustible: 9 surtidas por vehículo (~6 meses) + 3 pendientes + 2 rechazadas
     let nCom = 0;
-    const DIAS_CARGAS = [[168, 149, 133, 116, 97, 83, 63, 44, 18], [162, 141, 128, 109, 91, 76, 58, 37, 15], [171, 155, 137, 121, 103, 87, 66, 47, 21], [159, 138, 124, 105, 89, 73, 55, 34, 12]];
+    const DIAS_CARGAS = [[168, 149, 133, 116, 97, 83, 63, 44, 18], [162, 141, 128, 109, 91, 76, 58, 37, 15], [171, 155, 137, 121, 103, 87, 66, 47, 21]];
     for (const vid of VEH_IDS) {
       for (const d0 of DIAS_CARGAS[(vid - 1) % DIAS_CARGAS.length]) {
         const d = Math.max(1, d0 + rint(-3, 3));
         const gal = round1(8 + rnd() * 6);
-        const precio = round2(1.32 + ((180 - d) % 60) / 200 + rnd() * 0.04); // varía por mes 1.32-1.48
+        const precio = round2(1.32 + ((180 - d) % 60) / 200 + rnd() * 0.04);
         await conn.query(
           `INSERT INTO solicitudes_combustible
            (codigo, vehiculo_id, solicitante_id, galones_solicitados, galones_surtidos, tipo_combustible,
             costo_total, precio_por_galon, kilometraje_actual, estado, atendido_por_id, fecha_solicitud, fecha_atencion, observaciones)
            VALUES (?,?,?,?,?,?,?,?,?,?,?,?,?,?)`,
-          [`COM-DEMO${String(++nCom).padStart(5, '0')}`, vid, pick([2, 4]), gal, gal, pick(['Gasolina Superior', 'Gasolina Regular', 'Diésel']),
-            round2(gal * precio), precio, kmEn(vid, d), 'Surtida', pick([1, 3]),
+          [`COM-PROD${String(++nCom).padStart(5, '0')}`, vid, 2, gal, gal, pick(['Gasolina Superior', 'Gasolina Regular', 'Diésel']),
+            round2(gal * precio), precio, kmEn(vid, d), 'Surtida', 1,
             diasAtras(d, rint(7, 17)), diasAtras(d, rint(7, 17), rint(35, 70)), '']
         );
       }
     }
-    // Pendientes recientes (creadas por empleados)
+    // Pendientes recientes
     const PENDS = [[VEH_IDS[0], 0, 11], [VEH_IDS[1], 1, 14], [VEH_IDS[2], 2, 9]];
     for (const [vid, d, gal] of PENDS) {
       await conn.query(
@@ -140,19 +145,19 @@ async function main() {
          (codigo, vehiculo_id, solicitante_id, galones_solicitados, tipo_combustible, costo_total,
           kilometraje_actual, estado, fecha_solicitud, observaciones)
          VALUES (?,?,?,?,?,?,?,'Pendiente',?,?)`,
-        [`COM-DEMO${String(++nCom).padStart(5, '0')}`, vid, 4, gal, 'Gasolina Superior', 0,
+        [`COM-PROD${String(++nCom).padStart(5, '0')}`, vid, 2, gal, 'Gasolina Superior', 0,
           kmEn(vid, d), diasAtras(d, rint(8, 16)), '']
       );
     }
     // Rechazadas
-    const RECHS = [[VEH_IDS[3], 5, 'Fuera de política: tanque casi lleno'], [VEH_IDS[0], 8, 'Sin justificación de ruta']];
+    const RECHS = [[VEH_IDS[0], 5, 'Fuera de política: tanque casi lleno'], [VEH_IDS[1], 8, 'Sin justificación de ruta']];
     for (const [vid, d, motivo] of RECHS) {
       await conn.query(
         `INSERT INTO solicitudes_combustible
          (codigo, vehiculo_id, solicitante_id, galones_solicitados, tipo_combustible, costo_total,
           kilometraje_actual, estado, atendido_por_id, fecha_solicitud, fecha_atencion, observaciones)
          VALUES (?,?,?,?,?,?,?,'Rechazada',?,?,?,?)`,
-        [`COM-DEMO${String(++nCom).padStart(5, '0')}`, vid, 2, 12, 'Gasolina Regular', 0,
+        [`COM-PROD${String(++nCom).padStart(5, '0')}`, vid, 2, 12, 'Gasolina Regular', 0,
           kmEn(vid, d), 1, diasAtras(d, 10), diasAtras(d, 10, 50), motivo]
       );
     }
@@ -161,9 +166,9 @@ async function main() {
     const [tipos] = await conn.query('SELECT id FROM tipos_mantenimiento ORDER BY id');
     const TIPO_IDS = tipos.length ? tipos.map(t => t.id) : [null];
 
-    // 6) Mantenimientos: 18 completados + 2 pendientes + 1 rechazado
+    // 6) Mantenimientos: 15 completados + 2 pendientes + 1 rechazado
     let nMt = 0;
-    const DIAS_MT = [[165, 118, 74, 33], [152, 106, 61, 26], [173, 127, 82, 40, 14], [146, 99, 57, 23]];
+    const DIAS_MT = [[165, 118, 74, 33], [152, 106, 61, 26], [173, 127, 82, 40]];
     for (const vid of VEH_IDS) {
       for (const d0 of DIAS_MT[(vid - 1) % DIAS_MT.length]) {
         const d = Math.max(2, d0 + rint(-4, 4));
@@ -174,30 +179,30 @@ async function main() {
            (codigo, vehiculo_id, solicitante_id, tipo_mantenimiento_id, tipo_servicio, descripcion,
             kilometraje_realizado, fecha_programada, fecha_realizada, costo, proveedor, factura, estado, observaciones, atendido_por_id)
            VALUES (?,?,?,?,?,?,?,?,?,?,?,?,?,?,?)`,
-          [`MT-DEMO${String(++nMt).padStart(5, '0')}`, vid, pick([1, 3]), pick(TIPO_IDS),
+          [`MT-PROD${String(++nMt).padStart(5, '0')}`, vid, 2, pick(TIPO_IDS),
             correctivo ? 'Correctivo' : 'Preventivo',
             correctivo ? pick(DESC_CORRECTIVO) : pick(DESC_PREVENTIVO),
             kmEn(vid, d), diasAtras(d - 2), diasAtras(d, rint(8, 15)),
             round2(correctivo ? 120 + rnd() * 360 : 45 + rnd() * 130),
-            prov, `FAC-2026-${rint(1000, 9999)}`, 'Completado', '', pick([1, 3])]
+            prov, `FAC-2026-${rint(1000, 9999)}`, 'Completado', '', 1]
         );
       }
     }
-    const MTPEND = [[VEH_IDS[1], 2, 'Solicitud de servicio de frenos (pedaleo esponjoso)'], [VEH_IDS[3], 1, 'Revisión por vibración a partir de 80 km/h']];
+    const MTPEND = [[VEH_IDS[1], 2, 'Solicitud de servicio de frenos (pedaleo esponjoso)'], [VEH_IDS[2], 1, 'Revisión por vibración a partir de 80 km/h']];
     for (const [vid, d, desc] of MTPEND) {
       await conn.query(
         `INSERT INTO mantenimientos
          (codigo, vehiculo_id, solicitante_id, tipo_mantenimiento_id, tipo_servicio, descripcion,
           kilometraje_realizado, fecha_realizada, costo, estado)
          VALUES (?,?,?,?,?,?,?,?,0,'Pendiente')`,
-        [`MT-DEMO${String(++nMt).padStart(5, '0')}`, vid, pick([2, 4]), pick(TIPO_IDS), 'Preventivo', desc, kmEn(vid, d), diasAtras(d, rint(8, 14))]
+        [`MT-PROD${String(++nMt).padStart(5, '0')}`, vid, 2, pick(TIPO_IDS), 'Preventivo', desc, kmEn(vid, d), diasAtras(d, rint(8, 14))]
       );
     }
     await conn.query(
       `INSERT INTO mantenimientos
        (codigo, vehiculo_id, solicitante_id, tipo_mantenimiento_id, tipo_servicio, descripcion,
         kilometraje_realizado, fecha_realizada, costo, estado, atendido_por_id)
-       VALUES ('MT-DEMO99999', ?, 2, ?, 'Preventivo', 'Solicitud de cambio de llantas', ?, ?, 0, 'Rechazado', 1)`,
+       VALUES ('MT-PROD99999', ?, 2, ?, 'Preventivo', 'Solicitud de cambio de llantas', ?, ?, 0, 'Rechazado', 1)`,
       [VEH_IDS[2], pick(TIPO_IDS), kmEn(VEH_IDS[2], 6), diasAtras(6, 11)]
     );
 
@@ -217,22 +222,22 @@ async function main() {
         `INSERT INTO anomalias
          (codigo, vehiculo_id, usuario_id, tipo, severidad, descripcion, foto_url, estado, fecha_resuelta, resuelta_por_id, created_at)
          VALUES (?,?,?,?,?,?,?,?,?,?,?)`,
-        [`ANO-DEMO${String(++nAno).padStart(4, '0')}`, vid, pick([2, 4]), tipo, sev,
+        [`ANO-PROD${String(++nAno).padStart(4, '0')}`, vid, 2, tipo, sev,
           DESC_ANOMALIAS[tipo], null, estado,
           resuelta ? diasAtras(d - 1, rint(10, 16)) : null,
-          resuelta ? pick([1, 3]) : null,
+          resuelta ? 1 : null,
           diasAtras(d, rint(8, 18))]
       );
     }
 
-    // 8) Asignaciones vehículo-usuario
+    // 8) Asignaciones vehículo-usuario (sin duplicar usuario+vehiculo)
     await conn.query(
       `INSERT INTO asignaciones (usuario_id, vehiculo_id, created_at) VALUES
+        (1, ?, NOW() - INTERVAL 160 DAY),
         (2, ?, NOW() - INTERVAL 150 DAY),
         (2, ?, NOW() - INTERVAL 90 DAY),
-        (4, ?, NOW() - INTERVAL 140 DAY),
-        (4, ?, NOW() - INTERVAL 60 DAY)`,
-      [VEH_IDS[0], VEH_IDS[1], VEH_IDS[1], VEH_IDS[2]]
+        (2, ?, NOW() - INTERVAL 60 DAY)`,
+      [VEH_IDS[0], VEH_IDS[0], VEH_IDS[1], VEH_IDS[2]]
     );
 
     // 9) Ubicaciones GPS recientes (~últimas 30 h)
@@ -244,23 +249,20 @@ async function main() {
         await conn.query(
           `INSERT INTO ubicaciones (vehiculo_id, usuario_id, latitud, longitud, velocidad, direccion, precision_gps, bateria, timestamp)
            VALUES (?,?,?,?,?,?,?,?,?)`,
-          [vid, pick([2, 4]), Number(lat.toFixed(7)), Number(lng.toFixed(7)),
+          [vid, 2, Number(lat.toFixed(7)), Number(lng.toFixed(7)),
             rnd() < 0.25 ? 0 : round1(rnd() * 80), rint(0, 359), round1(5 + rnd() * 9), round1(40 + rnd() * 58),
             new Date(Date.now() - (i * 5 + rint(0, 3)) * 3600000)]
         );
       }
     }
 
-    // 10) Notificaciones para los admins sobre solicitudes pendientes
-    for (const uid of [1, 3]) {
-      await conn.query(
-        `INSERT INTO notificaciones (usuario_id, titulo, mensaje, tipo, leida, created_at) VALUES
-         (?, 'Nuevas solicitudes pendientes', 'Hay 3 cargas de combustible y 2 servicios de mantenimiento esperando aprobación.', 'warning', 0, NOW() - INTERVAL 2 HOUR),
-         (?, 'Anomalía de severidad alta reportada', 'Se reportó una anomalía crítica en uno de los vehículos asignados.', 'danger', 0, NOW() - INTERVAL 5 HOUR),
-         (?, 'Bienvenido al sistema', 'Sesión de pruebas con datos demo generados automáticamente.', 'info', 1, NOW() - INTERVAL 7 DAY)`,
-        [uid, uid, uid]
-      );
-    }
+    // 10) Notificaciones para el admin sobre solicitudes pendientes
+    await conn.query(
+      `INSERT INTO notificaciones (usuario_id, titulo, mensaje, tipo, leida, created_at) VALUES
+       (1, 'Nuevas solicitudes pendientes', 'Hay 3 cargas de combustible y 2 servicios de mantenimiento esperando aprobación.', 'warning', 0, NOW() - INTERVAL 2 HOUR),
+       (1, 'Anomalía de severidad alta reportada', 'Se reportó una anomalía crítica en uno de los vehículos asignados.', 'danger', 0, NOW() - INTERVAL 5 HOUR),
+       (1, 'Bienvenido al sistema', 'Datos demo de producción generados automáticamente.', 'info', 1, NOW() - INTERVAL 7 DAY)`
+    );
 
     await conn.commit();
 
@@ -270,11 +272,11 @@ async function main() {
       const [[r]] = await conn.query(`SELECT COUNT(*) c FROM ${t}`);
       resumen[t] = r.c;
     }
-    console.log('SEED OK:', JSON.stringify(resumen));
+    console.log('SEED PRODUCCIÓN OK:', JSON.stringify(resumen, null, 2));
     await conn.end();
   } catch (e) {
     await conn.rollback();
-    console.error('SEED ERROR:', e.message);
+    console.error('SEED PRODUCCIÓN ERROR:', e.message);
     await conn.end();
     process.exit(1);
   }

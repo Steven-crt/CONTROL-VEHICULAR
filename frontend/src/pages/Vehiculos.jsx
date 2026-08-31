@@ -44,7 +44,7 @@ export default function Vehiculos() {
       if (year) params.year = year;
       const { data } = await api.get('/vehiculos', { params });
       setVehiculos(data);
-    } catch (err) {
+    } catch {
       toast.error('Error al cargar vehículos');
     } finally {
       setLoading(false);

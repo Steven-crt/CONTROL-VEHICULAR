@@ -48,8 +48,9 @@ function date(value, { required = false, label = 'fecha' } = {}) {
   }
   if (typeof value !== 'string') return { ok: false, error: `${label} debe ser una fecha` };
   const v = value.trim();
-  // YYYY-MM-DD o ISO completo
+  // Validación estricta YYYY-MM-DD (si viene ISO completo se valida prefijo)
   if (!/^\d{4}-\d{2}-\d{2}/.test(v)) return { ok: false, error: `${label} debe tener formato AAAA-MM-DD` };
+  if (!/^\d{4}-\d{2}-\d{2}$/.test(v.slice(0, 10))) return { ok: false, error: `${label} debe tener formato AAAA-MM-DD` };
   const d = new Date(v);
   if (isNaN(d.getTime())) return { ok: false, error: `${label} no es una fecha válida` };
   return { ok: true, value: v.slice(0, 10) };
