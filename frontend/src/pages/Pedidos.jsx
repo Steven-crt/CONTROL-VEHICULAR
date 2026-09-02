@@ -1,9 +1,10 @@
-import { useState, useEffect, useCallback } from 'react';
+import { useState, useEffect, useCallback, useMemo } from 'react';
 import api from '../api/axios';
+import { useRealTime } from '../api/realtime';
 import toast from 'react-hot-toast';
 import { Fuel, Wrench, Check, X as XIcon, ClipboardList } from 'lucide-react';
 import { useAuth } from '../contexts/AuthContext';
-
+//se debe cambiar el nombre de depidos a tanqeuo
 const ESTADO_COLORS = {
   Pendiente: 'text-amber-400 bg-amber-900/30',
   Surtida: 'text-emerald-400 bg-emerald-900/30',
@@ -46,6 +47,11 @@ export default function Pedidos() {
   useEffect(() => {
     api.get('/vehiculos').then(r => setVehiculos(r.data || [])).catch(() => {});
   }, []);
+
+  // Tiempo real: si llega un cambio de combustible o mantenimiento (nuevo
+  // pedido, aprobación o rechazo de otro usuario), refresca la tabla al instante.
+  const pedidoVivo = useMemo(() => (tab === 'combustible' ? 'combustible' : 'mantenimiento'), [tab]);
+  useRealTime([pedidoVivo], () => { fetchPedidos(); });
 
   const openAdd = () => setModal(true);
 

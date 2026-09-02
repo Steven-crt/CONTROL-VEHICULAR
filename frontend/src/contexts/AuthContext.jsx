@@ -2,6 +2,7 @@ import { createContext, useContext, useState, useEffect, useCallback } from 'rea
 import { useNavigate } from 'react-router-dom';
 import api, { activarGraciaPostLogin } from '../api/axios';
 import { onUnauthorized, offUnauthorized } from '../api/authEvents';
+import { iniciarRealTime, detenerRealTime } from '../api/realtime';
 
 const AuthContext = createContext(null);
 
@@ -89,6 +90,17 @@ export function AuthProvider({ children }) {
     setUsuario(null);
     navigate('/login', { replace: true });
   };
+
+  // Conexión de tiempo real: activa el stream SSE mientras hay sesión y lo
+  // detiene al desloguearse (evita conexiones abiertas sin autenticar).
+  useEffect(() => {
+    if (usuario) {
+      iniciarRealTime();
+    } else {
+      detenerRealTime();
+    }
+    return () => detenerRealTime();
+  }, [!!usuario]);
 
   return (
     <AuthContext.Provider value={{ usuario, login, logout, verify2FA, loading }}>

@@ -5,6 +5,7 @@ const auth = require('../middleware/auth');
 const { internalError } = require('../utils/httpErrors');
 const { str, num, intId, body } = require('../utils/validate');
 const { EVENTOS, logEvento } = require('../utils/audit');
+const { EVENTOS: RT, emitirCambio } = require('../realtime');
 
 const LIMIT_MAX = 200;
 const TIPOS_VALIDOS = ['Mecánica', 'Eléctrica', 'Llantas', 'Frenos', 'Carrocería', 'Fuga', 'Otro'];
@@ -97,6 +98,7 @@ router.post('/', auth(), async (req, res) => {
     );
 
     logEvento(EVENTOS.ACCION_ADMIN, req, `anomalía ${codigo} reportada por usuario id=${req.user?.id}`);
+    emitirCambio(RT.ANOMALIA, { accion: 'nueva', id: result.insertId, vehiculo_id });
     res.status(201).json({
       id: result.insertId,
       codigo,
@@ -125,6 +127,7 @@ router.put('/:id/estado', auth(['admin']), async (req, res) => {
     if (result.affectedRows === 0) return res.status(404).json({ error: 'Anomalía no encontrada' });
 
     logEvento(EVENTOS.ACCION_ADMIN, req, `anomalía id=${id} -> ${nuevoEstado}`);
+    emitirCambio(RT.ANOMALIA, { accion: 'estado', id, estado: nuevoEstado });
     res.json({ message: `Anomalía actualizada a "${nuevoEstado}"`, estado: nuevoEstado });
   } catch (err) {
     internalError(res, err, 'anomalias');
@@ -139,6 +142,7 @@ router.delete('/:id', auth(['admin']), async (req, res) => {
     if (result.affectedRows === 0) return res.status(404).json({ error: 'Anomalía no encontrada' });
 
     logEvento(EVENTOS.ACCION_ADMIN, req, `eliminó anomalía id=${id}`);
+    emitirCambio(RT.ANOMALIA, { accion: 'eliminada', id });
     res.json({ message: 'Anomalía eliminada' });
   } catch (err) {
     internalError(res, err, 'anomalias');

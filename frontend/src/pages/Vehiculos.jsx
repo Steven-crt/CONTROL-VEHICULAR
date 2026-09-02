@@ -1,6 +1,7 @@
 import { useState, useEffect } from 'react';
 import { useNavigate } from 'react-router-dom';
 import api from '../api/axios';
+import { useRealTime } from '../api/realtime';
 import { useAuth } from '../contexts/AuthContext';
 import { Search, Car, MapPin, Fuel, Calendar, Gauge, Filter, ChevronDown, ChevronUp, AlertCircle, CalendarDays, Plus, X, Save, ShieldCheck } from 'lucide-react';
 import toast from 'react-hot-toast';
@@ -54,6 +55,10 @@ export default function Vehiculos() {
   useEffect(() => {
     fetchVehiculos();
   }, []);
+
+  // Tiempo real: refresca cuando se registra / actualiza / elimina un vehículo
+  // desde otra sesión.
+  useRealTime('vehiculo', () => { fetchVehiculos(yearFilter, search); });
 
   const handleSearch = (e) => {
     e.preventDefault();

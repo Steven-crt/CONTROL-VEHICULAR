@@ -5,6 +5,7 @@ const auth = require('../middleware/auth');
 const { internalError } = require('../utils/httpErrors');
 const { str, num, intId, date, body } = require('../utils/validate');
 const { EVENTOS, logEvento } = require('../utils/audit');
+const { EVENTOS: RT, emitirCambio } = require('../realtime');
 
 const LIMIT_MAX = 200;
 
@@ -253,8 +254,10 @@ router.post('/', auth(), async (req, res) => {
     // una solicitud pendiente aún no es un evento real.
     if (!esPendiente) {
       await actualizarKmVehiculo(vehiculo_id, km_actual);
+      emitirCambio(RT.COMBUSTIBLE, { accion: 'nuevo', id: result.insertId, vehiculo_id });
       res.status(201).json({ id: result.insertId, message: 'Carga de combustible registrada', estado: 'Surtida' });
     } else {
+      emitirCambio(RT.COMBUSTIBLE, { accion: 'nuevo', id: result.insertId, vehiculo_id });
       res.status(201).json({
         id: result.insertId,
         message: 'Solicitud de combustible creada. Queda pendiente de aprobación.',
@@ -301,6 +304,7 @@ router.put('/:id/atender', auth(['admin']), async (req, res) => {
 
     await actualizarKmVehiculo(sol.vehiculo_id, sol.kilometraje_actual);
     logEvento(EVENTOS.ACCION_ADMIN, req, `aprobó solicitud combustible id=${id}`);
+    emitirCambio(RT.COMBUSTIBLE, { accion: 'atendida', id, vehiculo_id: sol.vehiculo_id });
     res.json({ message: 'Solicitud surtida', estado: 'Surtida' });
   } catch (err) {
     internalError(res, err, 'combustible');
@@ -321,6 +325,7 @@ router.put('/:id/rechazar', auth(['admin']), async (req, res) => {
       return res.status(404).json({ error: 'Solicitud no encontrada o ya atendida' });
 
     logEvento(EVENTOS.ACCION_ADMIN, req, `rechazó solicitud combustible id=${id}`);
+    emitirCambio(RT.COMBUSTIBLE, { accion: 'rechazada', id, vehiculo_id: null });
     res.json({ message: 'Solicitud rechazada', estado: 'Rechazada' });
   } catch (err) {
     internalError(res, err, 'combustible');

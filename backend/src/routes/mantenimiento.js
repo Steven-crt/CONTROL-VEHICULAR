@@ -5,6 +5,7 @@ const auth = require('../middleware/auth');
 const { internalError } = require('../utils/httpErrors');
 const { str, num, date, intId, body } = require('../utils/validate');
 const { EVENTOS, logEvento } = require('../utils/audit');
+const { EVENTOS: RT, emitirCambio } = require('../realtime');
 
 const LIMIT_MAX = 200;
 
@@ -185,8 +186,10 @@ router.post('/', auth(), async (req, res) => {
     // El kilometraje del vehículo solo se actualiza al completar el servicio.
     if (!esPendiente) {
       await actualizarKmVehiculo(vehiculo_id, km_actual);
+      emitirCambio(RT.MANTENIMIENTO, { accion: 'nuevo', id: result.insertId, vehiculo_id });
       res.status(201).json({ id: result.insertId, message: 'Mantenimiento registrado', estado: 'Completado' });
     } else {
+      emitirCambio(RT.MANTENIMIENTO, { accion: 'nuevo', id: result.insertId, vehiculo_id });
       res.status(201).json({
         id: result.insertId,
         message: 'Solicitud de mantenimiento creada. Queda pendiente de aprobación.',
@@ -232,6 +235,7 @@ router.put('/:id/atender', auth(['admin']), async (req, res) => {
 
     await actualizarKmVehiculo(sol.vehiculo_id, sol.kilometraje_realizado);
     logEvento(EVENTOS.ACCION_ADMIN, req, `aprobó solicitud mantenimiento id=${id}`);
+    emitirCambio(RT.MANTENIMIENTO, { accion: 'completado', id, vehiculo_id: sol.vehiculo_id });
     res.json({ message: 'Mantenimiento completado', estado: 'Completado' });
   } catch (err) {
     internalError(res, err, 'mantenimiento');
@@ -250,6 +254,7 @@ router.put('/:id/rechazar', auth(['admin']), async (req, res) => {
       return res.status(404).json({ error: 'Solicitud no encontrada o ya atendida' });
 
     logEvento(EVENTOS.ACCION_ADMIN, req, `rechazó solicitud mantenimiento id=${id}`);
+    emitirCambio(RT.MANTENIMIENTO, { accion: 'rechazado', id, vehiculo_id: null });
     res.json({ message: 'Solicitud rechazada', estado: 'Rechazado' });
   } catch (err) {
     internalError(res, err, 'mantenimiento');

@@ -1,5 +1,6 @@
 import { useState, useEffect, useCallback, useRef } from 'react';
 import api from '../api/axios';
+import { useRealTime } from '../api/realtime';
 import {
   BarChart, Bar, XAxis, YAxis, Tooltip, ResponsiveContainer, CartesianGrid,
   PieChart, Pie, Cell, Legend
@@ -73,6 +74,9 @@ export default function Dashboard() {
     return () => clearInterval(interval);
   }, [fetchData]);
 
+  // Tiempo real: cualquier cambio de pedido/vehículo refresca el dashboard.
+  useRealTime(['combustible', 'mantenimiento', 'vehiculo', 'anomalia'], () => { fetchData(); });
+
   if (loading) return (
     <div className="flex items-center justify-center h-64">
       <div className="text-cv-accent animate-pulse font-medium tracking-wide">Cargando datos...</div>
@@ -110,7 +114,7 @@ export default function Dashboard() {
     name: d.name,
     value: parseInt(d.value) || 0
   }));
-
+ //en estta seccion se debe mostrar el total de combustible y mantenimiento
   return (
     <div className="space-y-6 animate-fade-in pb-10">
       {/* KPI Cards */}
@@ -194,6 +198,7 @@ export default function Dashboard() {
               <p className="text-cv-muted text-xs mt-1">Evolución mensual</p>
             </div>
           </div>
+        
           {combustibleChart.length > 0 ? (
             <ResponsiveContainer width="100%" height={260}>
               <BarChart data={combustibleChart} margin={{ top: 10, right: 10, left: -20, bottom: 0 }}>
