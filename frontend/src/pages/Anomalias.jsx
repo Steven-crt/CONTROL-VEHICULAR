@@ -1,5 +1,6 @@
 import { useState, useEffect, useCallback } from 'react';
 import api from '../api/axios';
+import { useRealTime } from '../api/realtime';
 import toast from 'react-hot-toast';
 import { Plus, X, AlertTriangle, Trash2 } from 'lucide-react';
 import { useAuth } from '../contexts/AuthContext';
@@ -46,6 +47,9 @@ export default function Anomalias() {
   useEffect(() => {
     api.get('/vehiculos').then(r => setVehiculos(r.data || [])).catch(() => {});
   }, []);
+
+  // Tiempo real: refresca la lista cuando llega una anomalía nueva o cambia su estado.
+  useRealTime('anomalia', () => { fetchAnomalias(); });
 
   const openAdd = () => { setForm(EMPTY_FORM); setModal(true); };
 

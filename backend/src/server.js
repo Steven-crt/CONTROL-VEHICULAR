@@ -160,6 +160,7 @@ app.use('/api/mantenimiento', require('./routes/mantenimiento'));
 app.use('/api/movimiento', require('./routes/movimiento'));
 app.use('/api/notificaciones', require('./routes/notificaciones'));
 app.use('/api/anomalias', require('./routes/anomalias'));
+app.use('/api/realtime', require('./routes/realtime'));
 
 // Health check con diagnóstico de conexión a la base de datos.
 // SOLO expone estado de conexión (sin versión MySQL ni estructura de tablas)

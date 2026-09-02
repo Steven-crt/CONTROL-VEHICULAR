@@ -4,6 +4,7 @@ const db = require('../db');
 const auth = require('../middleware/auth');
 const { str, num, date, intId, body } = require('../utils/validate');
 const { internalError } = require('../utils/httpErrors');
+const { EVENTOS: RT, emitirCambio } = require('../realtime');
 
 const LIMIT_MAX = 200;
 
@@ -150,6 +151,7 @@ router.post('/', auth(['admin']), async (req, res) => {
         soat_fecha_vencimiento
       ]
     );
+    emitirCambio(RT.VEHICULO, { accion: 'nuevo', id: result.insertId, vehiculo_id: result.insertId });
     res.status(201).json({ id: result.insertId, message: 'Vehículo registrado' });
   } catch (err) {
     if (err.code === 'ER_DUP_ENTRY')
@@ -253,6 +255,7 @@ router.post('/:id/ubicacion', auth(), async (req, res) => {
       'INSERT INTO ubicaciones (vehiculo_id, usuario_id, latitud, longitud, timestamp) VALUES (?, ?, ?, ?, NOW())',
       [id, req.user?.id || null, lat, lng]
     );
+    emitirCambio(RT.VEHICULO, { accion: 'ubicacion', id, vehiculo_id: id });
     res.status(201).json({ id: result.insertId, message: 'Ubicación registrada' });
   } catch (err) {
     internalError(res, err, 'vehiculos');
@@ -278,6 +281,7 @@ router.post('/:id/kilometraje', auth(), async (req, res) => {
       [km, id]
     );
     if (result.affectedRows === 0) return res.status(404).json({ error: 'Vehículo no encontrado' });
+    emitirCambio(RT.VEHICULO, { accion: 'km', id, vehiculo_id: id });
     res.status(201).json({ message: 'Kilometraje registrado exitosamente' });
   } catch (err) {
     internalError(res, err, 'vehiculos');
@@ -364,6 +368,7 @@ router.put('/:id', auth(['admin']), async (req, res) => {
       [id]
     );
     res.json(enriquecerConSoat({ ...updated[0], km_actual: parseFloat(updated[0].km_actual) || 0 }));
+    emitirCambio(RT.VEHICULO, { accion: 'actualizado', id, vehiculo_id: id });
   } catch (err) {
     if (err.code === 'ER_DUP_ENTRY')
       return res.status(409).json({ error: 'Ya existe un vehículo con esa placa' });
@@ -380,6 +385,7 @@ router.delete('/:id', auth(['admin']), async (req, res) => {
       return res.status(404).json({ error: 'Vehículo no encontrado' });
 
     await db.query('UPDATE vehiculos SET activo = 0 WHERE id = ?', [id]);
+    emitirCambio(RT.VEHICULO, { accion: 'eliminado', id, vehiculo_id: id });
     res.json({ message: 'Vehículo eliminado correctamente' });
   } catch (err) {
     internalError(res, err, 'vehiculos');

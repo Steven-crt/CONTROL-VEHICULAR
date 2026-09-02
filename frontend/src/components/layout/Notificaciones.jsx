@@ -1,9 +1,10 @@
-  import { useState, useEffect, useRef } from 'react';
+  import { useState, useEffect, useRef, useCallback } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { Bell, X, Fuel, AlertTriangle, Wrench, Car, DollarSign } from 'lucide-react';
 import styled, { keyframes } from 'styled-components';
 import api from '../../api/axios';
 import { useAuth } from '../../contexts/AuthContext';
+import { useRealTime } from '../../api/realtime';
 
 const ring = keyframes`
   0% { transform: rotate(0deg); }
@@ -237,6 +238,12 @@ export default function Notificaciones() {
     const interval = setInterval(safeFetch, 30000);
     return () => { mounted = false; controller.abort(); clearInterval(interval); };
   }, [usuario]);
+
+  // Tiempo real: si llega cualquier cambio (nuevo pedido, aprobación, anomalía,
+  // vehículo), refrescamos las notificaciones al instante para que el badge se
+  // actualice con 2+ usuarios conectados.
+  const fetchLive = useCallback(() => { fetchNotifs(); }, []);
+  useRealTime('global', fetchLive);
 
   useEffect(() => {
     const handleClick = (e) => {
