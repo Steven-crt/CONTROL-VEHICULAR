@@ -2,9 +2,8 @@ import { useState, useEffect, useCallback, useMemo } from 'react';
 import api from '../api/axios';
 import { useRealTime } from '../api/realtime';
 import toast from 'react-hot-toast';
-import { Fuel, Wrench, Check, X as XIcon, ClipboardList } from 'lucide-react';
+import { Fuel, Wrench, Check, X as XIcon, History } from 'lucide-react';
 import { useAuth } from '../contexts/AuthContext';
-//se debe cambiar el nombre de depidos a tanqeuo
 const ESTADO_COLORS = {
   Pendiente: 'text-amber-400 bg-amber-900/30',
   Surtida: 'text-emerald-400 bg-emerald-900/30',
@@ -19,43 +18,42 @@ const fmtFecha = (f) => {
   return isNaN(d.getTime()) ? String(f) : d.toLocaleDateString('es-CO', { day: '2-digit', month: 'short', year: 'numeric' });
 };
 
-export default function Pedidos() {
+export default function Historia() {
   const { usuario } = useAuth();
   const esAdmin = usuario?.rol === 'admin';
   const [tab, setTab] = useState('combustible');
-  const [pedidos, setPedidos] = useState([]);
+  const [registros, setRegistros] = useState([]);
   const [vehiculos, setVehiculos] = useState([]);
   const [filtroEstado, setFiltroEstado] = useState('');
   const [modal, setModal] = useState(false);
   const [saving, setSaving] = useState(false);
   const [form, setForm] = useState({ vehiculo_id: '', litros: '', km_actual: '', tipo_combustible: 'Gasolina', observaciones: '' });
 
-  const fetchPedidos = useCallback(async () => {
+  const fetchHistorial = useCallback(async () => {
     try {
       const base = tab === 'combustible' ? '/combustible' : '/mantenimiento';
       const params = {};
       if (filtroEstado) params.estado = filtroEstado;
       if (!esAdmin) params.solo_mios = '1';
       const r = await api.get(base, { params });
-      setPedidos(r.data || []);
+      setRegistros(r.data || []);
     } catch {
-      toast.error('Error al cargar pedidos');
+      toast.error('Error al cargar historial');
     }
   }, [tab, filtroEstado, esAdmin]);
 
-  useEffect(() => { fetchPedidos(); }, [fetchPedidos]);
+  useEffect(() => { fetchHistorial(); }, [fetchHistorial]);
   useEffect(() => {
     api.get('/vehiculos').then(r => setVehiculos(r.data || [])).catch(() => {});
   }, []);
 
-  // Tiempo real: si llega un cambio de combustible o mantenimiento (nuevo
-  // pedido, aprobación o rechazo de otro usuario), refresca la tabla al instante.
-  const pedidoVivo = useMemo(() => (tab === 'combustible' ? 'combustible' : 'mantenimiento'), [tab]);
-  useRealTime([pedidoVivo], () => { fetchPedidos(); });
+
+  const eventoVivo = useMemo(() => (tab === 'combustible' ? 'combustible' : 'mantenimiento'), [tab]);
+  useRealTime([eventoVivo], () => { fetchHistorial(); });
 
   const openAdd = () => setModal(true);
 
-  const savePedido = async (e) => {
+  const saveSolicitud = async (e) => {
     e.preventDefault();
     if (!form.vehiculo_id) return toast.error('Selecciona un vehículo');
     setSaving(true);
@@ -75,12 +73,12 @@ export default function Pedidos() {
           descripcion: form.observaciones || 'Solicitud de mantenimiento'
         });
       }
-      toast.success('Pedido enviado. Queda pendiente de aprobación.');
+      toast.success('Solicitud enviada. Queda pendiente de aprobación.');
       setModal(false);
       setForm({ vehiculo_id: '', litros: '', km_actual: '', tipo_combustible: 'Gasolina', observaciones: '' });
       setFiltroEstado('');
     } catch (err) {
-      toast.error(err.response?.data?.error || 'Error al enviar el pedido');
+      toast.error(err.response?.data?.error || 'Error al enviar la solicitud');
     } finally { setSaving(false); }
   };
 
@@ -88,20 +86,20 @@ export default function Pedidos() {
     try {
       if (tab === 'combustible') await api.put(`/combustible/${id}/atender`, {});
       else await api.put(`/mantenimiento/${id}/atender`, {});
-      toast.success('Pedido aprobado');
-      fetchPedidos();
+      toast.success('Solicitud aprobada');
+      fetchHistorial();
     } catch (err) {
       toast.error(err.response?.data?.error || 'Error al aprobar');
     }
   };
 
   const rechazar = async (id) => {
-    if (!confirm('¿Rechazar este pedido?')) return;
+    if (!confirm('¿Rechazar esta solicitud?')) return;
     try {
       if (tab === 'combustible') await api.put(`/combustible/${id}/rechazar`, {});
       else await api.put(`/mantenimiento/${id}/rechazar`, {});
-      toast.success('Pedido rechazado');
-      fetchPedidos();
+      toast.success('Solicitud rechazada');
+      fetchHistorial();
     } catch (err) {
       toast.error(err.response?.data?.error || 'Error al rechazar');
     }
@@ -113,7 +111,7 @@ export default function Pedidos() {
     <div className="space-y-5 animate-fade-in">
       <div className="flex items-center justify-between flex-wrap gap-3">
         <h2 className="text-cv-text font-semibold text-lg flex items-center gap-2">
-          <ClipboardList className="w-5 h-5 text-cv-accent" /> {esAdmin ? 'Pedidos' : 'Mis Pedidos'}
+          <History className="w-5 h-5 text-cv-accent" /> {esAdmin ? 'Historia' : 'Mi Historia'}
         </h2>
         <div className="flex gap-2 items-center flex-wrap">
           <select className="select w-auto" value={filtroEstado} onChange={e => setFiltroEstado(e.target.value)}>
@@ -123,7 +121,7 @@ export default function Pedidos() {
               ? <><option value="Surtida">Surtidas</option><option value="Rechazada">Rechazadas</option></>
               : <><option value="Completado">Completados</option><option value="Rechazado">Rechazados</option></>}
           </select>
-          <button onClick={openAdd} className="btn-primary"><ClipboardList className="w-4 h-4" /> Nuevo Pedido</button>
+          <button onClick={openAdd} className="btn-primary"><History className="w-4 h-4" /> Nueva Solicitud</button>
         </div>
       </div>
 
@@ -151,7 +149,7 @@ export default function Pedidos() {
               </tr>
             </thead>
             <tbody>
-              {pedidos.map(p => (
+              {registros.map(p => (
                 <tr key={p.id} className="hover:bg-cv-border/10 transition-colors">
                   <td className="table-cell px-2 font-mono text-xs text-cv-muted">{p.codigo}</td>
                   <td className="table-cell px-2 font-medium">{p.placa}<span className="block text-xs text-cv-muted">{p.marca} {p.modelo}</span></td>
@@ -187,7 +185,7 @@ export default function Pedidos() {
               </tr>
             </thead>
             <tbody>
-              {pedidos.map(p => (
+              {registros.map(p => (
                 <tr key={p.id} className="hover:bg-cv-border/10 transition-colors">
                   <td className="table-cell px-2 font-mono text-xs text-cv-muted">{p.codigo}</td>
                   <td className="table-cell px-2 font-medium">{p.placa}<span className="block text-xs text-cv-muted">{p.marca} {p.modelo}</span></td>
@@ -214,20 +212,20 @@ export default function Pedidos() {
             </tbody>
           </table>
         )}
-        {!pedidos.length && (
-          <p className="text-center text-cv-muted py-8">No hay pedidos para mostrar</p>
+        {!registros.length && (
+          <p className="text-center text-cv-muted py-8">No hay historial para mostrar</p>
         )}
       </div>
 
-      {/* Modal nuevo pedido */}
+      {/* Modal nueva solicitud */}
       {modal && (
         <div className="fixed inset-0 bg-black/60 flex items-center justify-center z-50 p-4">
           <div className="card max-w-md w-full animate-slide-in max-h-[90vh] overflow-y-auto">
             <div className="flex items-center justify-between mb-5">
-              <h3 className="text-cv-text font-semibold capitalize">Nuevo Pedido de {tab}</h3>
+              <h3 className="text-cv-text font-semibold capitalize">Nueva Solicitud de {tab}</h3>
               <button onClick={() => setModal(false)} className="text-cv-muted hover:text-cv-text"><XIcon className="w-5 h-5" /></button>
             </div>
-            <form onSubmit={savePedido} className="space-y-4">
+            <form onSubmit={saveSolicitud} className="space-y-4">
               <div>
                 <label className="block text-cv-muted text-sm mb-1">Vehículo *</label>
                 <select className="select" value={form.vehiculo_id}
@@ -279,13 +277,13 @@ export default function Pedidos() {
               )}
               {!esAdmin && (
                 <p className="text-xs text-cv-muted bg-cv-border/20 rounded-lg p-3">
-                  Tu pedido será revisado y aprobado por un administrador antes de ejecutarse.
+                  Tu solicitud será revisada y aprobada por un administrador antes de ejecutarse.
                 </p>
               )}
               <div className="flex gap-3 pt-2">
                 <button type="button" onClick={() => setModal(false)} className="btn-secondary flex-1 justify-center">Cancelar</button>
                 <button type="submit" disabled={saving} className="btn-primary flex-1 justify-center">
-                  {saving ? 'Enviando...' : 'Enviar Pedido'}
+                  {saving ? 'Enviando...' : 'Enviar Solicitud'}
                 </button>
               </div>
             </form>

@@ -284,7 +284,7 @@ export default function Login() {
   };
 
   return (
-    <StyledWrapper>
+    <StyledWrapper className="notranslate" translate="no">
       <canvas ref={canvasRef} className="ribbon-canvas" />
       <div className="login-wrapper">
         <div className="login-card">

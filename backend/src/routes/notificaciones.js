@@ -129,7 +129,7 @@ router.get('/', auth(), async (req, res) => {
       if (totalPend > 0) {
         push(`pend:${MES}`, 'warning', 'dollar', 'Solicitudes por atender',
           `${comb} carga${comb !== 1 ? 's' : ''} de combustible y ${mant} mantenimiento${mant !== 1 ? 's' : ''} esperan aprobación`,
-          '/pedidos');
+          '/historia');
       }
     }
 

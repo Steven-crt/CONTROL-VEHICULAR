@@ -22,6 +22,7 @@ export default function Movimiento() {
   const [showKmModal, setShowKmModal] = useState(false);
   const [kmManual, setKmManual] = useState('');
   const [registrandoKm, setRegistrandoKm] = useState(false);
+  
 
   // Por defecto: este mes
   useEffect(() => {

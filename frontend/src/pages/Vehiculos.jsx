@@ -74,7 +74,7 @@ export default function Vehiculos() {
   const handleSaveVehicle = async (e) => {
     e.preventDefault();
     if (!vehForm.placa.trim()) return toast.error('La placa es requerida');
-    setSaving(true);
+    setSaving(true);                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                    
     try {
       await api.post('/vehiculos', vehForm);
       toast.success('Vehículo registrado');

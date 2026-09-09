@@ -3,8 +3,8 @@ import { useParams, useNavigate } from 'react-router-dom';
 import api from '../api/axios';
 import { useAuth } from '../contexts/AuthContext';
 import {
-  Car, Fuel, Wrench, ArrowLeft, Gauge, MapPin, Calendar, DollarSign,
-  ChevronDown, ChevronUp, AlertCircle, Download, Filter, BarChart3, CalendarDays,
+  Car, Fuel, Wrench, ArrowLeft, Gauge, MapPin, DollarSign,
+  AlertCircle, Download, Filter, BarChart3, CalendarDays,
   Pencil, Trash2, X, Check, ShieldCheck
 } from 'lucide-react';
 import {
@@ -54,9 +54,6 @@ export default function VehiculoDetalle() {
   const [filtroCosto, setFiltroCosto] = useState('');
   const [sortField, setSortField] = useState('fecha');
   const [sortDir, setSortDir] = useState('desc');
-  const [showCombustibleForm, setShowCombustibleForm] = useState(false);
-  const [showMantenimientoForm, setShowMantenimientoForm] = useState(false);
-  const [formData, setFormData] = useState({});
 
   useEffect(() => {
     loadData();
@@ -137,49 +134,6 @@ export default function VehiculoDetalle() {
       toast.success(`Historial de ${tipo} exportado correctamente`);
     } catch {
       toast.error('Error al exportar');
-    }
-  };
-
-  const handleRegistrarCombustible = async (e) => {
-    e.preventDefault();
-    try {
-      const payload = {
-        vehiculo_id: parseInt(id),
-        tipo_combustible: formData.tipo_combustible,
-        galones_surtidos: formData.galones_surtidos != null ? parseFloat(formData.galones_surtidos) : undefined,
-        kilometraje_actual: formData.kilometraje_actual != null ? parseFloat(formData.kilometraje_actual) : undefined,
-        costo_total: formData.costo_total != null ? parseFloat(formData.costo_total) : undefined,
-        fecha_solicitud: formData.fecha_solicitud,
-        ubicacion_gps: formData.ubicacion_gps,
-      };
-      // GPS como objeto {latitud, longitud} si viene "lat,lng"
-      if (typeof payload.ubicacion_gps === 'string' && payload.ubicacion_gps.includes(',')) {
-        const [lat, lng] = payload.ubicacion_gps.split(',').map(s => parseFloat(s.trim()));
-        if (!isNaN(lat) && !isNaN(lng)) payload.ubicacion_gps = { latitud: lat, longitud: lng };
-      }
-      await api.post('/combustible', payload);
-      toast.success(isAdmin ? 'Carga de combustible registrada' : 'Solicitud enviada. Queda pendiente de aprobación.');
-      setShowCombustibleForm(false);
-      setFormData({});
-      loadData();
-    } catch (err) {
-      toast.error(err.response?.data?.error || 'Error al reguistrarse');
-    }
-  };
-
-  const handleRegistrarMantenimiento = async (e) => {
-    e.preventDefault();
-    try {
-      await api.post('/mantenimiento', {
-        vehiculo_id: parseInt(id),
-        ...formData
-      });
-      toast.success(isAdmin ? 'Mantenimiento registrado' : 'Solicitud enviada. Queda pendiente de aprobación.');
-      setShowMantenimientoForm(false);
-      setFormData({});
-      loadData();
-    } catch (err) {
-      toast.error(err.response?.data?.error || 'Error al registrar');
     }
   };
 
@@ -455,78 +409,8 @@ export default function VehiculoDetalle() {
                     Exportar PDF
                   </button>
                 </div>
-                <button onClick={() => setShowCombustibleForm(!showCombustibleForm)} className="btn-primary text-sm">
-                  {isAdmin ? '+ Nueva Carga' : '+ Solicitar Carga'}
-                </button>
               </div>
             </div>
-
-            {/* Combustible form */}
-            {showCombustibleForm && (
-              <form onSubmit={handleRegistrarCombustible} className="card border-cv-accent/30">
-                <h4 className="text-white font-semibold mb-4">{isAdmin ? 'Registrar Carga de Combustible' : 'Solicitar Carga de Combustible'}</h4>
-                <div className="grid grid-cols-1 sm:grid-cols-3 gap-4">
-                  <div>
-                    <label className="text-cv-muted text-xs font-medium mb-1 block">Litros *</label>
-                    <input type="number" step="0.01" required className="input"
-                      placeholder="Ej: 15.5"
-                      onChange={e => setFormData({...formData, litros: e.target.value})} />
-                  </div>
-                  {isAdmin && (
-                    <>
-                      <div>
-                        <label className="text-cv-muted text-xs font-medium mb-1 block">Precio Unitario</label>
-                        <input type="number" step="0.01" className="input"
-                          placeholder="Ej: 1.05"
-                          onChange={e => setFormData({...formData, precio_unitario: e.target.value})} />
-                      </div>
-                      <div>
-                        <label className="text-cv-muted text-xs font-medium mb-1 block">Costo Total</label>
-                        <input type="number" step="0.01" className="input"
-                          placeholder="Calculado si se omite"
-                          onChange={e => setFormData({...formData, costo_total: e.target.value})} />
-                      </div>
-                    </>
-                  )}
-                  {!isAdmin && (
-                    <div className="sm:col-span-2 flex items-end">
-                      <p className="text-xs text-cv-muted bg-cv-border/20 rounded-lg p-3 w-full">
-                        Tu solicitud será aprobada por un administrador antes de registrarse.
-                      </p>
-                    </div>
-                  )}
-                  <div>
-                    <label className="text-cv-muted text-xs font-medium mb-1 block">KM Actual *</label>
-                    <input type="number" required className="input"
-                      placeholder="Ej: 15000"
-                      onChange={e => setFormData({...formData, km_actual: e.target.value})} />
-                  </div>
-                  <div>
-                    <label className="text-cv-muted text-xs font-medium mb-1 block">Tipo Combustible</label>
-                    <select className="select" onChange={e => setFormData({...formData, tipo_combustible: e.target.value})}>
-                      <option value="Gasolina">Gasolina</option>
-                      <option value="Diésel">Diésel</option>
-                      <option value="Gas">Gas</option>
-                      <option value="Eléctrico">Eléctrico</option>
-                      <option value="Híbrido">Híbrido</option>
-                    </select>
-                  </div>
-                  <div>
-                    <label className="text-cv-muted text-xs font-medium mb-1 block">Ubicación GPS</label>
-                    <input type="text" className="input" placeholder="Lat, Lng"
-                      onChange={e => setFormData({...formData, ubicacion_gps: e.target.value})} />
-                  </div>
-                </div>
-                <div className="mt-3">
-                  <textarea className="input" placeholder="Observaciones" rows={2}
-                    onChange={e => setFormData({...formData, observaciones: e.target.value})} />
-                </div>
-                <div className="flex gap-3 mt-4">
-                  <button type="submit" className="btn-primary">{isAdmin ? 'Guardar Carga' : 'Enviar Solicitud'}</button>
-                  <button type="button" onClick={() => setShowCombustibleForm(false)} className="btn-secondary">Cancelar</button>
-                </div>
-              </form>
-            )}
 
             {/* Table */}
             {filtrarCombustible(historialCombustible).length > 0 ? (
@@ -596,7 +480,7 @@ export default function VehiculoDetalle() {
               <div className="card text-center py-12">
                 <Fuel className="w-12 h-12 mx-auto text-cv-muted/30 mb-3" />
                 <p className="text-cv-muted font-medium">No hay registros de combustible</p>
-                <p className="text-cv-muted text-sm mt-1">Registre la primera carga de combustible</p>
+                <p className="text-cv-muted text-sm mt-1">Las solicitudes de carga se gestionan en Historia</p>
               </div>
             )}
           </>
@@ -638,69 +522,8 @@ export default function VehiculoDetalle() {
                     Exportar PDF
                   </button>
                 </div>
-                <button onClick={() => setShowMantenimientoForm(!showMantenimientoForm)} className="btn-primary text-sm">
-                  {isAdmin ? '+ Nuevo Mantenimiento' : '+ Solicitar Mantenimiento'}
-                </button>
               </div>
             </div>
-
-            {/* Mantenimiento form */}
-            {showMantenimientoForm && (
-              <form onSubmit={handleRegistrarMantenimiento} className="card border-cv-accent/30">
-                <h4 className="text-white font-semibold mb-4">{isAdmin ? 'Registrar Mantenimiento' : 'Solicitar Mantenimiento'}</h4>
-                <div className="grid grid-cols-1 sm:grid-cols-3 gap-4">
-                  <div>
-                    <label className="text-cv-muted text-xs font-medium mb-1 block">Tipo Servicio</label>
-                    <select className="select" onChange={e => setFormData({...formData, tipo_servicio: e.target.value})}>
-                      <option value="Preventivo">Preventivo</option>
-                      <option value="Correctivo">Correctivo</option>
-                    </select>
-                  </div>
-                  <div>
-                    <label className="text-cv-muted text-xs font-medium mb-1 block">KM Actual *</label>
-                    <input type="number" required className="input" placeholder="Ej: 15000"
-                      onChange={e => setFormData({...formData, km_actual: e.target.value})} />
-                  </div>
-                  {isAdmin && (
-                    <>
-                      <div>
-                        <label className="text-cv-muted text-xs font-medium mb-1 block">Costo ($)</label>
-                        <input type="number" step="0.01" className="input" placeholder="Ej: 85.00"
-                          onChange={e => setFormData({...formData, costo: e.target.value})} />
-                      </div>
-                      <div className="sm:col-span-2">
-                        <label className="text-cv-muted text-xs font-medium mb-1 block">Descripción</label>
-                        <input type="text" className="input" placeholder="Describe el servicio realizado"
-                          onChange={e => setFormData({...formData, descripcion: e.target.value})} />
-                      </div>
-                      <div>
-                        <label className="text-cv-muted text-xs font-medium mb-1 block">Proveedor</label>
-                        <input type="text" className="input" placeholder="Taller o proveedor"
-                          onChange={e => setFormData({...formData, proveedor: e.target.value})} />
-                      </div>
-                    </>
-                  )}
-                  {!isAdmin && (
-                    <div className="sm:col-span-2 flex items-end">
-                      <p className="text-xs text-cv-muted bg-cv-border/20 rounded-lg p-3 w-full">
-                        Tu solicitud será aprobada por un administrador antes de ejecutarse.
-                      </p>
-                    </div>
-                  )}
-                </div>
-                {!isAdmin && (
-                  <div className="mt-3">
-                    <label className="text-cv-muted text-xs font-medium mb-1 block">¿Qué necesita el vehículo?</label>
-                    <input type="text" className="input" placeholder="Ej: cambio de aceite y filtros"
-                      onChange={e => setFormData({...formData, descripcion: e.target.value})} />
-                  </div>
-                )}
-                <div className="flex gap-3 mt-4">
-                  <button type="submit" className="btn-primary">{isAdmin ? 'Guardar Mantenimiento' : 'Enviar Solicitud'}</button>
-                  <button type="button" onClick={() => setShowMantenimientoForm(false)} className="btn-secondary">Cancelar</button>
-                </div>
-              </form>
-            )}
 
             {/* Table */}
             {filtrarMantenimiento(historialMantenimiento).length > 0 ? (
@@ -756,7 +579,7 @@ export default function VehiculoDetalle() {
               <div className="card text-center py-12">
                 <Wrench className="w-12 h-12 mx-auto text-cv-muted/30 mb-3" />
                 <p className="text-cv-muted font-medium">No hay registros de mantenimiento</p>
-                <p className="text-cv-muted text-sm mt-1">Registre el primer mantenimiento del vehículo</p>
+                <p className="text-cv-muted text-sm mt-1">Las solicitudes de mantenimiento se gestionan en Historia</p>
               </div>
             )}
           </>

@@ -185,6 +185,7 @@ router.get('/:id', auth(), async (req, res) => {
       [v.id]
     );
 
+
     // Totales de cargas de combustible
     const [totalesCombustible] = await db.query(`
       SELECT COUNT(*) as total_cargas, COALESCE(SUM(galones_surtidos),0) as total_litros,
@@ -217,7 +218,7 @@ router.get('/:id', auth(), async (req, res) => {
   }
 });
 
-// GET /api/vehiculos/:id/ubicacion - Última ubicación GPS
+
 router.get('/:id/ubicacion', auth(), async (req, res) => {
   const id = intId(req.params.id).value;
   try {

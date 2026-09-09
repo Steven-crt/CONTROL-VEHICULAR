@@ -7,7 +7,7 @@ export default function Layout() {
   const [isSidebarOpen, setIsSidebarOpen] = useState(false);
 
   return (
-    <div className="flex h-screen overflow-hidden bg-cv-dark">
+    <div className="flex h-screen overflow-hidden bg-cv-dark notranslate" translate="no">
       <Sidebar isOpen={isSidebarOpen} setIsOpen={setIsSidebarOpen} />
       
       {/* Overlay para móviles */}

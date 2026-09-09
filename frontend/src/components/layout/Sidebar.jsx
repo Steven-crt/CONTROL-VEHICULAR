@@ -10,7 +10,7 @@ import { useConfig } from '../../contexts/ConfigContext';
 const navItems = [
   { to: '/dashboard', icon: LayoutDashboard, label: 'Dashboard', roles: ['admin'] },
   { to: '/vehiculos', icon: Car,             label: 'Consulta Vehículos' },
-  { to: '/pedidos',   icon: ClipboardList,   label: 'Pedidos', labelEmpleado: 'Mis Pedidos' },
+  { to: '/historia', icon: ClipboardList, label: 'Historia', labelEmpleado: 'Mi Historia' },
   { to: '/anomalias', icon: AlertTriangle,   label: 'Anomalías' },
   { to: '/movimiento',icon: Activity,        label: 'Movimiento y Gasto', roles: ['admin'] },
   { to: '/reportes',  icon: BarChart3,       label: 'Reportes', roles: ['admin'] },

@@ -6,14 +6,14 @@ import { ThemeProvider } from './contexts/ThemeContext';
 import Layout from './components/layout/Layout';
 import Login from './pages/Login';
 import Dashboard from './pages/Dashboard';
-import Vehiculos from './pages/Vehiculos';
+import Vehiculos   from './pages/Vehiculos';
 import VehiculoDetalle from './pages/VehiculoDetalle';
 import Movimiento from './pages/Movimiento';
 import Reportes from './pages/Reportes';
 import Usuarios from './pages/Usuarios';
 import Configuracion from './pages/Configuracion';
 import Anomalias from './pages/Anomalias';
-import Pedidos from './pages/Pedidos';
+import Historia from './pages/Historia';
 
 function PrivateRoute({ children }) {
   const { usuario, loading } = useAuth();
@@ -24,9 +24,10 @@ function PrivateRoute({ children }) {
   );
   return usuario ? children : <Navigate to="/login" />;
 }
-
-// Rutas exclusivas de administrador: si un empleado intenta entrar, se
-// redirige a la consulta de vehículos (su vista principal).
+/*
+Rutas exclusivas de administrador: si un empleado intenta entrar, se
+redirige a la consulta de vehículos (su vista principal).
+*/                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                  
 function AdminRoute({ children }) {
   const { usuario } = useAuth();
   if (!usuario || usuario.rol !== 'admin') return <Navigate to="/vehiculos" replace />;
@@ -43,12 +44,13 @@ function AppRoutes() {
   );
   return (
     <Routes>
+      // Rutas privadas: si no hay usuario loguean 
       <Route path="/" element={<PrivateRoute><Layout /></PrivateRoute>}>
         <Route index element={<Navigate to={usuario?.rol === 'admin' ? '/dashboard' : '/vehiculos'} />} />
         <Route path="dashboard" element={<AdminRoute><Dashboard /></AdminRoute>} />
         <Route path="vehiculos" element={<Vehiculos />} />
         <Route path="vehiculos/:id" element={<VehiculoDetalle />} />
-        <Route path="pedidos" element={<Pedidos />} />
+        <Route path="historia" element={<Historia />} />
         <Route path="anomalias" element={<Anomalias />} />
         <Route path="movimiento" element={<AdminRoute><Movimiento /></AdminRoute>} />
         <Route path="reportes" element={<AdminRoute><Reportes /></AdminRoute>} />

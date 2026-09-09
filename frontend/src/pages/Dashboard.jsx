@@ -114,7 +114,7 @@ export default function Dashboard() {
     name: d.name,
     value: parseInt(d.value) || 0
   }));
- //en estta seccion se debe mostrar el total de combustible y mantenimiento
+
   return (
     <div className="space-y-6 animate-fade-in pb-10">
       {/* KPI Cards */}
