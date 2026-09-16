@@ -261,6 +261,14 @@ export default function Notificaciones() {
     } catch { /* si falla, la próxima recarga las vuelve a traer */ }
   };
 
+
+  const warningConst = notifs.filter(n => n.tipo === 'warning').length;
+  if (warningConst > 0 && !ringing) {
+    setRinging(true);
+    setTimeout(() => setRinging(false), 600);
+    
+  }
+
   const handleClick = (n) => {
     setOpen(false);
     marcarVistas([n.clave]);

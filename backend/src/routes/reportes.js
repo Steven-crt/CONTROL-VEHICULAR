@@ -19,6 +19,7 @@ router.use((req, res, next) => {
 const CACHE_TTL_MS = parseInt(process.env.REPORTES_CACHE_MS, 10) || 10000;
 const cacheMap = new Map();
 
+
 function cacheGet(key) {
   const hit = cacheMap.get(key);
   if (!hit) return null;

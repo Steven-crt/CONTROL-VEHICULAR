@@ -46,7 +46,7 @@ const storage = multer.diskStorage({
     cb(null, uploadDir);
   },
   filename: function (req, file, cb) {
-    // Nombre aleatorio criptográfico; extensión se corregirá tras validar magic bytes
+
     const rnd = crypto.randomBytes(8).toString('hex');
     const ext = MIME_A_EXT[file.mimetype] || '.png';
     cb(null, 'logo-' + Date.now().toString(36) + '-' + rnd + ext);

@@ -7,8 +7,7 @@
  */
 
 function obtenerIp(req) {
-  // Con trust proxy activo req.ip es fiable; fallback solo a socket.
-  // No usar x-forwarded-for crudo (falsificable por cliente).
+
   return req.ip || req.socket?.remoteAddress || 'unknown';
 }
 

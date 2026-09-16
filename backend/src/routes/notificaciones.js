@@ -66,7 +66,7 @@ router.get('/', auth(), async (req, res) => {
     const intervaloKm = parseInt(config[0]?.valor) || 5000;
     const [mantenciones] = await db.query(`
       SELECT v.id, v.placa, v.marca, v.modelo,
-        v.kilometraje_actual as km_actual,
+        v.kilometraje_actual as km_actual,  
         COALESCE(m.max_km, 0) as ultimo_km_mant
       FROM vehiculos v
       LEFT JOIN (

@@ -32,7 +32,7 @@ export default function Anomalias() {
   const [form, setForm] = useState(EMPTY_FORM);
   const [saving, setSaving] = useState(false);
 
-  const fetchAnomalias = async () => {
+  const fetchAnomalias = useCallback(async () => {
     try {
       const params = {};
       if (filtroEstado) params.estado = filtroEstado;
@@ -41,9 +41,9 @@ export default function Anomalias() {
     } catch {
       toast.error('Error al cargar anomalías');
     }
-  };
+  }, [filtroEstado]);
 
-  useEffect(() => { fetchAnomalias(); }, [filtroEstado]);
+  useEffect(() => { fetchAnomalias(); }, [fetchAnomalias]);
   useEffect(() => {
     api.get('/vehiculos').then(r => setVehiculos(r.data || [])).catch(() => {});
   }, []);

@@ -1,14 +1,6 @@
-// Hub de tiempo real (SSE - Server-Sent Events).
-//
-// No empuja datasets completos: cuando algo cambia (crear/atender/rechazar un
-// pedido, una anomalía, un vehículo, etc.) se emite un evento de
-// INVALIDACIÓN a todos los clientes conectados. Cada cliente re-fetcha los
-// datos que necesita en el instante. Esto evita problemas de consistencia por
-// rol (un admin ve todo, un empleado solo lo suyo) y funciona igual aunque
-// haya varios procesos/workers, porque la reconstrucción la hace cada cliente
-// contra la BD.
 
-// lista de eventos en tiempo real soportados
+
+
 const EVENTOS = {
   COMBUSTIBLE: 'combustible',
   MANTENIMIENTO: 'mantenimiento',
@@ -68,9 +60,7 @@ function req_cleanup(res, id, clean) {
   res.on('finish', onClose);
 }
 
-// Emite un evento a todos los clientes (o solo a los de cierto rol / usuario).
-// tip   → nombre del evento (cliente escucha en la property 'event').
-// data  → objeto pequeño con metadatos (p.ej. { entidad: 5, accion: 'nuevo' }).
+
 function emitirCambio(tip, data = {}) {
   const payload = JSON.stringify(data);
   for (const [id, c] of clientes) {

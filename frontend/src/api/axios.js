@@ -11,8 +11,7 @@ const api = axios.create({
   baseURL: API_URL,
   headers: { 'Content-Type': 'application/json' },
   timeout: 25000,
-  // Envía la cookie httpOnly de sesión en peticiones cross-origin
-  // (frontend en Vercel, API en Render)
+  
   withCredentials: true
 });
 
@@ -59,9 +58,7 @@ api.interceptors.response.use(
       // Limpiar datos de sesión locales
       try { localStorage.removeItem('usuario'); } catch {}
 
-      // Notificar al AuthProvider vía event bus (SIN window.location.href).
-      // El AuthProvider llama setUsuario(null) y React Router navega a /login
-      // sin recargar la página → se rompe el loop infinito.
+
       if (!emitiendo401) {
         emitiendo401 = true;
         emitUnauthorized();

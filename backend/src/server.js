@@ -17,9 +17,7 @@ getJwtSecret(); // valida el secreto al arrancar (fail-fast en producción si fa
 app.set('trust proxy', 1); // Render/LB: req.ip lee X-Forwarded-For real (fiable)
 app.use(cookieParser()); // req.cookies para sesión httpOnly
 
-// CORS: solo orígenes explícitamente autorizados en CORS_ORIGIN
-// NO se permite *.vercel.app genérico — solo los dominios exactos configurados.
-// Se añade el mismo-origen (Host == Origin) como caso permitido sin abrir wildcards.
+
 const allowedOrigins = (process.env.CORS_ORIGIN || 'http://localhost:5173')
   .split(',')
   .map(o => o.trim())
@@ -28,8 +26,7 @@ const allowedOrigins = (process.env.CORS_ORIGIN || 'http://localhost:5173')
 function buildApiCors(req) {
   return cors({
     origin: (origin, callback) => {
-      // Sin cabecera Origin = cliente no navegador (curl, health checks, monitores,
-      // Render). CORS solo aplica a navegadores: se deja pasar sin cabeceras CORS.
+
       if (!origin) {
         return callback(null, true);
       }
@@ -38,8 +35,7 @@ function buildApiCors(req) {
         return callback(new Error('CORS: no hay orígenes permitidos configurados'));
       }
       if (allowedOrigins.includes(origin)) return callback(null, true);
-      // Mismo origen: validar hostname exacto para evitar bypass via includes()
-      // y Host-header poisoning (ej. example.com.evil.com incluye example.com)
+
       try {
         const originHost = new URL(origin).host;
         const reqHost = (req?.headers?.host || '').split(':')[0];
@@ -64,8 +60,7 @@ app.use((req, res, next) => {
   return buildApiCors(req)(req, res, next);
 });
 
-// Helmet: configura automáticamente todas las cabeceras de seguridad HTTP críticas
-// (X-Content-Type-Options, X-Frame-Options, Referrer-Policy, HSTS, CSP, etc.)
+
 app.use(helmet({
   // Content-Security-Policy: restringe orígenes de recursos y scripts
   contentSecurityPolicy: {
@@ -110,8 +105,7 @@ app.use(helmet({
 app.use(express.json({ limit: '256kb' }));
 app.use(express.urlencoded({ extended: true, limit: '256kb' }));
 
-// Compresión gzip de respuestas (payloads ~70% más ligeros = más peticiones por
-// segundo con la misma CPU/red). Solo comprime JSON/HTML/texto, no imágenes.
+
 app.use(compression({ threshold: 1024 }));
 
 // Archivos subidos: son inmutables por URL (cada archivo tiene su propio nombre),
@@ -134,9 +128,7 @@ app.use((req, res, next) => {
   next();
 });
 
-// Rate limit global: 100 peticiones por ventana de 15 minutos por IP.
-// Usa express-rate-limit (librería oficial) con keyGenerator que lee req.ip
-// (resuelto por trust proxy, no X-Forwarded-For crudo que el cliente puede falsificar).
+
 const rateLimitGlobal = rateLimit({
   windowMs: parseInt(process.env.RATE_LIMIT_WINDOW_MS, 10) || 15 * 60 * 1000, // 15 minutos
   max: parseInt(process.env.RATE_LIMIT_MAX, 10) || 100, // 100 req por ventana
@@ -190,8 +182,7 @@ app.get('/api/health', async (req, res) => {
 
 // Error handler
 app.use((err, req, res, next) => {
-  // Errores de body-parser (JSON malformado, payload excedido) traen err.status
-  // (400/413) y err.type. Se respeta ese código: no son errores internos.
+
   const status = err?.status || err?.statusCode;
   if (status && status >= 400 && status <= 499) {
     return res.status(status).json({ error: 'Solicitud inválida' });
@@ -208,3 +199,4 @@ app.listen(PORT, () => {
 });
 
 module.exports = app;
+

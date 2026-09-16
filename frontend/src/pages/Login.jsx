@@ -258,7 +258,7 @@ export default function Login() {
     }
   };
 
-  // Enviar el código 2FA para completar el login
+
   const handleVerify2FA = async (e) => {
     e.preventDefault();
     if (!paso2FA?.firma2FA || !codigo2FA.trim()) return;

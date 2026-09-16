@@ -1,17 +1,4 @@
-/**
- * Cifrado transparente de campos sensibles (AES-256-GCM).
- *
- * - Si DATA_ENCRYPTION_KEY está definido en el entorno (32 bytes hex, 64 chars),
- *   los valores marcados se cifran en la BD y se descifran al leerlos.
- * - Si la clave NO está configurada, encrypt/decrypt son NO-OP (devolver el valor
- *   tal cual) para NO romper la conexión ni el flujo actual en producción.
- * - Compatibilidad con datos antiguos: los valores en texto plano que ya existen
- *   en la BD se siguen leyendo sin problema (solo se descifra lo que tiene el
- *   prefijo enc:v1:).
- *
- * Genera la clave con:
- *   node -e "console.log(require('crypto').randomBytes(32).toString('hex'))"
- */
+
 
 const crypto = require('crypto');
 
@@ -29,10 +16,7 @@ function getKey() {
   return Buffer.from(hex, 'hex');
 }
 
-/**
- * Cifra un string. Devuelve `enc:v1:<iv>:<tag>:<cipher>` en base64url.
- * No-op si no hay clave configurada o el valor no es un string.
- */
+
 function encrypt(value) {
   const key = getKey();
   if (!key || value === null || value === undefined || typeof value !== 'string') return value;
@@ -44,14 +28,11 @@ function encrypt(value) {
   return `${PREFIX}${iv.toString('base64url')}:${tag.toString('base64url')}:${enc.toString('base64url')}`;
 }
 
-/**
- * Descifra un valor cifrado. Si no tiene prefijo (dato antiguo) o no hay clave,
- * lo devuelve tal cual (compatibilidad con datos en texto plano existentes).
- */
+
 function decrypt(value) {
   const key = getKey();
   if (!key || value === null || value === undefined || typeof value !== 'string') return value;
-  if (!value.startsWith(PREFIX)) return value; // dato antiguo en texto plano
+  if (!value.startsWith(PREFIX)) return value;
   try {
     const payload = value.slice(PREFIX.length).split(':');
     if (payload.length !== 3) return value;
@@ -62,7 +43,7 @@ function decrypt(value) {
     decipher.setAuthTag(tag);
     return Buffer.concat([decipher.update(data), decipher.final()]).toString('utf8');
   } catch {
-    return value; // no se puede descifrar: devolver el valor crudo, no romper
+    return value;
   }
 }
 

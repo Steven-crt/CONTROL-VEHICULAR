@@ -49,8 +49,7 @@ router.get('/', auth(), async (req, res) => {
   const { year, search } = req.query;
   const limit = parseLimit(req.query.limit);
   try {
-    // Última ubicación con ROW_NUMBER() en una sola pasada sobre ubicaciones
-    // (una subquery correlacionada por fila escalaba mal con muchos vehículos)
+
     let q = `
       SELECT v.*,
         LOWER(COALESCE(tv.nombre, 'Camioneta')) AS tipo,

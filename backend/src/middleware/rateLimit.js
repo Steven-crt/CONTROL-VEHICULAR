@@ -1,9 +1,4 @@
-/**
- * Rate limiting en memoria (por IP y por clave de negocio).
- * - Adecuado para una instancia única (Render) o desarrollo local.
- * - Prefiere req.ip (resuelto por Express con trust proxy) en lugar de leer
- *   X-Forwarded-For crudo, que el cliente puede falsificar.
- */
+
 
 const { obtenerIp } = require('../utils/obtenerIp');
 

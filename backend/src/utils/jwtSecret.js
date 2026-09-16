@@ -53,9 +53,7 @@ function getJwtSecret() {
       '(genera uno con: node -e "console.log(require(\'crypto\').randomBytes(48).toString(\'hex\'))")'
     );
   }
-  // Modo desarrollo: generar un secreto y persistirlo en .env para que
-  // sobreviva reinicios del servidor. Así los tokens JWT no se invalidan
-  // cada vez que se reinicia el backend.
+
   if (!ephemeral) {
     ephemeral = crypto.randomBytes(32).toString('hex');
     persistirSecret(ephemeral);

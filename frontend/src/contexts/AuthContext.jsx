@@ -22,28 +22,22 @@ export function AuthProvider({ children }) {
   const [loading, setLoading] = useState(true);
   const navigate = useNavigate();
 
-  // Sin token en localStorage: la sesión vive en cookie httpOnly.
-  // Limpiar restos legacy de versiones anteriores que guardaban el JWT.
+  
   useEffect(() => {
-    try { localStorage.removeItem('token'); } catch {}
-    // Intentar restaurar sesión desde cookie httpOnly vía /auth/me
+    try { localStorage.removeItem('token'); } catch { /* opcional: limpieza legacy, puede no existir */ }
     api.get('/auth/me').then(({ data }) => {
       setUsuario(normalizeUsuario(data));
-      // Activar gracia post-restauración: al recargar la página, los componentes
-      // que se montan inmediatamente disparan peticiones API. Si alguna falla 401
-      // de forma transitoria (cold-start, race), no debe provocar redirect a login.
+
       activarGraciaPostLogin();
     }).catch(() => {
       setUsuario(null);
     }).finally(() => setLoading(false));
   }, []);
 
-  // Escuchar evento 401 del interceptor de axios.
-  // Al recibir 401: limpiar usuario y navegar a /login con React Router
-  // (SIN window.location.href → sin recarga de página → se rompe el loop).
+
   const handleUnauthorized = useCallback(() => {
     setUsuario(null);
-    try { localStorage.removeItem('usuario'); localStorage.removeItem('token'); } catch {}
+    try { localStorage.removeItem('usuario'); localStorage.removeItem('token'); } catch { /* opcional: limpieza legacy, puede no existir */ }
     navigate('/login', { replace: true });
   }, [navigate]);
 
@@ -54,14 +48,13 @@ export function AuthProvider({ children }) {
 
   const login = async (username, password) => {
     const { data } = await api.post('/auth/login', { username, password });
-    // Si el usuario tiene 2FA activo, el backend responde requiere2FA y no emite
-    // sesión todavía. El frontend debe pedir el código OTP antes de continuar.
+
     if (data?.requiere2FA) {
       return { requiere2FA: true, firma2FA: data.firma2FA, usuario: normalizeUsuario(data.usuario) };
     }
     const usuarioNorm = normalizeUsuario(data.usuario);
     // Token en cookie httpOnly — no se persiste en localStorage (XSS).
-    try { localStorage.setItem('usuario', JSON.stringify(usuarioNorm)); } catch {}
+    try { localStorage.setItem('usuario', JSON.stringify(usuarioNorm)); } catch { /* opcional: localStorage puede no estar disponible */ }
     setUsuario(usuarioNorm);
     // Activar período de gracia: las llamadas API que se disparen
     // inmediatamente (configuración, notificaciones, etc.) no deben
@@ -74,7 +67,7 @@ export function AuthProvider({ children }) {
   const verify2FA = async (firma2FA, codigo) => {
     const { data } = await api.post('/auth/2fa/verify', { firma2FA, codigo });
     const usuarioNorm = normalizeUsuario(data.usuario);
-    try { localStorage.setItem('usuario', JSON.stringify(usuarioNorm)); } catch {}
+    try { localStorage.setItem('usuario', JSON.stringify(usuarioNorm)); } catch { /* opcional: localStorage puede no estar disponible */ }
     setUsuario(usuarioNorm);
     activarGraciaPostLogin();
     return data;
@@ -86,7 +79,7 @@ export function AuthProvider({ children }) {
     } catch {
       // La cookie puede no existir: se limpia igual
     }
-    try { localStorage.removeItem('usuario'); localStorage.removeItem('token'); } catch {}
+    try { localStorage.removeItem('usuario'); localStorage.removeItem('token'); } catch { /* opcional: limpieza legacy, puede no existir */ }
     setUsuario(null);
     navigate('/login', { replace: true });
   };
@@ -100,6 +93,7 @@ export function AuthProvider({ children }) {
       detenerRealTime();
     }
     return () => detenerRealTime();
+    // eslint-disable-next-line react-hooks/exhaustive-deps 
   }, [!!usuario]);
 
   return (
@@ -109,6 +103,9 @@ export function AuthProvider({ children }) {
   );
 }
 
+// El patrón Provider + useAuth juntos es estándar para contextos; Fast Refresh
+// solo pierde HMR de estado en este archivo (aceptable para un contexto).
+// eslint-disable-next-line react-refresh/only-export-components
 export function useAuth() {
   return useContext(AuthContext);
 }
