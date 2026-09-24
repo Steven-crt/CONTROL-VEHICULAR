@@ -22,9 +22,9 @@ router.post('/calcular', auth(['admin']), async (req, res) => {
     // 1. Verificar que el vehículo existe
     const [vehiculo] = await db.query(
       `SELECT v.*, LOWER(COALESCE(tv.nombre, 'Camioneta')) AS tipo
-       FROM vehiculos v
-       LEFT JOIN tipos_vehiculo tv ON tv.id = v.tipo_vehiculo_id
-       WHERE v.id = ?`,
+      FROM vehiculos v
+      LEFT JOIN tipos_vehiculo tv ON tv.id = v.tipo_vehiculo_id
+      WHERE v.id = ?`,
       [vehiculo_id]
     );
     if (!vehiculo.length)

@@ -297,7 +297,7 @@ router.get('/gastos-consolidado', auth(['admin']), async (req, res) => {
   } catch (err) {
     internalError(res, err, 'reportes/dashboard');
   }
-});
+}); 
 
 // GET /api/reportes/vehiculos-recientes - Últimos vehículos registrados
 router.get('/vehiculos-recientes', auth(['admin']), async (req, res) => {
@@ -332,29 +332,29 @@ router.get('/anomalias-resumen', auth(['admin']), async (req, res) => {
                 SUM(a.estado = 'Pendiente') as abiertas,
                 SUM(a.estado IN ('Resuelta','Descartada')) as cerradas,
                 SUM(a.severidad = 'alta' AND a.estado = 'Pendiente') as criticas_abiertas
-         FROM anomalias a ${w}`,
+        FROM anomalias a ${w}`,
         params
       ),
       db.query(
         `SELECT a.severidad as name, COUNT(*) as value FROM anomalias a ${w}
-         GROUP BY a.severidad`,
+        GROUP BY a.severidad`,
         params
       ),
       db.query(
         `SELECT a.tipo as name, COUNT(*) as value,
                 SUM(a.estado = 'Pendiente') as pendientes
-         FROM anomalias a ${w}
-         GROUP BY a.tipo ORDER BY value DESC LIMIT 8`,
+        FROM anomalias a ${w}
+        GROUP BY a.tipo ORDER BY value DESC LIMIT 8`,
         params
       ),
       db.query(
         `SELECT a.id, a.codigo, a.tipo, a.severidad, a.descripcion, a.estado, a.created_at,
                 v.placa, u.nombre as reportado_por
-         FROM anomalias a
-         LEFT JOIN vehiculos v ON v.id = a.vehiculo_id
-         LEFT JOIN usuarios u ON u.id = a.usuario_id
-         ${w}
-         ORDER BY a.created_at DESC LIMIT 6`,
+        FROM anomalias a
+        LEFT JOIN vehiculos v ON v.id = a.vehiculo_id
+        LEFT JOIN usuarios u ON u.id = a.usuario_id
+        ${w}
+        ORDER BY a.created_at DESC LIMIT 6`,
         params
       )
     ]);

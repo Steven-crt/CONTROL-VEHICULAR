@@ -29,8 +29,7 @@ let emitiendo401 = false;
 
 // Período de gracia post-login/refresh: durante GRACIA_MS tras un login exitoso
 // o restauración de sesión, los 401 transitorios (cookie aún no propagada,
-// cold-start de Render, CORS preflight, etc.) se silencian para no disparar
-// un logout/redirect inmediato.
+// cold-start -
 const GRACIA_MS = 8000; // 8 s — suficiente para cold start de Render (~5-7 s)
 let graciaPostLogin = false;
 let graciaTimer = null;
@@ -56,7 +55,7 @@ api.interceptors.response.use(
       }
 
       // Limpiar datos de sesión locales
-      try { localStorage.removeItem('usuario'); } catch {}
+      try { localStorage.removeItem('usuario'); } catch { /* empty */ }
 
 
       if (!emitiendo401) {

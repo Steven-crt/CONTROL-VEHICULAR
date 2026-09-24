@@ -13,6 +13,14 @@ const EVENTOS = {
 const clientes = new Map();
 let nextId = 1;
 
+// Límites anti-uso-abusivo del hub SSE:
+// - por usuario: evita que una cuenta autenticada abra cientos de streams y
+//   gaste memoria/respuestas del proceso (sin tope, cada stream retiene un
+//   socket + un setInterval).
+// - total: respaldo global por si varios usuarios se reconectan en ráfaga.
+const MAX_CONEXIONES_POR_USUARIO = 5;
+const MAX_CONEXIONES_TOTAL = 1000;
+
 // Cabeceras para evitar que proxies / navegador buffereen la respuesta SSE
 const SSE_HEADERS = {
   'Content-Type': 'text/event-stream',
@@ -21,10 +29,26 @@ const SSE_HEADERS = {
   'X-Accel-Buffering': 'no'
 };
 
-// Registra un cliente SSE autenticado y devuelve un objeto {id, close()}
+// Registra un cliente SSE autenticado y devuelve un objeto {id, close()}.
+// Si supera los límites de conexiones, responde el error y devuelve null.
 function registrarCliente(res, usuario) {
   const id = nextId++;
-  const entrada = { res, usuarioId: usuario?.id ?? null, rol: usuario?.rol ?? null, heartbeat: null };
+
+  const usuarioId = usuario?.id ?? null;
+  let activasDelUsuario = 0;
+  for (const [cId, c] of clientes) {
+    if (c.usuarioId === usuarioId) activasDelUsuario++;
+  }
+  if (usuarioId !== null && activasDelUsuario >= MAX_CONEXIONES_POR_USUARIO) {
+    if (!res.headersSent) res.status(429).json({ error: 'Demasiadas conexiones de tiempo real abiertas' });
+    return null;
+  }
+  if (clientes.size >= MAX_CONEXIONES_TOTAL) {
+    if (!res.headersSent) res.status(503).json({ error: 'Servicio de tiempo real saturado, reintenta en unos segundos' });
+    return null;
+  }
+
+  const entrada = { res, usuarioId, rol: usuario?.rol ?? null, heartbeat: null };
 
   res.writeHead(200, SSE_HEADERS);
   // saludo inicial: envío el id para que el cliente sepa que está conectado

@@ -35,7 +35,7 @@ router.get('/', auth(), async (req, res) => {
     const [rows] = await db.query('SELECT clave, valor FROM configuracion');
     const config = {};
     rows.forEach(r => {
-      // Filtrar claves sensibles que no deben llegar al frontend
+
       if (!CLAVES_PRIVADAS.includes(r.clave.toLowerCase())) {
         config[r.clave] = r.valor;
       }
@@ -46,12 +46,12 @@ router.get('/', auth(), async (req, res) => {
   }
 });
 
-// PUT /api/configuracion — solo admin
+
 router.put('/', auth(['admin']), async (req, res) => {
   const entries = Object.entries(req.body);
   if (!entries.length) return res.status(400).json({ error: 'No hay datos para actualizar' });
 
-  // Sanitizar: solo claves permitidas, valores string/number, límite de longitud + URL segura para logo_url
+
   const entradaValida = entries.filter(([clave, valor]) => {
     if (!CLAVES_PERMITIDAS.has(clave)) return false;
     if (typeof clave !== 'string' || clave.length > 100) return false;

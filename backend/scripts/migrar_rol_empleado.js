@@ -1,15 +1,4 @@
-/**
- * Migración: rol unificado 'empleado' (rol_id INT) + tabla 'anomalias'.
- *
- * - Usa DATABASE_URL (URI de Aiven) o las variables DB_*; SSL activo por
- *   defecto en producción.
- * - Idempotente: puede ejecutarse varias veces sin dañar datos.
- * - Esquema real de usuarios: `rol_id INT` (1=admin, 2=empleado).
- *   Si existiera además una columna texto `rol` (instalaciones antiguas),
- *   también se normaliza a ENUM('admin','empleado').
- *
- * Ejecutar: node scripts/migrar_rol_empleado.js
- */
+
 const mysql = require('mysql2/promise');
 require('dotenv').config();
 const { buildDbConfig } = require('../src/utils/dbConfig');
@@ -23,7 +12,7 @@ const cfg = {
 async function columnExists(conn, table, column) {
   const [rows] = await conn.query(
     `SELECT COUNT(*) AS n FROM information_schema.columns
-     WHERE table_schema = DATABASE() AND table_name = ? AND column_name = ?`,
+    WHERE table_schema = DATABASE() AND table_name = ? AND column_name = ?`,
     [table, column]
   );
   return rows[0].n > 0;

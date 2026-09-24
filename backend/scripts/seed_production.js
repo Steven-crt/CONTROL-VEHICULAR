@@ -128,9 +128,9 @@ async function main() {
         const precio = round2(1.32 + ((180 - d) % 60) / 200 + rnd() * 0.04);
         await conn.query(
           `INSERT INTO solicitudes_combustible
-           (codigo, vehiculo_id, solicitante_id, galones_solicitados, galones_surtidos, tipo_combustible,
+          (codigo, vehiculo_id, solicitante_id, galones_solicitados, galones_surtidos, tipo_combustible,
             costo_total, precio_por_galon, kilometraje_actual, estado, atendido_por_id, fecha_solicitud, fecha_atencion, observaciones)
-           VALUES (?,?,?,?,?,?,?,?,?,?,?,?,?,?)`,
+          VALUES (?,?,?,?,?,?,?,?,?,?,?,?,?,?)`,
           [`COM-PROD${String(++nCom).padStart(5, '0')}`, vid, 2, gal, gal, pick(['Gasolina Superior', 'Gasolina Regular', 'Diésel']),
             round2(gal * precio), precio, kmEn(vid, d), 'Surtida', 1,
             diasAtras(d, rint(7, 17)), diasAtras(d, rint(7, 17), rint(35, 70)), '']
@@ -142,9 +142,9 @@ async function main() {
     for (const [vid, d, gal] of PENDS) {
       await conn.query(
         `INSERT INTO solicitudes_combustible
-         (codigo, vehiculo_id, solicitante_id, galones_solicitados, tipo_combustible, costo_total,
+        (codigo, vehiculo_id, solicitante_id, galones_solicitados, tipo_combustible, costo_total,
           kilometraje_actual, estado, fecha_solicitud, observaciones)
-         VALUES (?,?,?,?,?,?,?,'Pendiente',?,?)`,
+        VALUES (?,?,?,?,?,?,?,'Pendiente',?,?)`,
         [`COM-PROD${String(++nCom).padStart(5, '0')}`, vid, 2, gal, 'Gasolina Superior', 0,
           kmEn(vid, d), diasAtras(d, rint(8, 16)), '']
       );
@@ -154,9 +154,9 @@ async function main() {
     for (const [vid, d, motivo] of RECHS) {
       await conn.query(
         `INSERT INTO solicitudes_combustible
-         (codigo, vehiculo_id, solicitante_id, galones_solicitados, tipo_combustible, costo_total,
+        (codigo, vehiculo_id, solicitante_id, galones_solicitados, tipo_combustible, costo_total,
           kilometraje_actual, estado, atendido_por_id, fecha_solicitud, fecha_atencion, observaciones)
-         VALUES (?,?,?,?,?,?,?,'Rechazada',?,?,?,?)`,
+        VALUES (?,?,?,?,?,?,?,'Rechazada',?,?,?,?)`,
         [`COM-PROD${String(++nCom).padStart(5, '0')}`, vid, 2, 12, 'Gasolina Regular', 0,
           kmEn(vid, d), 1, diasAtras(d, 10), diasAtras(d, 10, 50), motivo]
       );
@@ -176,9 +176,9 @@ async function main() {
         const prov = correctivo ? 'Taller Mecánico Central' : PROVEEDORES[rint(0, 3)][0];
         await conn.query(
           `INSERT INTO mantenimientos
-           (codigo, vehiculo_id, solicitante_id, tipo_mantenimiento_id, tipo_servicio, descripcion,
+          (codigo, vehiculo_id, solicitante_id, tipo_mantenimiento_id, tipo_servicio, descripcion,
             kilometraje_realizado, fecha_programada, fecha_realizada, costo, proveedor, factura, estado, observaciones, atendido_por_id)
-           VALUES (?,?,?,?,?,?,?,?,?,?,?,?,?,?,?)`,
+          VALUES (?,?,?,?,?,?,?,?,?,?,?,?,?,?,?)`,
           [`MT-PROD${String(++nMt).padStart(5, '0')}`, vid, 2, pick(TIPO_IDS),
             correctivo ? 'Correctivo' : 'Preventivo',
             correctivo ? pick(DESC_CORRECTIVO) : pick(DESC_PREVENTIVO),
@@ -192,17 +192,17 @@ async function main() {
     for (const [vid, d, desc] of MTPEND) {
       await conn.query(
         `INSERT INTO mantenimientos
-         (codigo, vehiculo_id, solicitante_id, tipo_mantenimiento_id, tipo_servicio, descripcion,
+          (codigo, vehiculo_id, solicitante_id, tipo_mantenimiento_id, tipo_servicio, descripcion,
           kilometraje_realizado, fecha_realizada, costo, estado)
-         VALUES (?,?,?,?,?,?,?,?,0,'Pendiente')`,
+        VALUES (?,?,?,?,?,?,?,?,0,'Pendiente')`,
         [`MT-PROD${String(++nMt).padStart(5, '0')}`, vid, 2, pick(TIPO_IDS), 'Preventivo', desc, kmEn(vid, d), diasAtras(d, rint(8, 14))]
       );
     }
     await conn.query(
       `INSERT INTO mantenimientos
-       (codigo, vehiculo_id, solicitante_id, tipo_mantenimiento_id, tipo_servicio, descripcion,
+      (codigo, vehiculo_id, solicitante_id, tipo_mantenimiento_id, tipo_servicio, descripcion,
         kilometraje_realizado, fecha_realizada, costo, estado, atendido_por_id)
-       VALUES ('MT-PROD99999', ?, 2, ?, 'Preventivo', 'Solicitud de cambio de llantas', ?, ?, 0, 'Rechazado', 1)`,
+      VALUES ('MT-PROD99999', ?, 2, ?, 'Preventivo', 'Solicitud de cambio de llantas', ?, ?, 0, 'Rechazado', 1)`,
       [VEH_IDS[2], pick(TIPO_IDS), kmEn(VEH_IDS[2], 6), diasAtras(6, 11)]
     );
 
@@ -220,8 +220,8 @@ async function main() {
       const resuelta = estado === 'Resuelta' || estado === 'Descartada';
       await conn.query(
         `INSERT INTO anomalias
-         (codigo, vehiculo_id, usuario_id, tipo, severidad, descripcion, foto_url, estado, fecha_resuelta, resuelta_por_id, created_at)
-         VALUES (?,?,?,?,?,?,?,?,?,?,?)`,
+        (codigo, vehiculo_id, usuario_id, tipo, severidad, descripcion, foto_url, estado, fecha_resuelta, resuelta_por_id, created_at)
+        VALUES (?,?,?,?,?,?,?,?,?,?,?)`,
         [`ANO-PROD${String(++nAno).padStart(4, '0')}`, vid, 2, tipo, sev,
           DESC_ANOMALIAS[tipo], null, estado,
           resuelta ? diasAtras(d - 1, rint(10, 16)) : null,
@@ -248,7 +248,7 @@ async function main() {
         lng += (rnd() - 0.5) * 0.012;
         await conn.query(
           `INSERT INTO ubicaciones (vehiculo_id, usuario_id, latitud, longitud, velocidad, direccion, precision_gps, bateria, timestamp)
-           VALUES (?,?,?,?,?,?,?,?,?)`,
+          VALUES (?,?,?,?,?,?,?,?,?)`,
           [vid, 2, Number(lat.toFixed(7)), Number(lng.toFixed(7)),
             rnd() < 0.25 ? 0 : round1(rnd() * 80), rint(0, 359), round1(5 + rnd() * 9), round1(40 + rnd() * 58),
             new Date(Date.now() - (i * 5 + rint(0, 3)) * 3600000)]
@@ -259,9 +259,9 @@ async function main() {
     // 10) Notificaciones para el admin sobre solicitudes pendientes
     await conn.query(
       `INSERT INTO notificaciones (usuario_id, titulo, mensaje, tipo, leida, created_at) VALUES
-       (1, 'Nuevas solicitudes pendientes', 'Hay 3 cargas de combustible y 2 servicios de mantenimiento esperando aprobación.', 'warning', 0, NOW() - INTERVAL 2 HOUR),
-       (1, 'Anomalía de severidad alta reportada', 'Se reportó una anomalía crítica en uno de los vehículos asignados.', 'danger', 0, NOW() - INTERVAL 5 HOUR),
-       (1, 'Bienvenido al sistema', 'Datos demo de producción generados automáticamente.', 'info', 1, NOW() - INTERVAL 7 DAY)`
+      (1, 'Nuevas solicitudes pendientes', 'Hay 3 cargas de combustible y 2 servicios de mantenimiento esperando aprobación.', 'warning', 0, NOW() - INTERVAL 2 HOUR),
+      (1, 'Anomalía de severidad alta reportada', 'Se reportó una anomalía crítica en uno de los vehículos asignados.', 'danger', 0, NOW() - INTERVAL 5 HOUR),
+      (1, 'Bienvenido al sistema', 'Datos demo de producción generados automáticamente.', 'info', 1, NOW() - INTERVAL 7 DAY)`
     );
 
     await conn.commit();

@@ -38,16 +38,16 @@ function conectar() {
 
 
   source.addEventListener('combustible', (e) => {
-    try { notificar(EVENTOS.COMBUSTIBLE, JSON.parse(e.data)); } catch {}
-  });
+    try { notificar(EVENTOS.COMBUSTIBLE, JSON.parse(e.data)); } catch { /* empty */ }
+});
   source.addEventListener('mantenimiento', (e) => {
-    try { notificar(EVENTOS.MANTENIMIENTO, JSON.parse(e.data)); } catch {}
+    try { notificar(EVENTOS.MANTENIMIENTO, JSON.parse(e.data)); } catch { /* empty */ }
   });
   source.addEventListener('anomalia', (e) => {
-    try { notificar(EVENTOS.ANOMALIA, JSON.parse(e.data)); } catch {}
+    try { notificar(EVENTOS.ANOMALIA, JSON.parse(e.data)); } catch { /* empty */ }
   });
   source.addEventListener('vehiculo', (e) => {
-    try { notificar(EVENTOS.VEHICULO, JSON.parse(e.data)); } catch {}
+    try { notificar(EVENTOS.VEHICULO, JSON.parse(e.data)); } catch { /* empty */ }
   });
 
   source.onerror = () => {
@@ -77,6 +77,7 @@ function iniciar() {
 import { useEffect, useRef } from 'react';
 export function useRealTime(tipos, callback) {
   const cbRef = useRef(callback);
+  // eslint-disable-next-line react-hooks/refs
   cbRef.current = callback;
   const tiposArr = Array.isArray(tipos) ? tipos : [tipos];
 

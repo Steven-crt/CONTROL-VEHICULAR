@@ -31,6 +31,7 @@ export default function Anomalias() {
   const [modal, setModal] = useState(false);
   const [form, setForm] = useState(EMPTY_FORM);
   const [saving, setSaving] = useState(false);
+  
 
   const fetchAnomalias = useCallback(async () => {
     try {
@@ -48,7 +49,7 @@ export default function Anomalias() {
     api.get('/vehiculos').then(r => setVehiculos(r.data || [])).catch(() => {});
   }, []);
 
-  // Tiempo real: refresca la lista cuando llega una anomalía nueva o cambia su estado.
+
   useRealTime('anomalia', () => { fetchAnomalias(); });
 
   const openAdd = () => { setForm(EMPTY_FORM); setModal(true); };

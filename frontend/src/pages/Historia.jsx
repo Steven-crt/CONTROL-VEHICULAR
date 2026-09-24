@@ -248,6 +248,7 @@ export default function Historia() {
                         onChange={e => setForm({ ...form, litros: e.target.value })} required />
                     </div>
                     <div>
+                      
                       <label className="block text-cv-muted text-sm mb-1">Tipo</label>
                       <select className="select" value={form.tipo_combustible} onChange={e => setForm({ ...form, tipo_combustible: e.target.value })}>
                         {['Gasolina', 'Corriente', 'Extra', 'Diesel', 'ACPM'].map(t => <option key={t}>{t}</option>)}

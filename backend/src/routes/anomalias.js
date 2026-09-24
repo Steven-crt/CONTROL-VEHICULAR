@@ -93,7 +93,7 @@ router.post('/', auth(), async (req, res) => {
     const codigo = genCodigo();
     const [result] = await db.query(
       `INSERT INTO anomalias (codigo, vehiculo_id, usuario_id, tipo, severidad, descripcion, foto_url, estado)
-       VALUES (?, ?, ?, ?, ?, ?, ?, 'Pendiente')`,
+      VALUES (?, ?, ?, ?, ?, ?, ?, 'Pendiente')`,
       [codigo, vehiculo_id, req.user?.id || null, tipoFinal, severidadFinal, descripcion, foto_url || null]
     );
 

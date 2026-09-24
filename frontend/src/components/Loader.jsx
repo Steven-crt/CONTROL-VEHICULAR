@@ -4,7 +4,7 @@ import styled from 'styled-components';
 const Loader = () => {
   return (
     <StyledWrapper>
-      <div className="loader" />
+    <div className="loader" />
     </StyledWrapper>
   );
 }

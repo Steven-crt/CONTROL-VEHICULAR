@@ -136,7 +136,7 @@ router.post('/', auth(['admin']), async (req, res) => {
     const tipoId = await tipoVehiculoId(tipo);
     const [result] = await db.query(
       `INSERT INTO vehiculos (placa, tipo_vehiculo_id, color, marca, modelo, ano, soat_numero, soat_empresa, soat_fecha_inicio, soat_fecha_vencimiento)
-       VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?)`,
+      VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?)`,
       [
         placa.trim().toUpperCase(),
         tipoId,
@@ -294,7 +294,7 @@ router.get('/:id/historial-km', auth(), async (req, res) => {
   try {
     const [combustible] = await db.query(
       `SELECT fecha_solicitud as fecha, kilometraje_actual as km_actual, galones_surtidos as litros, 'combustible' as tipo
-       FROM solicitudes_combustible WHERE vehiculo_id = ? ORDER BY fecha_solicitud ASC`,
+      FROM solicitudes_combustible WHERE vehiculo_id = ? ORDER BY fecha_solicitud ASC`,
       [id]
     );
     res.json(combustible);
@@ -323,9 +323,9 @@ router.put('/:id', auth(['admin']), async (req, res) => {
   try {
     const [existing] = await db.query(
       `SELECT v.*, LOWER(COALESCE(tv.nombre, 'Camioneta')) AS tipo
-       FROM vehiculos v
-       LEFT JOIN tipos_vehiculo tv ON tv.id = v.tipo_vehiculo_id
-       WHERE v.id = ?`,
+      FROM vehiculos v
+      LEFT JOIN tipos_vehiculo tv ON tv.id = v.tipo_vehiculo_id
+      WHERE v.id = ?`,
       [id]
     );
     if (!existing.length)
@@ -343,7 +343,7 @@ router.put('/:id', auth(['admin']), async (req, res) => {
     await db.query(
       `UPDATE vehiculos SET placa = ?, tipo_vehiculo_id = ?, color = ?, marca = ?, modelo = ?, ano = ?,
         soat_numero = ?, soat_empresa = ?, soat_fecha_inicio = ?, soat_fecha_vencimiento = ?
-       WHERE id = ?`,
+      WHERE id = ?`,
       [
         placa ? placa.trim().toUpperCase() : existing[0].placa,
         tipoId,
@@ -362,9 +362,9 @@ router.put('/:id', auth(['admin']), async (req, res) => {
     const [updated] = await db.query(
       `SELECT v.*, LOWER(COALESCE(tv.nombre, 'Camioneta')) AS tipo,
         v.ano AS anio, v.kilometraje_actual AS km_actual
-       FROM vehiculos v
-       LEFT JOIN tipos_vehiculo tv ON tv.id = v.tipo_vehiculo_id
-       WHERE v.id = ?`,
+      FROM vehiculos v
+      LEFT JOIN tipos_vehiculo tv ON tv.id = v.tipo_vehiculo_id
+      WHERE v.id = ?`,
       [id]
     );
     res.json(enriquecerConSoat({ ...updated[0], km_actual: parseFloat(updated[0].km_actual) || 0 }));

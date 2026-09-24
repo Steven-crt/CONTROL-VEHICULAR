@@ -16,7 +16,13 @@ require('dotenv').config();
 
 const intentosFallidos = new Map();
 const MAX_INTENTOS = 5;
-const VENTANA_MS = 15 * 60 * 1000; // 15 minutos
+const VENTANA_MS = 15 * 60 * 1000;
+
+// Hash dummy para igualar el tiempo de respuesta cuando el usuario no existe:
+// sin esto, un atacante distingue por latencia entre "usuario no existe"
+// (respuesta rápida) y "contraseña incorrecta" (bcrypt ~100ms), enumerando
+// los usernames válidos.
+const DUMMY_HASH = bcrypt.hashSync('dummy-para-siempre-' + crypto.randomUUID(), 10);
 
 // Barrer periódicamente entradas viejas para evitar fuga de memoria
 setInterval(() => {
@@ -96,6 +102,7 @@ router.post('/login', async (req, res) => {
       [username.trim()]
     );
     if (rows.length === 0) {
+      await bcrypt.compare(password, DUMMY_HASH); // igualar timing (anti-enumeración)
       registrarFallo(ip);
       logEvento(EVENTOS.LOGIN_FAIL, req, `usuario=${username.trim()}`);
       return res.status(401).json({ error: 'Credenciales inválidas' });

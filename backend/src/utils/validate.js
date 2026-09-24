@@ -1,10 +1,4 @@
-/**
- * Validación centralizada de entradas.
- * - Evita payloads malformados, tipos incorrectos, longitudes desbordadas y
- *   valores fuera de rango en toda la API (defensa en profundidad sobre las
- *   consultas parametrizadas).
- * - Cada validador devuelve { ok: true, value } o { ok: false, error }.
- */
+
 
 const RE_EMAIL = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
 const RE_PLACA = /^[A-Za-z0-9-]{3,15}$/;

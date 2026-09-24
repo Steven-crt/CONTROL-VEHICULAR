@@ -76,9 +76,10 @@ router.get('/', auth(), async (req, res) => {
       q += ' AND c.estado = ?';
       params.push(String(req.query.estado));
     }
-    // Un empleado solo puede listar sus propias solicitudes con solo_mios;
-    // el admin puede filtrar por cualquier solicitante.
-    if (String(req.query.solo_mios || '') === '1') {
+    // Un empleado SOLO puede listar sus propias solicitudes (se fuerza en el
+    // servidor, no se confía en que el cliente envíe solo_mios). El admin puede
+    // filtrar por cualquier solicitante.
+    if (req.user?.rol !== 'admin' || String(req.query.solo_mios || '') === '1') {
       q += ' AND c.solicitante_id = ?';
       params.push(req.user.id);
     }

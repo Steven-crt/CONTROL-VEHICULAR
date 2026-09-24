@@ -6,7 +6,7 @@ const { registrarCliente, stats } = require('../realtime');
 
 router.get('/stream', auth(), (req, res) => {
   const cliente = registrarCliente(res, req.user);
-
+  if (!cliente) return; // límite alcanzado: registrarCliente ya respondió el error
 
   res.setTimeout(0);
 });

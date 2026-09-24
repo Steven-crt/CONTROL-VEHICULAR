@@ -3,7 +3,7 @@ import api from '../api/axios';
 import toast from 'react-hot-toast';
 import { Save, Settings, UploadCloud, Truck, Shield, Fuel, Wrench } from 'lucide-react';
 
-const CAMPOS_NEGOCIO = [
+const CAMPOS_NEGOCIO                                                                                                                                                                                                                                                                                                                                                                                 = [
   { key: 'nombre_negocio', label: 'Nombre de la Empresa', type: 'text', placeholder: 'Control Vehicular' },
   { key: 'ruc', label: 'RUC / ID Fiscal', type: 'text', placeholder: '1234567890001' },
   { key: 'direccion', label: 'Dirección', type: 'text', placeholder: 'Av. Principal 123' },
@@ -160,7 +160,7 @@ export default function Configuracion() {
           <Seccion icon={Truck} titulo="Flota Vehicular" subtitulo="parámetros de la flota" campos={CAMPOS_FLOTA} config={config} setConfig={setConfig} loading={loading} />
           <Seccion icon={Wrench} titulo="Mantenimiento" subtitulo="alertas preventivas" campos={CAMPOS_MANTENIMIENTO} config={config} setConfig={setConfig} loading={loading} />
           <Seccion icon={Shield} titulo="Seguridad y Monitoreo" campos={CAMPOS_SEGURIDAD} config={config} setConfig={setConfig} loading={loading} />
-
+          
           <div className="border-t border-cv-border pt-4">
             <h3 className="text-cv-muted text-xs font-semibold uppercase tracking-wider pb-4">Información del Sistema</h3>
             <div className="grid grid-cols-1 sm:grid-cols-2 gap-3 text-sm text-cv-muted">

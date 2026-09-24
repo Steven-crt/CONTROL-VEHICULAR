@@ -1,15 +1,4 @@
-/**
- * Bus de eventos de autenticación.
- *
- * Permite que el interceptor de axios notifique al AuthProvider de un 401
- * sin usar window.location.href (que hace recarga completa y provoca el
- * loop infinito de login).
- *
- * Uso:
- *   - Interceptor: authEvents.emit('unauthorized')
- *   - AuthProvider: authEvents.on('unauthorized', handler)
- *                   authEvents.off('unauthorized', handler)  ← limpieza en useEffect
- */
+
 
 const authEvents = new EventTarget();
 

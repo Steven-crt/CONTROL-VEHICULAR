@@ -60,6 +60,36 @@ app.use((req, res, next) => {
   return buildApiCors(req)(req, res, next);
 });
 
+// Defensa CSRF: la sesión viaja en cookie httpOnly con SameSite=None en
+// producción (frontend y API están en dominios distintos), por lo que el
+// navegador adjunta la cookie a peticiones cross-site. El CORS bloquea que
+// JS lea la respuesta, pero NO impide que el request se ejecute si llega como
+// formulario simple (application/x-www-form-urlencoded / multipart) sin
+// preflight. Para métodos que mutan estado, si llega cabecera Origin y no está
+// en la lista de orígenes permitidos, se rechaza: eso corta el CSRF por
+// formulario. Clientes no-navegador (curl, integraciones) no envían Origin y
+// siguen funcionando.
+app.use((req, res, next) => {
+  if (!['POST', 'PUT', 'PATCH', 'DELETE'].includes(req.method)) return next();
+  const origin = req.headers.origin;
+  if (!origin) return next();
+  let permitido = allowedOrigins.includes(origin);
+  if (!permitido) {
+    try {
+      const originHost = new URL(origin).host;
+      const reqHost = (req?.headers?.host || '').split(':')[0];
+      const hostAllowed = allowedOrigins.some(o => {
+        try { return new URL(o).host.split(':')[0] === reqHost; } catch { return false; }
+      });
+      permitido = hostAllowed && originHost === reqHost;
+    } catch {}
+  }
+  if (!permitido) {
+    return res.status(403).json({ error: 'Origen de petición no permitido' });
+  }
+  next();
+});
+
 
 app.use(helmet({
   // Content-Security-Policy: restringe orígenes de recursos y scripts

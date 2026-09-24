@@ -30,6 +30,7 @@ export default function Login() {
   const { login, verify2FA } = useAuth();
   const navigate = useNavigate();
   const canvasRef = useRef(null);
+  
 
   useEffect(() => {
     const canvas = canvasRef.current;

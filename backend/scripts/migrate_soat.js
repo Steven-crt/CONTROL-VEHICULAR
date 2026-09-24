@@ -20,7 +20,7 @@ async function main() {
 
   const [existing] = await conn.query(
     `SELECT COLUMN_NAME FROM INFORMATION_SCHEMA.COLUMNS
-     WHERE TABLE_SCHEMA = DATABASE() AND TABLE_NAME = 'vehiculos'`
+    WHERE TABLE_SCHEMA = DATABASE() AND TABLE_NAME = 'vehiculos'`
   );
   const existingNames = new Set(existing.map(r => r.COLUMN_NAME));
 

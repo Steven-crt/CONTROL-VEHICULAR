@@ -73,7 +73,7 @@ router.get('/', auth(), async (req, res) => {
       q += ' AND m.estado = ?';
       params.push(String(req.query.estado));
     }
-    if (String(req.query.solo_mios || '') === '1') {
+    if (req.user?.rol !== 'admin' || String(req.query.solo_mios || '') === '1') {
       q += ' AND m.solicitante_id = ?';
       params.push(req.user.id);
     }
@@ -134,10 +134,7 @@ router.get('/historial/:vehiculo_id', auth(), async (req, res) => {
   }
 });
 
-// POST /api/mantenimiento - Registrar mantenimiento
-// - admin: registra directamente como 'Completado'
-// - empleado: crea una SOLICITUD 'Pendiente' que el admin aprueba después.
-//   Costo/proveedor enviados por un empleado se ignoran (solo el admin los fija).
+
 router.post('/', auth(), async (req, res) => {
   const validado = body({
     vehiculo_id: [intId, { label: 'vehiculo_id' }],
@@ -166,7 +163,7 @@ router.post('/', auth(), async (req, res) => {
     const [result] = await db.query(
       `INSERT INTO mantenimientos
         (codigo, vehiculo_id, solicitante_id, tipo_mantenimiento_id, tipo_servicio, descripcion, kilometraje_realizado, fecha_realizada, costo, proveedor, observaciones, estado)
-       VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)`,
+      VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)`,
       [
         genCodigo('MT'),
         vehiculo_id,
@@ -223,8 +220,8 @@ router.put('/:id/atender', auth(['admin']), async (req, res) => {
     const sol = rows[0];
     await db.query(
       `UPDATE mantenimientos
-       SET estado = 'Completado', costo = ?, proveedor = ?, fecha_realizada = ?
-       WHERE id = ?`,
+      SET estado = 'Completado', costo = ?, proveedor = ?, fecha_realizada = ?
+      WHERE id = ?`,
       [
         costo.value ?? sol.costo ?? 0,
         proveedor.value ?? sol.proveedor ?? null,

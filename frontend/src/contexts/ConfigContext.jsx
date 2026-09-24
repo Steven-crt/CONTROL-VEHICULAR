@@ -35,9 +35,15 @@ export function ConfigProvider({ children }) {
     <ConfigContext.Provider value={{ config, refreshConfig: fetchConfig, loadingConfig }}>
       {children}
     </ConfigContext.Provider>
-  );
+  ); 
 }
 
+
+// eslint-disable-next-line react-refresh/only-export-components
 export function useConfig() {
-  return useContext(ConfigContext);
+  const context = useContext(ConfigContext);
+  if (!context) {
+    throw new Error('useConfig debe usarse dentro de un <ConfigProvider>');
+  }
+  return context;
 }

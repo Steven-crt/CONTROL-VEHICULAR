@@ -29,7 +29,7 @@ router.get('/', auth(['admin']), async (req, res) => {
     const rolSelect = col.name ? `${col.name} AS rol` : 'NULL AS rol';
     const [rows] = await db.query(
       `SELECT id, nombre, username, email, ${rolSelect}, activo, created_at
-       FROM usuarios ORDER BY nombre, id LIMIT ? OFFSET ?`,
+      FROM usuarios ORDER BY nombre, id LIMIT ? OFFSET ?`,
       [limit, offset]
     );
     rows.forEach(u => {
