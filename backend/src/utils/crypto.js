@@ -1,4 +1,4 @@
-
+// Cifrado de datos (encriptado con AES-256-GCM) y descifrado
 
 const crypto = require('crypto');
 

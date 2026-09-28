@@ -1,10 +1,4 @@
-/**
- * Resolución robusta de la IP del cliente.
- * - Con `trust proxy` activado, req.ip ya usa X-Forwarded-For resuelto por
- *   Express/Render de forma fiable.
- * - NO leer req.headers['x-forwarded-for'] directamente: el cliente puede
- *   falsificar ese header y así saltarse el rate limiting por IP.
- */
+// Obtener la IP del cliente (IPv4 o IPv6)
 
 function obtenerIp(req) {
 

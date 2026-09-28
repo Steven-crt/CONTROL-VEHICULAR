@@ -156,8 +156,7 @@ router.post('/', auth(), async (req, res) => {
     const tipoServicio = tipo_servicio && TIPOS_SERVICIO_VALIDOS.includes(tipo_servicio) ? tipo_servicio : 'Preventivo';
     const tipoId = await tipoMantenimientoId(tipoServicio);
 
-    // Para solicitudes pendientes la fecha real aún no existe: se guarda la
-    // fecha de solicitud en fecha_realizada para ordenar el listado.
+    
     const fechaRegistro = esPendiente ? new Date().toISOString().slice(0, 10) : (fecha || new Date().toISOString().slice(0, 10));
 
     const [result] = await db.query(

@@ -23,14 +23,12 @@ const api = axios.create({
 // /auth/login → credenciales incorrectas: el formulario gestiona el error
 const SONDAS_SILENCIOSAS = ['/auth/me', '/auth/login'];
 
-// Guard anti-ráfaga: si múltiples peticiones fallan 401 a la vez, solo
-// se emite el evento una vez. Se resetea tras 3 s.
+
 let emitiendo401 = false;
 
-// Período de gracia post-login/refresh: durante GRACIA_MS tras un login exitoso
-// o restauración de sesión, los 401 transitorios (cookie aún no propagada,
-// cold-start -
-const GRACIA_MS = 8000; // 8 s — suficiente para cold start de Render (~5-7 s)
+
+
+const GRACIA_MS = 8000;
 let graciaPostLogin = false;
 let graciaTimer = null;
 

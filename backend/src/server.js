@@ -13,9 +13,9 @@ const { getJwtSecret } = require('./utils/jwtSecret');
 const { obtenerIp } = require('./utils/obtenerIp');
 const { createLimiter } = require('./middleware/rateLimit');
 
-getJwtSecret(); // valida el secreto al arrancar (fail-fast en producción si falta)
-app.set('trust proxy', 1); // Render/LB: req.ip lee X-Forwarded-For real (fiable)
-app.use(cookieParser()); // req.cookies para sesión httpOnly
+getJwtSecret();
+app.set('trust proxy', 1);
+app.use(cookieParser());
 
 
 const allowedOrigins = (process.env.CORS_ORIGIN || 'http://localhost:5173')
@@ -26,11 +26,11 @@ const allowedOrigins = (process.env.CORS_ORIGIN || 'http://localhost:5173')
 function buildApiCors(req) {
   return cors({
     origin: (origin, callback) => {
-
+      
       if (!origin) {
         return callback(null, true);
       }
-      // Si no hay orígenes configurados, bloquear en producción
+
       if (!allowedOrigins.length && process.env.NODE_ENV === 'production') {
         return callback(new Error('CORS: no hay orígenes permitidos configurados'));
       }
@@ -53,22 +53,11 @@ function buildApiCors(req) {
   });
 }
 
-// /api/health queda exento del CORS estricto para permitir health checks,
-// curl y navegación directa (peticiones sin cabecera Origin)
 app.use((req, res, next) => {
   if (req.path === '/api/health' || req.path === '/health') return cors({ origin: allowedOrigins.length ? allowedOrigins : true })(req, res, next);
   return buildApiCors(req)(req, res, next);
 });
 
-// Defensa CSRF: la sesión viaja en cookie httpOnly con SameSite=None en
-// producción (frontend y API están en dominios distintos), por lo que el
-// navegador adjunta la cookie a peticiones cross-site. El CORS bloquea que
-// JS lea la respuesta, pero NO impide que el request se ejecute si llega como
-// formulario simple (application/x-www-form-urlencoded / multipart) sin
-// preflight. Para métodos que mutan estado, si llega cabecera Origin y no está
-// en la lista de orígenes permitidos, se rechaza: eso corta el CSRF por
-// formulario. Clientes no-navegador (curl, integraciones) no envían Origin y
-// siguen funcionando.
 app.use((req, res, next) => {
   if (!['POST', 'PUT', 'PATCH', 'DELETE'].includes(req.method)) return next();
   const origin = req.headers.origin;
@@ -92,7 +81,6 @@ app.use((req, res, next) => {
 
 
 app.use(helmet({
-  // Content-Security-Policy: restringe orígenes de recursos y scripts
   contentSecurityPolicy: {
     directives: {
       defaultSrc: ["'self'"],
@@ -110,16 +98,15 @@ app.use(helmet({
     includeSubDomains: true,
     preload: true
   },
-  // X-Frame-Options: DENY — previene clickjacking
+
   frameguard: { action: 'deny' },
-  // Referrer-Policy: no filtrar información sensible a terceros
+
   referrerPolicy: { policy: 'strict-origin-when-cross-origin' },
-  // X-Content-Type-Options: nosniff — previene MIME sniffing
+  
   noSniff: true,
-  // X-XSS-Protection desactivado intencionalmente (CSP es la protección moderna;
-  // el header antiguo puede crear vulnerabilidades en IE)
+  
   xssFilter: false,
-  // Permissions-Policy: deshabilitar acceso a cámara, micrófono y geolocalización
+
   permissionsPolicy: {
     directives: {
       camera: [],
@@ -131,15 +118,14 @@ app.use(helmet({
   permittedCrossDomainPolicies: { permittedPolicies: 'none' }
 }));
 
-// Límite de tamaño de cuerpo JSON: evita payloads abusivos / DoS
+
 app.use(express.json({ limit: '256kb' }));
 app.use(express.urlencoded({ extended: true, limit: '256kb' }));
 
 
 app.use(compression({ threshold: 1024 }));
 
-// Archivos subidos: son inmutables por URL (cada archivo tiene su propio nombre),
-// así que se cachean 24h en navegador/CDN sin riesgo de servir contenido viejo.
+
 app.use('/uploads', express.static(path.join(__dirname, '../uploads'), {
   fallthrough: false,
   maxAge: '1d',

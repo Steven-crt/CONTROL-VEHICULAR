@@ -11,11 +11,7 @@ router.use((req, res, next) => {
   next();
 });
 
-// Caché en servidor para reportes pesados (dashboard): datos agregados que
-// cambian poco. Con 100 usuarios abriendo el dashboard, la BD solo recibe
-// 1 cálculo real cada CACHE_TTL_MS en vez de 100. TTL corto por defecto (10s).
-// No cachea errores. Se invalida sola por tiempo (sin clave: un solo slot por
-// endpoint es suficiente aquí).
+
 const CACHE_TTL_MS = parseInt(process.env.REPORTES_CACHE_MS, 10) || 10000;
 const cacheMap = new Map();
 
@@ -33,8 +29,7 @@ function cacheSet(key, data) {
   cacheMap.set(key, { ts: Date.now(), data });
 }
 
-// Filtros de fecha compartidos: valida formato y devuelve {desde, hasta}
-// como strings seguros 'YYYY-MM-DD' (o null). Rechaza valores malformados.
+
 function filtrosFecha(query) {
   const desde = date(query.desde, { label: 'desde' }).value;
   const hasta = date(query.hasta, { label: 'hasta' }).value;
@@ -50,11 +45,6 @@ router.get('/dashboard', auth(['admin']), async (req, res) => {
   const cached = cacheGet(cacheKey);
   if (cached) return res.json(cached);
   try {
-    // Todas las queries en PARALELO (Promise.all): cada una viaja por red hasta
-    // la BD (~150-250ms de latencia a Aiven). En serie serían 8 latencias;
-    // en paralelo, una sola. Reducción típica: 2.5s → 0.4s por petición.
-    // Ventana de gastos del dashboard: últimos 6 meses (los mantenimientos/combustible
-    // suelen ser de meses anteriores, filtrar solo por el mes actual daba $0.00).
     const VENTANA = "DATE_SUB(CURDATE(), INTERVAL 6 MONTH)";
     const [
       [totalVehiculos],
@@ -72,47 +62,47 @@ router.get('/dashboard', auth(['admin']), async (req, res) => {
       db.query('SELECT COUNT(*) as total FROM vehiculos WHERE activo = 1'),
       db.query(
         `SELECT COALESCE(SUM(costo_total),0) as total FROM solicitudes_combustible
-         WHERE fecha_solicitud >= ${VENTANA}`
+        WHERE fecha_solicitud >= ${VENTANA}`
       ),
       db.query(
         `SELECT COALESCE(SUM(costo),0) as total FROM mantenimientos
-         WHERE fecha_realizada >= ${VENTANA}`
+        WHERE fecha_realizada >= ${VENTANA}`
       ),
       db.query(
         `SELECT LOWER(COALESCE(tv.nombre, 'Otro')) as name, COUNT(*) as value
-         FROM vehiculos v
-         LEFT JOIN tipos_vehiculo tv ON tv.id = v.tipo_vehiculo_id
-         WHERE v.activo = 1
-         GROUP BY tv.nombre`
+        FROM vehiculos v
+        LEFT JOIN tipos_vehiculo tv ON tv.id = v.tipo_vehiculo_id
+        WHERE v.activo = 1
+        GROUP BY tv.nombre`
       ),
       db.query(
         `SELECT marca as name, COUNT(*) as value FROM vehiculos
-         WHERE marca IS NOT NULL AND activo = 1 GROUP BY marca ORDER BY value DESC LIMIT 10`
+        WHERE marca IS NOT NULL AND activo = 1 GROUP BY marca ORDER BY value DESC LIMIT 10`
       ),
       db.query(
         `SELECT v.id, v.placa, LOWER(COALESCE(tv.nombre, 'camioneta')) as tipo, v.marca, v.modelo, v.color, v.created_at
-         FROM vehiculos v
-         LEFT JOIN tipos_vehiculo tv ON tv.id = v.tipo_vehiculo_id
-         WHERE v.activo = 1
-         ORDER BY v.created_at DESC LIMIT 5`
+        FROM vehiculos v
+        LEFT JOIN tipos_vehiculo tv ON tv.id = v.tipo_vehiculo_id
+        WHERE v.activo = 1
+        ORDER BY v.created_at DESC LIMIT 5`
       ),
       db.query(
         `SELECT DATE_FORMAT(fecha_solicitud,'%Y-%m') as periodo, SUM(costo_total) as total
-         FROM solicitudes_combustible
-         WHERE fecha_solicitud >= DATE_SUB(CURDATE(), INTERVAL 5 MONTH)
-         GROUP BY periodo ORDER BY periodo`
+        FROM solicitudes_combustible
+        WHERE fecha_solicitud >= DATE_SUB(CURDATE(), INTERVAL 5 MONTH)
+        GROUP BY periodo ORDER BY periodo`
       ),
       db.query(
         `SELECT DATE_FORMAT(fecha_realizada,'%Y-%m') as periodo, SUM(costo) as total
-         FROM mantenimientos
-         WHERE fecha_realizada >= DATE_SUB(CURDATE(), INTERVAL 5 MONTH)
-         GROUP BY periodo ORDER BY periodo`
+        FROM mantenimientos
+        WHERE fecha_realizada >= DATE_SUB(CURDATE(), INTERVAL 5 MONTH)
+        GROUP BY periodo ORDER BY periodo`
       ),
       db.query(
         `SELECT COALESCE(NULLIF(tipo_servicio,''),'General') as name, COUNT(*) as value
-         FROM mantenimientos
-         WHERE fecha_realizada >= ${VENTANA}
-         GROUP BY name ORDER BY value DESC`
+        FROM mantenimientos
+        WHERE fecha_realizada >= ${VENTANA}
+        GROUP BY name ORDER BY value DESC`
       )
     ]);
 
@@ -134,7 +124,7 @@ router.get('/dashboard', auth(['admin']), async (req, res) => {
   }
 });
 
-// ==================== REPORTES DE GESTIÓN DE VEHÍCULOS ====================
+
 
 router.get('/vehiculos-resumen', auth(['admin']), async (req, res) => {
   try {
@@ -142,18 +132,18 @@ router.get('/vehiculos-resumen', auth(['admin']), async (req, res) => {
       db.query('SELECT COUNT(*) as total FROM vehiculos WHERE activo = 1'),
       db.query(
         `SELECT LOWER(COALESCE(tv.nombre, 'Otro')) as name, COUNT(*) as value
-         FROM vehiculos v
-         LEFT JOIN tipos_vehiculo tv ON tv.id = v.tipo_vehiculo_id
-         WHERE v.activo = 1
-         GROUP BY tv.nombre`
+        FROM vehiculos v
+        LEFT JOIN tipos_vehiculo tv ON tv.id = v.tipo_vehiculo_id
+        WHERE v.activo = 1
+        GROUP BY tv.nombre`
       ),
       db.query(
         `SELECT marca as name, COUNT(*) as value FROM vehiculos
-         WHERE marca IS NOT NULL AND activo = 1 GROUP BY marca ORDER BY value DESC LIMIT 10`
+        WHERE marca IS NOT NULL AND activo = 1 GROUP BY marca ORDER BY value DESC LIMIT 10`
       ),
       db.query(
         `SELECT ano as name, COUNT(*) as value FROM vehiculos
-         WHERE ano IS NOT NULL AND activo = 1 GROUP BY ano ORDER BY name DESC LIMIT 10`
+        WHERE ano IS NOT NULL AND activo = 1 GROUP BY ano ORDER BY name DESC LIMIT 10`
       )
     ]);
 
@@ -299,7 +289,7 @@ router.get('/gastos-consolidado', auth(['admin']), async (req, res) => {
   }
 }); 
 
-// GET /api/reportes/vehiculos-recientes - Últimos vehículos registrados
+
 router.get('/vehiculos-recientes', auth(['admin']), async (req, res) => {
   try {
     const [rows] = await db.query(`

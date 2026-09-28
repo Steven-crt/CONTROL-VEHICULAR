@@ -18,9 +18,6 @@ function persistirSecret(secret) {
       // .env no existe — se creará
     }
     if (contenido.includes('JWT_SECRET=')) {
-      // Ya existe una línea JWT_SECRET — NO sobrescribir.
-      // Si llegamos aquí es porque dotenv no cargó el .env (ej. test externo).
-      // Evitar sobrescribir un secreto válido que otro proceso está usando.
       console.log('ℹ️  JWT_SECRET ya existe en .env — no se sobrescribe.');
       return;
     }

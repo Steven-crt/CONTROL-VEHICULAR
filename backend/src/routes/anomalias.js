@@ -110,8 +110,7 @@ router.post('/', auth(), async (req, res) => {
   }
 });
 
-// PUT /api/anomalias/:id/estado - Cambiar estado (solo admin)
-// Body: { estado: 'Pendiente'|'En revisión'|'Resuelta'|'Descartada' }
+
 router.put('/:id/estado', auth(['admin']), async (req, res) => {
   const id = intId(req.params.id, { label: 'id' }).value;
   const nuevoEstado = String(req.body?.estado || '');
@@ -134,7 +133,7 @@ router.put('/:id/estado', auth(['admin']), async (req, res) => {
   }
 });
 
-// DELETE /api/anomalias/:id - Eliminar una anomalía (solo admin)
+
 router.delete('/:id', auth(['admin']), async (req, res) => {
   const id = intId(req.params.id, { label: 'id' }).value;
   try {

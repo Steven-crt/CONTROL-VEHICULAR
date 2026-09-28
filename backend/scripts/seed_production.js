@@ -256,7 +256,7 @@ async function main() {
       }
     }
 
-    // 10) Notificaciones para el admin sobre solicitudes pendientes
+
     await conn.query(
       `INSERT INTO notificaciones (usuario_id, titulo, mensaje, tipo, leida, created_at) VALUES
       (1, 'Nuevas solicitudes pendientes', 'Hay 3 cargas de combustible y 2 servicios de mantenimiento esperando aprobación.', 'warning', 0, NOW() - INTERVAL 2 HOUR),

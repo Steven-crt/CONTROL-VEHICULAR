@@ -1,4 +1,4 @@
-
+// Validación de datos de entrada (body, query, params)
 
 const RE_EMAIL = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
 const RE_PLACA = /^[A-Za-z0-9-]{3,15}$/;
@@ -68,12 +68,6 @@ function intId(value, { label = 'id' } = {}) {
   return num(value, { min: 1, max: 2147483647, required: true, label });
 }
 
-/**
- * Valida un cuerpo JSON contra un esquema simple:
- *   { campo: [validador, ...args] }
- * Devuelve { ok, values } donde values tiene SOLO los campos del esquema
- * (ignora campos extra => anti mass-assignment).
- */
 function body(schema, raw) {
   const values = {};
   for (const [field, [fn, opts]] of Object.entries(schema)) {

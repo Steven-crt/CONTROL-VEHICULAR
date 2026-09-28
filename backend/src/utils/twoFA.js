@@ -1,17 +1,5 @@
-// Middleware de 2FA (TOTP) — verificación de código OTP tras el login.
-// Flujo:
-//   1. Login válido → si el usuario tiene 2FA activo, NO se emite JWT aún.
-//      Se emite un "pedido" temporal (papel de 2FA) con la identidad.
-//   2. El cliente envía el código OTP + la firma del pedido a /api/auth/2fa/verify.
-//   3. Si el código es correcto, se emite el JWT real.
-//   4. TOTP se valida con speakeasy contra el secreto almacenado (AES cifrado).
-
+// Autenticación de dos factores (TOTP) y gestión de pedidos de 2FA
 const speakeasy = require('speakeasy');
-
-// Almacén en memoria de "pedidos de 2FA" pendientes (antes de emitir JWT).
-// Clave: firma aleatoria. Valor: { usuarioId, expiraEn }.
-// La firma viaja en el body del verify; así no hay estado persistente en BD
-// y la ventana es corta (5 min) para evitar reutilización.
 const pedidos2FA = new Map();
 
 const TTL_PEDIDO_MS = 5 * 60 * 1000; // 5 minutos

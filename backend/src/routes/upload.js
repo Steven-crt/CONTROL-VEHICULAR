@@ -93,7 +93,7 @@ async function procesarUpload(req, res, mensaje) {
     const imageUrl = baseUrlSegura(req) + '/uploads/' + req.file.filename;
     res.json({ message: mensaje, url: imageUrl });
   } catch (err) {
-    console.error('[upload]', err);
+    console.error('[upload]', err); 
     if (req.file) await fs.promises.unlink(req.file.path).catch(() => {});
     res.status(500).json({ error: 'Error interno del servidor' });
   }

@@ -1,11 +1,4 @@
-/**
- * Construye la configuración de conexión MySQL a partir de:
- *   - Opción A (recomendada para Aiven): DATABASE_URL con la URI completa
- *       mysql://avnadmin:CLAVE@mysql-xxxx.aivencloud.com:26355/defaultdb?ssl-mode=REQUIRED
- *   - Opción B (local o variables individuales): DB_HOST, DB_PORT, DB_USER, DB_PASSWORD, DB_NAME
- *
- * NOTA: este módulo NO carga dotenv; cada consumidor decide cómo cargar sus env vars.
- */
+// Configuración de la conexión a la base de datos
 
 function parseDatabaseUrl(url) {
   try {

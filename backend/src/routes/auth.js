@@ -18,10 +18,7 @@ const intentosFallidos = new Map();
 const MAX_INTENTOS = 5;
 const VENTANA_MS = 15 * 60 * 1000;
 
-// Hash dummy para igualar el tiempo de respuesta cuando el usuario no existe:
-// sin esto, un atacante distingue por latencia entre "usuario no existe"
-// (respuesta rápida) y "contraseña incorrecta" (bcrypt ~100ms), enumerando
-// los usernames válidos.
+
 const DUMMY_HASH = bcrypt.hashSync('dummy-para-siempre-' + crypto.randomUUID(), 10);
 
 // Barrer periódicamente entradas viejas para evitar fuga de memoria

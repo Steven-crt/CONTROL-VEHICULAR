@@ -1,6 +1,4 @@
-// Roles vigentes: 'admin' y 'empleado'.
-// Se siguen aceptando valores legacy (operador/cajero, ids 2/3) para que
-// tokens o filas antiguas sigan resolviendo al rol unificado 'empleado'.
+// Roles vigentes: 'admin' y 'empleado' (para usuarios)
 function normalizeRol(rol) {
   const r = String(rol ?? '').trim().toLowerCase();
   if (r === '1' || r === 'admin' || r === 'administrador') return 'admin';

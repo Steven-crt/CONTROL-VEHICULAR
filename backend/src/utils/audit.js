@@ -1,9 +1,4 @@
-/**
- * Auditoría y monitoreo:
- * - Aplica el prefijo de cifrado transparente a los mensajes de log para no
- *   filtrar datos sensibles.
- * - Registra eventos de seguridad (login fallido, bloqueos, acciones admin).
- */
+// Auditoría de eventos (log) de la aplicación
 
 const { obtenerIp } = require('./obtenerIp');
 
