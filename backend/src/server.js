@@ -18,62 +18,63 @@ app.set('trust proxy', 1);
 app.use(cookieParser());
 
 
-const allowedOrigins = (process.env.CORS_ORIGIN || 'http://localhost:5173')
-  .split(',')
-  .map(o => o.trim())
-  .filter(Boolean);
+const ES_PRODUCCION = process.env.NODE_ENV === 'production';
 
-function buildApiCors(req) {
+// Allowlist exacta de origenes. Se normaliza sin barra final para que la
+// comparacion sea literal y no dependa de como el navegador formatee el Origin.
+const allowedOrigins = (() => {
+  const configurados = (process.env.CORS_ORIGIN || '')
+    .split(',')
+    .map(o => o.trim().replace(/\/$/, ''))
+    .filter(Boolean);
+
+  if (configurados.length) return configurados;
+
+  // Fail-closed: en produccion no hay ningun origen implicito. Si CORS_ORIGIN
+  // falta o es invalido, la API rechaza el acceso cross-origin en vez de abrirlo.
+  return ES_PRODUCCION ? [] : ['http://localhost:5173', 'http://127.0.0.1:5173'];
+})();
+
+function isOriginAllowed(origin) {
+  // Sin cabecera Origin no hay contexto cross-origin (curl, health checks,
+  // apps moviles): la peticion no queda sujeta a CORS.
+  if (!origin) return true;
+  return allowedOrigins.includes(origin.trim().replace(/\/$/, ''));
+}
+
+const CORS_METHODS = ['GET', 'POST', 'PUT', 'PATCH', 'DELETE', 'OPTIONS'];
+
+function buildApiCors() {
   return cors({
-    origin: (origin, callback) => {
-      
-      if (!origin) {
-        return callback(null, true);
+    origin(origin, callback) {
+      if (ES_PRODUCCION && !allowedOrigins.length) {
+        return callback(new Error('CORS: CORS_ORIGIN no esta configurado en produccion'));
       }
-
-      if (!allowedOrigins.length && process.env.NODE_ENV === 'production') {
-        return callback(new Error('CORS: no hay orígenes permitidos configurados'));
-      }
-      if (allowedOrigins.includes(origin)) return callback(null, true);
-
-      try {
-        const originHost = new URL(origin).host;
-        const reqHost = (req?.headers?.host || '').split(':')[0];
-        // Solo confiar en Host si coincide con un origen permitido (evita poisoning)
-        const hostAllowed = allowedOrigins.some(o => {
-          try { return new URL(o).host.split(':')[0] === reqHost; } catch { return false; }
-        });
-        if (hostAllowed && originHost === reqHost) {
-          return callback(null, true);
-        }
-      } catch {}
-      callback(new Error(`CORS: origen no permitido → ${origin}`));
+      // false => el middleware NO emite Access-Control-Allow-Origin, por lo que
+      // el navegador bloquea la respuesta. No se devuelve 500 ni se filtra datos.
+      return callback(null, isOriginAllowed(origin));
     },
-    credentials: true
+    credentials: true,
+    methods: CORS_METHODS,
+    allowedHeaders: ['Content-Type'],
+    maxAge: 600,
+    optionsSuccessStatus: 204
   });
 }
 
-app.use((req, res, next) => {
-  if (req.path === '/api/health' || req.path === '/health') return cors({ origin: allowedOrigins.length ? allowedOrigins : true })(req, res, next);
-  return buildApiCors(req)(req, res, next);
-});
+// Una sola politica CORS para toda la API (incluido /api/health): antes el health
+// check usaba un allowlist distinto y caia en `origin: true` (refleja cualquier
+// origen) cuando la lista quedaba vacia.
+app.use(buildApiCors());
 
+// Segunda capa: los metodos mutables se rechazan con 403 si el origen no esta
+// en la allowlist. CORS protege la lectura desde el navegador; esto blinda tambien
+// a clientes no-navegador que ignorarian la cabecera.
 app.use((req, res, next) => {
   if (!['POST', 'PUT', 'PATCH', 'DELETE'].includes(req.method)) return next();
   const origin = req.headers.origin;
   if (!origin) return next();
-  let permitido = allowedOrigins.includes(origin);
-  if (!permitido) {
-    try {
-      const originHost = new URL(origin).host;
-      const reqHost = (req?.headers?.host || '').split(':')[0];
-      const hostAllowed = allowedOrigins.some(o => {
-        try { return new URL(o).host.split(':')[0] === reqHost; } catch { return false; }
-      });
-      permitido = hostAllowed && originHost === reqHost;
-    } catch {}
-  }
-  if (!permitido) {
+  if (!isOriginAllowed(origin)) {
     return res.status(403).json({ error: 'Origen de petición no permitido' });
   }
   next();
@@ -216,8 +217,12 @@ app.use((err, req, res, next) => {
 const PORT = process.env.PORT || 3001;
 app.listen(PORT, () => {
   console.log(`🚀 Gestión Vehicular API corriendo en http://localhost:${PORT}`);
-  console.log(`✅ CORS habilitado para: ${allowedOrigins.join(', ')}`);
   console.log(`🔍 Diagnóstico: abre http://localhost:${PORT}/api/health para ver el estado de la BD`);
+  if (!allowedOrigins.length) {
+    console.error('⛔ CORS: allowlist vacía. Configura CORS_ORIGIN; la API rechazará todo acceso cross-origin.');
+  } else {
+    console.log(`✅ CORS habilitado para: ${allowedOrigins.join(', ')}`);
+  }
 });
 
 module.exports = app;

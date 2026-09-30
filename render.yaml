@@ -25,7 +25,9 @@ services:
       - key: JWT_EXPIRES_IN
         value: "8h"
       - key: CORS_ORIGIN
-        value: "https://control-vehicular.vercel.app,https://control-vehicular-iota.vercel.app"
+        value: "https://control-vehicular-iota.vercel.app"
+      - key: PUBLIC_URL
+        value: "https://control-vehicular-pkze.onrender.com"
       - key: DATA_ENCRYPTION_KEY
         sync: false
       - key: RATE_LIMIT_WINDOW_MS
