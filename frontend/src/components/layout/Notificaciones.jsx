@@ -1,143 +1,10 @@
   import { useState, useEffect, useRef, useCallback } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { Bell, X, Fuel, AlertTriangle, Wrench, Car, DollarSign } from 'lucide-react';
-import styled, { keyframes } from 'styled-components';
+import './Notificaciones.css';
 import api from '../../api/axios';
 import { useAuth } from '../../contexts/AuthContext';
 import { useRealTime } from '../../api/realtime';
-
-const ring = keyframes`
-  0% { transform: rotate(0deg); }
-  15% { transform: rotate(12deg); }
-  30% { transform: rotate(-10deg); }
-  45% { transform: rotate(6deg); }
-  60% { transform: rotate(-4deg); }
-  75% { transform: rotate(2deg); }
-  100% { transform: rotate(0deg); }
-`;
-
-const pulse = keyframes`
-  0%, 100% { box-shadow: 0 0 0 0 rgba(245, 158, 11, 0.5); }
-  50% { box-shadow: 0 0 0 8px rgba(245, 158, 11, 0); }
-`;
-
-const BellButton = styled.button`
-  position: relative;
-  color: #9ca3af;
-  transition: color 0.2s;
-  background: none;
-  border: none;
-  cursor: pointer;
-  padding: 4px;
-  border-radius: 9999px;
-  display: flex;
-  align-items: center;
-  justify-content: center;
-
-  &:hover {
-    color: #f59e0b;
-  }
-
-  &.has-alerts {
-    animation: ${pulse} 2s ease-in-out infinite;
-  }
-
-  &.ringing svg {
-    animation: ${ring} 0.6s ease-in-out;
-  }
-`;
-
-const Badge = styled.span`
-  position: absolute;
-  top: -2px;
-  right: -2px;
-  min-width: 16px;
-  height: 16px;
-  padding: 0 4px;
-  background: #ef4444;
-  color: white;
-  font-size: 10px;
-  font-weight: 700;
-  border-radius: 9999px;
-  display: flex;
-  align-items: center;
-  justify-content: center;
-  line-height: 1;
-  box-shadow: 0 0 0 2px #1f2937;
-`;
-
-const Dropdown = styled.div`
-  position: absolute;
-  top: calc(100% + 8px);
-  right: 0;
-  width: 360px;
-  max-height: 460px;
-  overflow-y: auto;
-  background: #1f2937;
-  border: 1px solid #374151;
-  border-radius: 12px;
-  box-shadow: 0 10px 40px rgba(0, 0, 0, 0.5);
-  z-index: 100;
-
-  &::-webkit-scrollbar { width: 6px; }
-  &::-webkit-scrollbar-track { background: transparent; }
-  &::-webkit-scrollbar-thumb { background: #4b5563; border-radius: 3px; }
-`;
-
-const Header = styled.div`
-  padding: 12px 16px;
-  border-bottom: 1px solid #374151;
-  display: flex;
-  align-items: center;
-  justify-content: space-between;
-`;
-
-const HeaderTitle = styled.h3`
-  color: #f3f4f6;
-  font-size: 14px;
-  font-weight: 600;
-  margin: 0;
-`;
-
-const CloseBtn = styled.button`
-  background: none;
-  border: none;
-  color: #6b7280;
-  cursor: pointer;
-  padding: 2px;
-  border-radius: 4px;
-  display: flex;
-  align-items: center;
-  justify-content: center;
-  transition: color 0.2s;
-
-  &:hover { color: #f3f4f6; }
-`;
-
-const EmptyState = styled.div`
-  padding: 32px 16px;
-  text-align: center;
-  color: #6b7280;
-  font-size: 13px;
-`;
-
-const NotifItem = styled.div`
-  padding: 12px 16px;
-  display: flex;
-  align-items: flex-start;
-  gap: 10px;
-  cursor: pointer;
-  transition: background 0.15s;
-  border-bottom: 1px solid #1f2937;
-
-  &:hover { background: rgba(245, 158, 11, 0.06); }
-  &:last-child { border-bottom: none; }
-`;
-
-const iconByType = {
-  warning: '#f59e0b',
-  info: '#3b82f6',
-};
 
 const iconMap = {
   fuel: Fuel,
@@ -146,47 +13,6 @@ const iconMap = {
   car: Car,
   dollar: DollarSign,
 };
-
-const NotifIcon = styled.div`
-  width: 32px;
-  height: 32px;
-  border-radius: 8px;
-  display: flex;
-  align-items: center;
-  justify-content: center;
-  flex-shrink: 0;
-  background: ${p => {
-    const base = iconByType[p.$tipo] || '#6b7280';
-    return `${base}1a`;
-  }};
-  color: ${p => iconByType[p.$tipo] || '#6b7280'};
-`;
-
-const NotifContent = styled.div`
-  flex: 1;
-  min-width: 0;
-`;
-
-const NotifTitle = styled.p`
-  margin: 0;
-  color: #f3f4f6;
-  font-size: 13px;
-  font-weight: 600;
-  white-space: nowrap;
-  overflow: hidden;
-  text-overflow: ellipsis;
-`;
-
-const NotifMsg = styled.p`
-  margin: 2px 0 0;
-  color: #9ca3af;
-  font-size: 12px;
-  line-height: 1.4;
-  display: -webkit-box;
-  -webkit-line-clamp: 2;
-  -webkit-box-orient: vertical;
-  overflow: hidden;
-`;
 
 export default function Notificaciones() {
   const { usuario } = useAuth();
@@ -282,20 +108,20 @@ export default function Notificaciones() {
   const warnCount = notifs.filter(n => n.tipo === 'warning').length;
 
   return (
-    <div ref={ref} style={{ position: 'relative' }}>
+    <div ref={ref} className="relative">
       <BellButton
-        className={`relative ${warnCount > 0 ? 'has-alerts' : ''} ${ringing ? 'ringing' : ''}`}
+        className={`notif-bell ${warnCount > 0 ? 'has-alerts' : ''} ${ringing ? 'ringing' : ''}`}
         onClick={() => setOpen(p => !p)}
         aria-label="Notificaciones"
       >
         <Bell size={20} />
-        {notifs.length > 0 && <Badge>{notifs.length}</Badge>}
+        {notifs.length > 0 && <span className="notif-badge">{notifs.length}</span>}
       </BellButton>
 
       {open && (
-        <Dropdown>
-          <Header>
-            <HeaderTitle>Notificaciones</HeaderTitle>
+        <div className="notif-dropdown">
+          <div className="notif-header">
+            <h3 className="notif-header-title">Notificaciones</h3>
             {notifs.length > 0 && (
               <button
                 onClick={handleMarcarTodas}
@@ -304,30 +130,31 @@ export default function Notificaciones() {
                 Marcar todas
               </button>
             )}
-            <CloseBtn onClick={() => setOpen(false)}>
+            <button onClick={() => setOpen(false)} className="notif-close" aria-label="Cerrar">
               <X size={16} />
-            </CloseBtn>
-          </Header>
+            </button>
+          </div>
 
           {notifs.length === 0 ? (
-            <EmptyState>Sin novedades</EmptyState>
+            <div className="notif-empty">Sin novedades</div>
           ) : (
             notifs.map((n) => {
               const Icon = iconMap[n.icono] || AlertTriangle;
+              const variant = n.tipo === 'warning' ? 'notif-icon--warning' : n.tipo === 'info' ? 'notif-icon--info' : '';
               return (
-                <NotifItem key={n.clave} onClick={() => handleClick(n)}>
-                  <NotifIcon $tipo={n.tipo}>
+                <div key={n.clave} onClick={() => handleClick(n)} className="notif-item">
+                  <div className={`notif-icon ${variant}`}>
                     <Icon size={16} />
-                  </NotifIcon>
-                  <NotifContent>
-                    <NotifTitle>{n.titulo}</NotifTitle>
-                    <NotifMsg>{n.mensaje}</NotifMsg>
-                  </NotifContent>
-                </NotifItem>
+                  </div>
+                  <div className="notif-content">
+                    <p className="notif-title">{n.titulo}</p>
+                    <p className="notif-msg">{n.mensaje}</p>
+                  </div>
+                </div>
               );
             })
           )}
-        </Dropdown>
+        </div>
       )}
     </div>
   );

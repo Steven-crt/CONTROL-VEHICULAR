@@ -7,13 +7,21 @@ import {
 import { TrendingUp, Calendar, Car, Fuel, Wrench, DollarSign, AlertTriangle } from 'lucide-react';
 import { useConfig } from '../contexts/ConfigContext';
 
+const PALETTE_CLASSES = [
+  'text-[#3b82f6]',
+  'text-[#8b5cf6]',
+  'text-[#f59e0b]',
+  'text-[#10b981]',
+  'text-[#ef4444]',
+  'text-[#06b6d4]',
+];
 const COLORS = ['#3b82f6', '#8b5cf6', '#f59e0b', '#10b981', '#ef4444', '#06b6d4'];
 const customTooltip = ({ active, payload, label }, currency) => {
   if (active && payload?.length) return (
     <div className="bg-cv-card border border-cv-border rounded-lg p-3 text-sm shadow-xl">
       <p className="text-cv-muted mb-1">{label}</p>
       {payload.map((p, i) => (
-        <p key={i} className="font-bold" style={{ color: p.color }}>
+        <p key={i} className={`font-bold ${PALETTE_CLASSES[COLORS.indexOf(p.color)] || ''}`}>
           {p.name}: {currency}{Number(p.value || 0).toFixed(2)}
         </p>
       ))}
@@ -41,7 +49,7 @@ function StatCard({ icon, label, value, color, iconBg }) {
 function sanitizeCurrency(c) {
   if (!c || typeof c !== 'string') return '$';
   const v = c.trim().slice(0, 5);
-  return /^[A-Za-z$€£¥S\/\.]{1,5}$/.test(v) ? v : '$';
+  return /^[A-Za-z$€£¥S\/\.]{1,5}$/.test(v) ? v : '€';
 }
 export default function Reportes() {
   const { config } = useConfig();

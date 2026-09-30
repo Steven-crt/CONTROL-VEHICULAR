@@ -85,7 +85,13 @@ app.use(helmet({
     directives: {
       defaultSrc: ["'self'"],
       scriptSrc: ["'self'"],
-      styleSrc: ["'self'", "'unsafe-inline'"],
+      // Sin 'unsafe-inline' en style-src: los bloques <style> y CSSOM solo se
+      // permiten desde 'self'. Los atributos style="" dinámicos (barras de
+      // combustible, tooltips) siguen habilitados vía style-src-attr, que es
+      // un subconjunto de superficie: no permite inyectar reglas CSS.
+      styleSrc: ["'self'"],
+      styleSrcElem: ["'self'"],
+      styleSrcAttr: ["'unsafe-inline'"],
       imgSrc: ["'self'", 'data:', 'https:'],
       connectSrc: ["'self'", ...allowedOrigins.filter(o => o.startsWith('https://'))],
       frameSrc: ["'none'"],

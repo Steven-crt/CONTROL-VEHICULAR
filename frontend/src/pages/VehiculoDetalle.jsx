@@ -647,7 +647,7 @@ export default function VehiculoDetalle() {
                           <div className="bg-[#0f172a] border border-[#1e3a5f] rounded-xl p-3 text-sm shadow-2xl">
                             <p className="text-slate-400 mb-1">{label}</p>
                             {payload.map((p, i) => (
-                              <p key={i} className="font-bold" style={{color: p.color}}>{p.name}: {p.value}</p>
+                              <p key={i} className="font-bold text-[#f59e0b]">{p.name}: {p.value}</p>
                             ))}
                           </div>
                         );
