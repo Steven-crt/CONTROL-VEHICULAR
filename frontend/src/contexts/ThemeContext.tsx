@@ -9,7 +9,6 @@ interface ThemeContextType {
 
 const THEME_STORAGE_KEY = 'theme';
 
-// Lee el tema persistido con fallback a preferencia del sistema o 'dark'.
 function getInitialTheme(): Theme {
   if (typeof window === 'undefined') return 'dark';
   const savedTheme = localStorage.getItem(THEME_STORAGE_KEY);
@@ -22,7 +21,6 @@ const ThemeContext = createContext<ThemeContextType | undefined>(undefined);
 export function ThemeProvider({ children }: { children: ReactNode }) {
   const [theme, setTheme] = useState<Theme>(getInitialTheme);
 
-  // Sincroniza la clase del <html> y la persistencia cada vez que cambia el tema.
   useEffect(() => {
     document.documentElement.classList.toggle('dark', theme === 'dark');
     localStorage.setItem(THEME_STORAGE_KEY, theme);

@@ -23,7 +23,6 @@ export default function Login() {
   const [form, setForm] = useState({ username: '', password: '', website: '' });
   const [showPass, setShowPass] = useState(false);
   const [loading, setLoading] = useState(false);
-  // Estado del flujo 2FA
   const [paso2FA, setPaso2FA] = useState(null); // { firma2FA, usuario }
   const [codigo2FA, setCodigo2FA] = useState('');
   const [cargando2FA, setCargando2FA] = useState(false);
@@ -31,7 +30,6 @@ export default function Login() {
   const navigate = useNavigate();
   const canvasRef = useRef(null);
   
-
   useEffect(() => {
     const canvas = canvasRef.current;
     if (!canvas) return;
@@ -233,18 +231,15 @@ export default function Login() {
 
   const handleSubmit = async (e) => {
     e.preventDefault();
-    // Honeypot: si el campo oculto viene lleno, es un bot — no enviar nada
     if (form.website) return;
     setLoading(true);
     try {
       const data = await login(form.username, form.password);
-      // Si requiere 2FA, cambiar a la vista de código sin navegar todavía
       if (data?.requiere2FA) {
         setPaso2FA({ firma2FA: data.firma2FA, usuario: data.usuario });
         return;
       }
       toast.success('¡Listo! Bienvenido.');
-      // Navegar a la vista principal según el rol para evitar redirecciones extra
       const rolNav = data?.usuario?.rol;
       const destino = (rolNav === 'admin' || rolNav === '1') ? '/dashboard' : '/vehiculos';
       navigate(destino);
@@ -258,7 +253,6 @@ export default function Login() {
       setLoading(false);
     }
   };
-
 
   const handleVerify2FA = async (e) => {
     e.preventDefault();
@@ -278,7 +272,6 @@ export default function Login() {
     }
   };
 
-  // Volver al login si el usuario se equivocó de cuenta
   const volverAlLogin = () => {
     setPaso2FA(null);
     setCodigo2FA('');

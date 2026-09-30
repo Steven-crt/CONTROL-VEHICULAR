@@ -6,7 +6,6 @@ import {
 } from 'lucide-react';
 import { useConfig } from '../../contexts/ConfigContext';
 
-// roles: lista de roles que ven el ítem. Sin 'roles' => visible para todos.
 const navItems = [
   { to: '/dashboard', icon: LayoutDashboard, label: 'Dashboard', roles: ['admin'] },
   { to: '/vehiculos', icon: Car,             label: 'Consulta Vehículos' },

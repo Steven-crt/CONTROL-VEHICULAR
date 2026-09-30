@@ -45,11 +45,10 @@ function StatCard({ icon, label, value, color, iconBg }) {
   );
 }
 
-// Rcordatorio que hay un prblema en los simpbolos de esta linea se recomenienda repararla 
 function sanitizeCurrency(c) {
   if (!c || typeof c !== 'string') return '$';
   const v = c.trim().slice(0, 5);
-  return /^[A-Za-z$€£¥S\/\.]{1,5}$/.test(v) ? v : '€';
+  return /^[A-Za-z$€£¥S/.]{1,5}$/.test(v) ? v : '€';
 }
 export default function Reportes() {
   const { config } = useConfig();

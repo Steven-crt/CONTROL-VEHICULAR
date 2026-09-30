@@ -15,18 +15,9 @@ const api = axios.create({
   withCredentials: true
 });
 
-// Sesión vía cookie httpOnly: no se usa localStorage para JWT (anti-XSS).
-// El servidor lee la cookie cv_session con withCredentials:true.
-
-// Rutas que reciben 401 como respuesta normal (no disparan logout).
-// /auth/me  → sonda de sesión: 401 = no hay sesión activa (esperado al arrancar)
-// /auth/login → credenciales incorrectas: el formulario gestiona el error
 const SONDAS_SILENCIOSAS = ['/auth/me', '/auth/login'];
 
-
 let emitiendo401 = false;
-
-
 
 const GRACIA_MS = 8000;
 let graciaPostLogin = false;
@@ -46,15 +37,11 @@ api.interceptors.response.use(
     const esSilenciosa = SONDAS_SILENCIOSAS.some(s => url.includes(s));
 
     if (status === 401 && !esSilenciosa) {
-      // Durante el período de gracia, silenciar el 401 transitorio.
-      // Los componentes manejan el error en su propio catch.
       if (graciaPostLogin) {
         return Promise.reject(err);
       }
 
-      // Limpiar datos de sesión locales
       try { localStorage.removeItem('usuario'); } catch { /* empty */ }
-
 
       if (!emitiendo401) {
         emitiendo401 = true;

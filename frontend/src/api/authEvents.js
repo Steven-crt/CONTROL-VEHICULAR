@@ -1,5 +1,4 @@
 
-
 const authEvents = new EventTarget();
 
 export function emitUnauthorized() {

@@ -58,7 +58,6 @@ export default function Dashboard() {
       hasDataRef.current = true;
     } catch (e) {
       console.error(e);
-      // Solo mostrar error si aún no hay datos cargados
       if (!hasDataRef.current) {
         const msg = e.response?.data?.error || e.message || 'Error al conectar con el servidor';
         setError(msg);
@@ -74,7 +73,6 @@ export default function Dashboard() {
     return () => clearInterval(interval);
   }, [fetchData]);
 
-  // Tiempo real: cualquier cambio de pedido/vehículo refresca el dashboard.
   useRealTime(['combustible', 'mantenimiento', 'vehiculo', 'anomalia'], () => { fetchData(); });
 
   if (loading) return (

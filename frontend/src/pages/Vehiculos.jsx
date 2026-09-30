@@ -56,8 +56,6 @@ export default function Vehiculos() {
     fetchVehiculos();
   }, []);
 
-  // Tiempo real: refresca cuando se registra / actualiza / elimina un vehículo
-  // desde otra sesión.
   useRealTime('vehiculo', () => { fetchVehiculos(yearFilter, search); });
 
   const handleSearch = (e) => {

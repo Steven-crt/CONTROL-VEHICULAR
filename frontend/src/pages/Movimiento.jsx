@@ -23,8 +23,6 @@ export default function Movimiento() {
   const [kmManual, setKmManual] = useState('');
   const [registrandoKm, setRegistrandoKm] = useState(false);
   
-
-  // Por defecto: este mes
   useEffect(() => {
     const now = new Date();
     const firstDay = new Date(now.getFullYear(), now.getMonth(), 1);

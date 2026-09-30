@@ -36,8 +36,6 @@ export default function Notificaciones() {
   };
 
   useEffect(() => {
-    // No hacer polling sin sesión: cada 401 disparaba el interceptor y
-    // alimentaba el bucle que saturaba el rate-limit.
     if (!usuario) return;
 
     let mounted = true;
@@ -54,7 +52,6 @@ export default function Notificaciones() {
         }
         prevCount.current = data.length;
       } catch (err) {
-        // Si la sesión expiró (401), detener el polling para no agravar el bucle
         if (err?.response?.status === 401 && mounted) {
           controller.abort();
         }
@@ -65,9 +62,6 @@ export default function Notificaciones() {
     return () => { mounted = false; controller.abort(); clearInterval(interval); };
   }, [usuario]);
 
-  // Tiempo real: si llega cualquier cambio (nuevo pedido, aprobación, anomalía,
-  // vehículo), refrescamos las notificaciones al instante para que el badge se
-  // actualice con 2+ usuarios conectados.
   const fetchLive = useCallback(() => { fetchNotifs(); }, []);
   useRealTime('global', fetchLive);
 
@@ -86,7 +80,6 @@ export default function Notificaciones() {
       await api.post('/notificaciones/vista', { claves });
     } catch { /* si falla, la próxima recarga las vuelve a traer */ }
   };
-
 
   const warningConst = notifs.filter(n => n.tipo === 'warning').length;
   if (warningConst > 0 && !ringing) {

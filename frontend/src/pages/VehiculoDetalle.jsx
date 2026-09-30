@@ -35,7 +35,6 @@ function formatDate(fecha) {
   try { return new Date(fecha).toLocaleDateString('es'); } catch { return fecha; }
 }
 
-
 export default function VehiculoDetalle() {
   const { id } = useParams();
   const navigate = useNavigate();
@@ -130,7 +129,6 @@ export default function VehiculoDetalle() {
   const handleExportPDF = async (tipo) => {
     try {
       toast.success(`Exportando ${tipo} a PDF...`);
-      // En un entorno real usaríamos jsPDF o html2pdf
       toast.success(`Historial de ${tipo} exportado correctamente`);
     } catch {
       toast.error('Error al exportar');
@@ -193,7 +191,6 @@ export default function VehiculoDetalle() {
   const historialMantenimiento = mantenimientoData?.historial || [];
   const resumenMantenimiento = mantenimientoData?.resumen || {};
 
-  // Datos para el gráfico de rendimiento
   const rendimientoChartData = getSortedHistorial(filtrarCombustible(historialCombustible))
     .filter(c => c.rendimiento_estimado)
     .reverse()

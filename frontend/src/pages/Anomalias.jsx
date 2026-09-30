@@ -32,7 +32,6 @@ export default function Anomalias() {
   const [form, setForm] = useState(EMPTY_FORM);
   const [saving, setSaving] = useState(false);
   
-
   const fetchAnomalias = useCallback(async () => {
     try {
       const params = {};
@@ -48,7 +47,6 @@ export default function Anomalias() {
   useEffect(() => {
     api.get('/vehiculos').then(r => setVehiculos(r.data || [])).catch(() => {});
   }, []);
-
 
   useRealTime('anomalia', () => { fetchAnomalias(); });
 

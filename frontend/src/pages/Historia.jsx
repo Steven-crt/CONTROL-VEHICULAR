@@ -47,7 +47,6 @@ export default function Historia() {
     api.get('/vehiculos').then(r => setVehiculos(r.data || [])).catch(() => {});
   }, []);
 
-
   const eventoVivo = useMemo(() => (tab === 'combustible' ? 'combustible' : 'mantenimiento'), [tab]);
   useRealTime([eventoVivo], () => { fetchHistorial(); });
 

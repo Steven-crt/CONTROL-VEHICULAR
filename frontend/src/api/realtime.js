@@ -1,11 +1,9 @@
 
-
 const API_BASE =
   import.meta.env.VITE_API_URL ||
   (['localhost', '127.0.0.1'].includes(window.location.hostname)
     ? 'http://localhost:3001/api'
     : `${window.location.origin}/api`);
-
 
 const EVENTOS = {
   COMBUSTIBLE: 'combustible',
@@ -24,7 +22,6 @@ function notificar(tipo, data) {
   realtimeBus.dispatchEvent(new CustomEvent('global', { detail: { tipo, ...data } }));
 }
 
-
 function conectar() {
   if (source || conectando) return;
   conectando = true;
@@ -35,7 +32,6 @@ function conectar() {
     conectando = false;
     notificar('conectado', { ok: true });
   };
-
 
   source.addEventListener('combustible', (e) => {
     try { notificar(EVENTOS.COMBUSTIBLE, JSON.parse(e.data)); } catch { /* empty */ }
@@ -59,7 +55,6 @@ function conectar() {
   };
 }
 
-// Cierra la conexión y desactiva la reconexión automática.
 function detener() {
   if (source) {
     source.close();
@@ -72,7 +67,6 @@ function iniciar() {
   if (import.meta.env.VITE_PASAR_ALTO === '1') return; // respaldo de emergencia (no usado)
   conectar();
 }
-
 
 import { useEffect, useRef } from 'react';
 export function useRealTime(tipos, callback) {

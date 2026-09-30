@@ -41,7 +41,6 @@ function AppRoutes() {
   );
   return (
     <Routes>
-      // Rutas privadas: si no hay usuario loguean 
       <Route path="/" element={<PrivateRoute><Layout /></PrivateRoute>}>
         <Route index element={<Navigate to={usuario?.rol === 'admin' ? '/dashboard' : '/vehiculos'} />} />
         <Route path="dashboard" element={<AdminRoute><Dashboard /></AdminRoute>} />
