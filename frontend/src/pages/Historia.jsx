@@ -1,7 +1,7 @@
 import { useState, useEffect, useCallback, useMemo } from 'react';
 import api from '../api/axios';
 import { useRealTime } from '../api/realtime';
-import toast from 'react-hot-toast';
+import toast from '../components/toastStore';
 import { Fuel, Wrench, Check, X as XIcon, History } from 'lucide-react';
 import { useAuth } from '../contexts/AuthContext';
 const ESTADO_COLORS = {

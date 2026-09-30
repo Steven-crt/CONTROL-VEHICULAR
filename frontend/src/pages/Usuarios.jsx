@@ -1,6 +1,6 @@
 import { useState, useEffect } from 'react';
 import api from '../api/axios';
-import toast from 'react-hot-toast';
+import toast from '../components/toastStore';
 import { Plus, Pencil, Trash2, X, Save, Shield } from 'lucide-react';
 
 const ROLES = ['admin', 'empleado'];

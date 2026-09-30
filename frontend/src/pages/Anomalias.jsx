@@ -1,7 +1,7 @@
 import { useState, useEffect, useCallback } from 'react';
 import api from '../api/axios';
 import { useRealTime } from '../api/realtime';
-import toast from 'react-hot-toast';
+import toast from '../components/toastStore';
 import { Plus, X, AlertTriangle, Trash2 } from 'lucide-react';
 import { useAuth } from '../contexts/AuthContext';
 

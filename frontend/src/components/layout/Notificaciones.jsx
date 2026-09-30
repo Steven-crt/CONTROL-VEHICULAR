@@ -109,14 +109,14 @@ export default function Notificaciones() {
 
   return (
     <div ref={ref} className="relative">
-      <BellButton
+      <button
         className={`notif-bell ${warnCount > 0 ? 'has-alerts' : ''} ${ringing ? 'ringing' : ''}`}
         onClick={() => setOpen(p => !p)}
         aria-label="Notificaciones"
       >
         <Bell size={20} />
         {notifs.length > 0 && <span className="notif-badge">{notifs.length}</span>}
-      </BellButton>
+      </button>
 
       {open && (
         <div className="notif-dropdown">

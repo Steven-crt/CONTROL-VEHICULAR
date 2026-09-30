@@ -9,7 +9,7 @@ import {
   Gauge, Fuel, DollarSign, AlertTriangle, AlertCircle, Car,
   Calendar, TrendingUp, TrendingDown, Activity, MapPin
 } from 'lucide-react';
-import toast from 'react-hot-toast';
+import toast from '../components/toastStore';
 
 export default function Movimiento() {
   const [vehiculos, setVehiculos] = useState([]);

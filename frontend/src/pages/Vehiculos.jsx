@@ -4,7 +4,7 @@ import api from '../api/axios';
 import { useRealTime } from '../api/realtime';
 import { useAuth } from '../contexts/AuthContext';
 import { Search, Car, MapPin, Fuel, Calendar, Gauge, Filter, ChevronDown, ChevronUp, AlertCircle, CalendarDays, Plus, X, Save, ShieldCheck } from 'lucide-react';
-import toast from 'react-hot-toast';
+import toast from '../components/toastStore';
 
 const EMPTY_VEHICULO = { placa: '', tipo: 'camioneta', color: '', marca: '', modelo: '', anio: '', soat_numero: '', soat_empresa: '', soat_fecha_inicio: '', soat_fecha_vencimiento: '' };
 

@@ -1,6 +1,6 @@
 import { useState, useEffect } from 'react';
 import api from '../api/axios';
-import toast from 'react-hot-toast';
+import toast from '../components/toastStore';
 import { Save, Settings, UploadCloud, Truck, Shield, Fuel, Wrench } from 'lucide-react';
 
 const CAMPOS_NEGOCIO                                                                                                                                                                                                                                                                                                                                                                                 = [

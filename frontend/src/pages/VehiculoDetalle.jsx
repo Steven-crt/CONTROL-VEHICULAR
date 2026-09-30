@@ -10,7 +10,7 @@ import {
 import {
   BarChart, Bar, XAxis, YAxis, Tooltip, ResponsiveContainer, CartesianGrid, AreaChart, Area, Legend
 } from 'recharts';
-import toast from 'react-hot-toast';
+import toast from '../components/toastStore';
 
 const SOAT_STYLES = {
   vigente: { badge: 'text-emerald-400 bg-emerald-900/20 border-emerald-700/50', alerta: 'border-emerald-700/50 bg-emerald-900/20', icono: 'text-emerald-400' },

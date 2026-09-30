@@ -1,5 +1,5 @@
 import { BrowserRouter, Routes, Route, Navigate } from 'react-router-dom';
-import { Toaster } from 'react-hot-toast';
+import { Toaster } from './components/Toast';
 import { AuthProvider, useAuth } from './contexts/AuthContext';
 import { ConfigProvider } from './contexts/ConfigContext';
 import { ThemeProvider } from './contexts/ThemeContext';
@@ -66,14 +66,7 @@ export default function App() {
       <BrowserRouter>
         <AuthProvider>
           <ConfigProvider>
-            <Toaster
-              position="top-right"
-              toastOptions={{
-                style: { background: '#132040', color: '#e2e8f0', border: '1px solid #1e3a5f' },
-                success: { iconTheme: { primary: '#10b981', secondary: '#132040' } },
-                error: { iconTheme: { primary: '#ef4444', secondary: '#132040' } },
-              }}
-            />
+              <Toaster />
             <AppRoutes />
           </ConfigProvider>
         </AuthProvider>

@@ -1,7 +1,7 @@
 import { useState, useEffect, useRef } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { useAuth } from '../contexts/AuthContext';
-import toast from 'react-hot-toast';
+import toast from '../components/toastStore';
 import { useConfig } from '../contexts/ConfigContext';
 import { Car, Eye, EyeOff } from 'lucide-react';
 import Loader from '../components/Loader';
