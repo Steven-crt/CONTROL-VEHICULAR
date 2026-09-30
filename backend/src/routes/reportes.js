@@ -6,12 +6,6 @@ const { internalError } = require('../utils/httpErrors');
 const { date } = require('../utils/validate');
 
 
-router.use((req, res, next) => {
-  if (req.method === 'GET') res.setHeader('Cache-Control', 'private, max-age=30');
-  next();
-});
-
-
 const CACHE_TTL_MS = parseInt(process.env.REPORTES_CACHE_MS, 10) || 10000;
 const cacheMap = new Map();
 

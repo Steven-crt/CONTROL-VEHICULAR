@@ -133,10 +133,33 @@ app.use(express.urlencoded({ extended: true, limit: '256kb' }));
 app.use(compression({ threshold: 1024 }));
 
 
+// CWE-525 / OWASP A07: la API devuelve datos de usuario y de sesion (flota,
+// usuarios, mantenimiento, reportes, configuracion). Sin cabeceras explicitas,
+// un proxy o CDN intermedio puede aplicar cache heuristica y devolver la
+// respuesta de un usuario a otro. `no-store` prohibe almacenarla en cualquier
+// cache, compartida o privada.
+//
+// Se aplica a /api, que es la superficie con datos personales. Los assets
+// publicos (/uploads) siguen cacheandose, pero solo en cache privada.
+const NO_STORE_HEADERS = {
+  'Cache-Control': 'no-store, no-cache, must-revalidate, private, max-age=0',
+  'Pragma': 'no-cache',
+  'Expires': '0'
+};
+
+app.use('/api', (req, res, next) => {
+  res.set(NO_STORE_HEADERS);
+  next();
+});
+
+
+// `private` en lugar de `public`: las imagenes subidas por usuarios (fotos de
+// anomalias, logo) son datos del usuario y no deben guardarse en caches
+// compartidas, solo en el navegador de quien las solicito.
 app.use('/uploads', express.static(path.join(__dirname, '../uploads'), {
   fallthrough: false,
   maxAge: '1d',
-  setHeaders: (res) => res.setHeader('Cache-Control', 'public, max-age=86400')
+  setHeaders: (res) => res.setHeader('Cache-Control', 'private, max-age=86400')
 }));
 
 // Logging de peticiones (método, ruta, estado, duración, IP) sin datos sensibles
@@ -179,7 +202,10 @@ app.use('/api/realtime', require('./routes/realtime'));
 
 // Health check con diagnóstico de conexión a la base de datos.
 // SOLO expone estado de conexión (sin versión MySQL ni estructura de tablas)
-app.get('/', (req, res) => res.json({ status: 'ok', service: 'Gestion Vehicular API', health: '/api/health' }));
+app.get('/', (req, res) => {
+  res.set(NO_STORE_HEADERS);
+  res.json({ status: 'ok', service: 'Gestion Vehicular API', health: '/api/health' });
+});
 
 app.get('/api/health', async (req, res) => {
   const info = {

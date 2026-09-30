@@ -21,10 +21,14 @@ let nextId = 1;
 const MAX_CONEXIONES_POR_USUARIO = 5;
 const MAX_CONEXIONES_TOTAL = 1000;
 
-// Cabeceras para evitar que proxies / navegador buffereen la respuesta SSE
+// Cabeceras para evitar que proxies / navegador buffereen la respuesta SSE.
+// `no-store` (y no solo `no-cache`) porque el stream va montado sobre la cookie
+// de sesion: si un cache compartido lo guardara, otro usuario de la misma red
+// podria recibir los eventos de este usuario en tiempo real.
 const SSE_HEADERS = {
   'Content-Type': 'text/event-stream',
-  'Cache-Control': 'no-cache, no-transform',
+  'Cache-Control': 'no-store, no-cache, must-revalidate, private, no-transform',
+  Pragma: 'no-cache',
   'Connection': 'keep-alive',
   'X-Accel-Buffering': 'no'
 };

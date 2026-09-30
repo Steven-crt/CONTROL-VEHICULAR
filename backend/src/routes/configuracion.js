@@ -30,7 +30,6 @@ function esUrlSegura(v) {
 }
 
 router.get('/', auth(), async (req, res) => {
-  res.setHeader('Cache-Control', 'private, max-age=60');
   try {
     const [rows] = await db.query('SELECT clave, valor FROM configuracion');
     const config = {};
