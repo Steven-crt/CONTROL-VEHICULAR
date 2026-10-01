@@ -15,13 +15,33 @@ const { createLimiter } = require('./middleware/rateLimit');
 
 getJwtSecret();
 app.set('trust proxy', 1);
+
+const NO_STORE_HEADERS = {
+  'Cache-Control': 'no-store, no-cache, must-revalidate, private, max-age=0, no-transform',
+  'Pragma': 'no-cache',
+  'Expires': '0',
+  'Surrogate-Control': 'no-store'
+};
+
+function setNoStore(res) {
+  res.set(NO_STORE_HEADERS);
+  res.vary('Cookie');
+  res.vary('Authorization');
+}
+
+function noStoreMiddleware(req, res, next) {
+  setNoStore(res);
+  next();
+}
+
+app.use('/api', noStoreMiddleware);
+
 app.use(cookieParser());
 
 
 const ES_PRODUCCION = process.env.NODE_ENV === 'production';
 
-// Allowlist exacta de origenes. Se normaliza sin barra final para que la
-// comparacion sea literal y no dependa de como el navegador formatee el Origin.
+
 const allowedOrigins = (() => {
   const configurados = (process.env.CORS_ORIGIN || '')
     .split(',')
@@ -30,14 +50,10 @@ const allowedOrigins = (() => {
 
   if (configurados.length) return configurados;
 
-  // Fail-closed: en produccion no hay ningun origen implicito. Si CORS_ORIGIN
-  // falta o es invalido, la API rechaza el acceso cross-origin en vez de abrirlo.
   return ES_PRODUCCION ? [] : ['http://localhost:5173', 'http://127.0.0.1:5173'];
 })();
 
 function isOriginAllowed(origin) {
-  // Sin cabecera Origin no hay contexto cross-origin (curl, health checks,
-  // apps moviles): la peticion no queda sujeta a CORS.
   if (!origin) return true;
   return allowedOrigins.includes(origin.trim().replace(/\/$/, ''));
 }
@@ -50,8 +66,7 @@ function buildApiCors() {
       if (ES_PRODUCCION && !allowedOrigins.length) {
         return callback(new Error('CORS: CORS_ORIGIN no esta configurado en produccion'));
       }
-      // false => el middleware NO emite Access-Control-Allow-Origin, por lo que
-      // el navegador bloquea la respuesta. No se devuelve 500 ni se filtra datos.
+
       return callback(null, isOriginAllowed(origin));
     },
     credentials: true,
@@ -62,9 +77,6 @@ function buildApiCors() {
   });
 }
 
-// Una sola politica CORS para toda la API (incluido /api/health): antes el health
-// check usaba un allowlist distinto y caia en `origin: true` (refleja cualquier
-// origen) cuando la lista quedaba vacia.
 app.use(buildApiCors());
 
 // Segunda capa: los metodos mutables se rechazan con 403 si el origen no esta
@@ -86,10 +98,6 @@ app.use(helmet({
     directives: {
       defaultSrc: ["'self'"],
       scriptSrc: ["'self'"],
-      // Sin 'unsafe-inline' en style-src: los bloques <style> y CSSOM solo se
-      // permiten desde 'self'. Los atributos style="" dinámicos (barras de
-      // combustible, tooltips) siguen habilitados vía style-src-attr, que es
-      // un subconjunto de superficie: no permite inyectar reglas CSS.
       styleSrc: ["'self'"],
       styleSrcElem: ["'self'"],
       styleSrcAttr: ["'unsafe-inline'"],
@@ -99,7 +107,7 @@ app.use(helmet({
       objectSrc: ["'none'"]
     }
   },
-  // HSTS: fuerza HTTPS con preload habilitado
+
   hsts: {
     maxAge: 31536000,
     includeSubDomains: true,
@@ -133,36 +141,18 @@ app.use(express.urlencoded({ extended: true, limit: '256kb' }));
 app.use(compression({ threshold: 1024 }));
 
 
-// CWE-525 / OWASP A07: la API devuelve datos de usuario y de sesion (flota,
-// usuarios, mantenimiento, reportes, configuracion). Sin cabeceras explicitas,
-// un proxy o CDN intermedio puede aplicar cache heuristica y devolver la
-// respuesta de un usuario a otro. `no-store` prohibe almacenarla en cualquier
-// cache, compartida o privada.
-//
-// Se aplica a /api, que es la superficie con datos personales. Los assets
-// publicos (/uploads) siguen cacheandose, pero solo en cache privada.
-const NO_STORE_HEADERS = {
-  'Cache-Control': 'no-store, no-cache, must-revalidate, private, max-age=0',
-  'Pragma': 'no-cache',
-  'Expires': '0'
-};
-
-app.use('/api', (req, res, next) => {
-  res.set(NO_STORE_HEADERS);
-  next();
-});
-
-
-// `private` en lugar de `public`: las imagenes subidas por usuarios (fotos de
-// anomalias, logo) son datos del usuario y no deben guardarse en caches
-// compartidas, solo en el navegador de quien las solicito.
 app.use('/uploads', express.static(path.join(__dirname, '../uploads'), {
   fallthrough: false,
   maxAge: '1d',
-  setHeaders: (res) => res.setHeader('Cache-Control', 'private, max-age=86400')
+  setHeaders: (res) => {
+    res.setHeader('Cache-Control', 'private, max-age=86400');
+    res.setHeader('Surrogate-Control', 'private');
+    res.vary('Cookie');
+    res.vary('Authorization');
+  }
 }));
 
-// Logging de peticiones (método, ruta, estado, duración, IP) sin datos sensibles
+
 app.use((req, res, next) => {
   const start = Date.now();
   res.on('finish', () => {
@@ -200,10 +190,9 @@ app.use('/api/notificaciones', require('./routes/notificaciones'));
 app.use('/api/anomalias', require('./routes/anomalias'));
 app.use('/api/realtime', require('./routes/realtime'));
 
-// Health check con diagnóstico de conexión a la base de datos.
-// SOLO expone estado de conexión (sin versión MySQL ni estructura de tablas)
+
 app.get('/', (req, res) => {
-  res.set(NO_STORE_HEADERS);
+  setNoStore(res);
   res.json({ status: 'ok', service: 'Gestion Vehicular API', health: '/api/health' });
 });
 
@@ -230,7 +219,13 @@ app.get('/api/health', async (req, res) => {
 });
 
 // Error handler
+app.use((req, res) => {
+  setNoStore(res);
+  res.status(404).json({ error: 'Recurso no encontrado' });
+});
+
 app.use((err, req, res, next) => {
+  setNoStore(res);
 
   const status = err?.status || err?.statusCode;
   if (status && status >= 400 && status <= 499) {
@@ -252,4 +247,3 @@ app.listen(PORT, () => {
 });
 
 module.exports = app;
-
