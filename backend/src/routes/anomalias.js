@@ -51,7 +51,7 @@ router.get('/', auth(), async (req, res) => {
     }
     const idVehiculo = num(req.query.vehiculo_id, { min: 1, max: 2147483647, label: 'vehiculo_id' }).value;
     if (idVehiculo !== null) { q += ' AND a.vehiculo_id = ?'; params.push(idVehiculo); }
-    // Empleados solo ven sus propios reportes; el admin ve todo.11
+    // Empleados solo ven sus propios reportes; el admin ve todo.
     if (req.user?.rol !== 'admin') {
       q += ' AND a.usuario_id = ?';
       params.push(req.user.id);

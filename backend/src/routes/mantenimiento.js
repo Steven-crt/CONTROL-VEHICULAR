@@ -238,7 +238,6 @@ router.put('/:id/atender', auth(['admin']), async (req, res) => {
   }
 });
 
-// PUT /api/mantenimiento/:id/rechazar - Rechazar una solicitud pendiente (admin)
 router.put('/:id/rechazar', auth(['admin']), async (req, res) => {
   const id = intId(req.params.id, { label: 'id' }).value;
   try {
