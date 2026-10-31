@@ -60,8 +60,7 @@ router.get('/', auth(), async (req, res) => {
         `${v.placa} (${v.marca} ${v.modelo}) — ${v.dias} días`, `/vehiculos/${v.id}`);
     });
 
-    // 3. Mantenimientos preventivos próximos (km cercano al intervalo)
-    // Optimización: usar una sola subquery para obtener el último KM de mantenimiento por vehículo
+
     const [config] = await db.query(`SELECT valor FROM configuracion WHERE clave = 'intervalo_mant_km'`);
     const intervaloKm = parseInt(config[0]?.valor) || 5000;
     const [mantenciones] = await db.query(`
@@ -85,7 +84,7 @@ router.get('/', auth(), async (req, res) => {
         `${v.placa} — faltan ${kmRestante > 0 ? kmRestante : 0} km para el servicio`, `/vehiculos/${v.id}`);
     });
 
-    // 4. SOAT: vencidos, por vencer y sin datos registrados
+
     const [soatVehiculos] = await db.query(`
       SELECT id, placa, marca, modelo, soat_numero, soat_empresa, soat_fecha_vencimiento,
         DATEDIFF(soat_fecha_vencimiento, CURDATE()) as dias_restantes
@@ -116,8 +115,7 @@ router.get('/', auth(), async (req, res) => {
         `${v.placa} — registre los datos del SOAT`, `/vehiculos/${v.id}`);
     });
 
-    // 5. Solicitudes pendientes de aprobación (solo admins): combustible,
-    //    mantenimiento y anomalías abiertas creadas por empleados.
+
     if (req.user?.rol === 'admin') {
       const [pendientes] = await db.query(`
         SELECT
@@ -133,7 +131,7 @@ router.get('/', auth(), async (req, res) => {
       }
     }
 
-    // Filtrar las que este usuario ya marcó como vistas
+
     const [vistas] = await db.query(
       'SELECT clave FROM notificaciones_vistas WHERE usuario_id = ?',
       [req.user?.id || 0]
@@ -147,8 +145,7 @@ router.get('/', auth(), async (req, res) => {
   }
 });
 
-// POST /api/notificaciones/vista  { claves: ['rb:1:2026-08', ...] }
-// Marca alertas como vistas para el usuario actual (dejan de aparecer).
+
 router.post('/vista', auth(), async (req, res) => {
   try {
     const claves = Array.isArray(req.body?.claves) ? req.body.claves.filter(c => typeof c === 'string').slice(0, 100) : [];

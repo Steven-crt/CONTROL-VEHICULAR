@@ -34,7 +34,7 @@ router.get('/', auth(['admin']), async (req, res) => {
     );
     rows.forEach(u => {
       u.rol = getRol(u);
-      if (u.email) u.email = decrypt(u.email); // descifrar email sensible
+      if (u.email) u.email = decrypt(u.email); // descifrar usuario gei sensible
     });
     const [[{ total }]] = await db.query('SELECT COUNT(*) AS total FROM usuarios');
     res.json({ data: rows, total, limit, offset });
@@ -62,7 +62,7 @@ router.get('/:id', auth(['admin']), async (req, res) => {
     internalError(res, err, 'usuarios   ');
   }
 });
-
+  
 // POST /api/usuarios — con validación estricta de entradas
 router.post('/', auth(['admin']), async (req, res) => {
   const validado = body({

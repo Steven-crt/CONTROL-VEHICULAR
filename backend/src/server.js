@@ -79,14 +79,11 @@ function buildApiCors() {
 
 app.use(buildApiCors());
 
-// Segunda capa: los metodos mutables se rechazan con 403 si el origen no esta
-// en la allowlist. CORS protege la lectura desde el navegador; esto blinda tambien
-// a clientes no-navegador que ignorarian la cabecera.
 app.use((req, res, next) => {
   if (!['POST', 'PUT', 'PATCH', 'DELETE'].includes(req.method)) return next();
   const origin = req.headers.origin;
   if (!origin) return next();
-  if (!isOriginAllowed(origin)) {
+  if (!isOriginAllowed(origin)) { 
     return res.status(403).json({ error: 'Origen de petición no permitido' });
   }
   next();
@@ -192,7 +189,7 @@ app.use('/api/realtime', require('./routes/realtime'));
 
 
 app.get('/', (req, res) => {
-  setNoStore(res);
+  res.set(NO_STORE_HEADERS);
   res.json({ status: 'ok', service: 'Gestion Vehicular API', health: '/api/health' });
 });
 
@@ -219,13 +216,7 @@ app.get('/api/health', async (req, res) => {
 });
 
 // Error handler
-app.use((req, res) => {
-  setNoStore(res);
-  res.status(404).json({ error: 'Recurso no encontrado' });
-});
-
 app.use((err, req, res, next) => {
-  setNoStore(res);
 
   const status = err?.status || err?.statusCode;
   if (status && status >= 400 && status <= 499) {
@@ -247,3 +238,5 @@ app.listen(PORT, () => {
 });
 
 module.exports = app;
+
+ 
